@@ -1,35 +1,32 @@
-# UI n8n-rust — DIPUTUSKAN (revisi): Rust-served single-file UI
+# UI web n8n-rust v0.4.0
 
-## Keputusan awal (2026-09-10): Opsi A — Vue 3 + VueFlow + Axum
+Editor workflow single-file (`crates/n8n-server/ui/app.html`, ±23 KB),
+disajikan embedded oleh binary server di `GET /`. Tanpa toolchain JS,
+tanpa bundler, tanpa dependensi CDN — buka browser, langsung pakai.
 
-Dipilih karena syarat kemiripan 95%: editor n8n asli berbasis Vue.
+## Fitur
 
-## Revisi (2026-09-10): UI single-file embedded di binary Rust
+- Canvas SVG: 12 tipe node (termasuk Code/Function, Schedule, Webhook),
+  drag untuk pindah, badge warna per tipe.
+- Edge: drag dari lingkaran kanan node sumber ke node target; klik edge
+  untuk menghapus. Aturan If: edge pertama = cabang true (abu-abu),
+  edge kedua = false (kuning).
+- Panel node: metadata + editor parameters JSON (disimpan per tombol,
+  divalidasi sebagai object) + output run terakhir per cabang.
+- Toolbar: Contoh (fixture), Buka JSON (impor file), **Export JSON**
+  (unduh workflow yang sedang diedit — nama file dari nama workflow),
+  Validate, Explain, Run.
+- Hasil Run: badge urutan eksekusi di tiap node + durasi ms hijau;
+  ringkasan run tercatat di server (`GET /api/runs`).
 
-Alasan revisi (syarat user: murni Rust, personal, seefisien mungkin):
+## API yang dipakai UI
 
-- VueFlow butuh npm + toolchain JS + build step — bertentangan dengan
-  "satu binary, tanpa install, offline-first".
-- Kemiripan visual adalah soal HTML/CSS, bukan framework: kanvas SVG +
-  kartu node + panel properti bisa meniru n8n tanpa framework.
-- Hasil: `crates/n8n-server/ui/app.html` — satu file, tanpa dependensi
-  eksternal, disajikan Rust via `include_str!`. Nol build step.
+`POST /api/validate`, `POST /api/explain`, `POST /api/run` — semuanya
+menerima workflow JSON penuh sebagai body. UI tidak menyimpan state ke
+server selain saat Run (riwayat adalah efek samping server).
 
-VueFlow tetap menjadi **upgrade path** masa depan: protokol REST
-(`/api/nodes|validate|explain|run`) adalah kontrak stabil, jadi folder
-`web/` ini bisa diganti implementasi Vue kapan saja tanpa menyentuh engine.
+## Batasan UI
 
-## Arti "95% sama" (operasional, bukan slogan)
-
-- Layout: kanvas node + panel properti kanan + toolbar — sama.
-- Node cards: nama, tipe, status/urutan eksekusi, timing — sama.
-- Interaksi inti v0.3.0: tambah/hapus node, drag-node, sambung edge via
-  drag dari port (otomatis output[0]=true lalu output[1]=false untuk If),
-  klik-edge untuk hapus, edit parameters JSON, Validate/Explain/Run — ada.
-- Yang BOLEH beda (5%): branding/logo, tema minor, menu lanjutan di luar v1.
-
-## Terbuka (calon tiket)
-
-1. Tombol ekspor/unduh workflow JSON dari UI (saat ini searah: buka → edit → run).
-2. Impor `.json` n8n asli yang besar (uji + virtualisasi bila perlu).
-3. Upgrade VueFlow bila kemiripan single-file mentok (kontrak REST siap).
+- Canvas 1600×900 tetap (scroll), tanpa zoom/pan dan tanpa undo.
+- Editor parameters mentah JSON (tanpa form per tipe node).
+- Export hanya mengunduh file; tidak ada penyimpanan server-side.

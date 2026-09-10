@@ -1,8 +1,7 @@
 //! n8n-engine: executor workflow sinkron (tanpa runtime async — ringan).
 //!
-//! v0.3.0: node multi-output (`BranchOutputs`, indeks = cabang `main[i]`)
-//! untuk If-cabang; items node = gabungan output (pendahulu, cabang) yang
-//! mengarah padanya. `explain`, `lint`, dan timing tidak berubah bentuk.
+//! v0.4.0: `run_with` membawa payload webhook opsional ke `ExecContext`
+//! (node webhook membacanya); `run` = `run_with(None)`. Sisanya sama.
 
 use n8n_core::{Workflow, WorkflowNode};
 use serde::{Deserialize, Serialize};
@@ -37,9 +36,11 @@ pub type EngineResult<T> = Result<T, EngineError>;
 /// Node biasa mengembalikan persis 1 cabang.
 pub type BranchOutputs = Vec<Vec<Value>>;
 
-/// Konteks eksekusi: output semua node yang sudah jalan.
+/// Konteks eksekusi: output node lain + payload webhook (bila ada).
 pub struct ExecContext<'a> {
     pub outputs: &'a HashMap<String, BranchOutputs>,
+    /// Payload request webhook (server `/hook`) — None saat run biasa.
+    pub webhook: Option<&'a Value>,
 }
 
 impl ExecContext<'_> {
@@ -176,7 +177,17 @@ impl Engine {
         Ok(plan(workflow)?.order)
     }
 
+    /// Run biasa (tanpa payload webhook).
     pub fn run(workflow: &Workflow, registry: &Registry) -> EngineResult<RunReport> {
+        Self::run_with(workflow, registry, None)
+    }
+
+    /// Run dengan payload webhook opsional (dibaca node webhook).
+    pub fn run_with(
+        workflow: &Workflow,
+        registry: &Registry,
+        webhook: Option<Value>,
+    ) -> EngineResult<RunReport> {
         let p = plan(workflow)?;
         let by_name: HashMap<&str, &WorkflowNode> =
             workflow.nodes.iter().map(|n| (n.name.as_str(), n)).collect();
@@ -200,7 +211,10 @@ impl Engine {
                     node.node_type
                 ))
             })?;
-            let ctx = ExecContext { outputs: &done };
+            let ctx = ExecContext {
+                outputs: &done,
+                webhook: webhook.as_ref(),
+            };
             let t0 = std::time::Instant::now();
             let out = node_impl.execute(node, items, &ctx).map_err(|e| {
                 EngineError::new(format!("node '{name}' failed: {e}"))
@@ -295,6 +309,7 @@ mod tests {
 
     struct Emit;
     struct Pass;
+    struct EchoHook;
 
     impl Node for Emit {
         fn node_type(&self) -> &'static str {
@@ -324,6 +339,20 @@ mod tests {
         }
     }
 
+    impl Node for EchoHook {
+        fn node_type(&self) -> &'static str {
+            "test.echohook"
+        }
+        fn execute(
+            &self,
+            _node: &WorkflowNode,
+            _items: Vec<Value>,
+            ctx: &ExecContext,
+        ) -> EngineResult<BranchOutputs> {
+            Ok(vec![vec![ctx.webhook.cloned().unwrap_or(Value::Null)]])
+        }
+    }
+
     fn node(name: &str, t: &str) -> WorkflowNode {
         WorkflowNode {
             id: format!("id-{name}"),
@@ -341,6 +370,7 @@ mod tests {
         let mut r = Registry::default();
         r.register(Arc::new(Emit));
         r.register(Arc::new(Pass));
+        r.register(Arc::new(EchoHook));
         r
     }
 
@@ -435,6 +465,17 @@ mod tests {
                 .iter()
                 .any(|d| d.level == Level::Error && d.message.contains("gantung")),
             "{diags:?}"
+        );
+    }
+
+    #[test]
+    fn run_with_threads_webhook_payload() {
+        let wf = workflow(vec![node("A", "test.echohook")], HashMap::new());
+        let report = Engine::run_with(&wf, &registry(), Some(serde_json::json!({"h": 1})))
+            .expect("run");
+        assert_eq!(
+            report.outputs["A"][0],
+            vec![serde_json::json!({"h": 1})]
         );
     }
 }

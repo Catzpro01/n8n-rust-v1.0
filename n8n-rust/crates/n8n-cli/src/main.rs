@@ -21,7 +21,13 @@ fn real_main() -> Result<(), String> {
     match args.get(1).map(String::as_str) {
         Some("validate") => cmd_validate(args.get(2)),
         Some("explain") => cmd_explain(args.get(2)),
-        Some("run") => cmd_run(args.get(2)),
+        Some("run") => {
+            let save = args
+                .iter()
+                .position(|a| a == "--save")
+                .and_then(|i| args.get(i + 1).map(String::as_str));
+            cmd_run(args.get(2), save)
+        }
         Some("nodes") => cmd_nodes(),
         _ => {
             usage();
@@ -32,7 +38,7 @@ fn real_main() -> Result<(), String> {
 
 fn usage() {
     eprintln!(
-        "pakai: n8n-cli validate <workflow.json> | explain <workflow.json> | run <workflow.json> | nodes"
+        "pakai: n8n-cli validate <workflow.json> | explain <workflow.json> | run <workflow.json> [--save <report.json>] | nodes"
     );
 }
 
@@ -90,7 +96,7 @@ fn cmd_explain(arg: Option<&String>) -> Result<(), String> {
     }
 }
 
-fn cmd_run(arg: Option<&String>) -> Result<(), String> {
+fn cmd_run(arg: Option<&String>, save: Option<&str>) -> Result<(), String> {
     let wf = load_workflow(need_path(arg)?)?;
     let report = Engine::run(&wf, &full_registry()).map_err(|e| e.to_string())?;
     println!("urutan: {}", report.order.join(" -> "));
@@ -108,6 +114,12 @@ fn cmd_run(arg: Option<&String>) -> Result<(), String> {
     println!("waktu: {} (total {total}ms)", per.join(", "));
     let out = serde_json::to_string_pretty(&report.outputs).map_err(|e| e.to_string())?;
     println!("{out}");
+    if let Some(path) = save {
+        let pretty =
+            serde_json::to_string_pretty(&report).map_err(|e| e.to_string())?;
+        std::fs::write(path, pretty).map_err(|e| format!("simpan '{path}' gagal: {e}"))?;
+        println!("tersimpan: {path}");
+    }
     Ok(())
 }
 

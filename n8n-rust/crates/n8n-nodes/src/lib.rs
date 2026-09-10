@@ -1,13 +1,13 @@
 //! n8n-nodes: node bawaan v1 (subset kecil yang tumbuh bertahap).
 //!
-//! v0.3.0: `manualTrigger`, `set` (+ekspresi), `noOp`, `filter`, `sort`,
-//! `limit`, `if` (2 cabang: [true, false]), `httpRequest` (subset).
-//! Nilai string di parameter dirender sebagai template `={{ }}`
-//! (lihat `n8n_core::expr`).
+//! v0.4.0: manualTrigger, set, noOp, filter, sort, limit, if (2 cabang),
+//! httpRequest (fan-out per item), code + function (rhai, var `items`),
+//! scheduleTrigger (penanda + metadata), webhook (payload dari server).
+//! Nilai string di parameter dirender sebagai template `={{ }}`.
 
 use n8n_core::expr::{render, render_value, ExprContext};
 use n8n_core::WorkflowNode;
-use n8n_engine::{BranchOutputs, EngineResult, ExecContext, Node, Registry};
+use n8n_engine::{BranchOutputs, EngineError, EngineResult, ExecContext, Node, Registry};
 use serde_json::{json, Map, Value};
 use std::sync::Arc;
 
@@ -19,6 +19,10 @@ pub struct SortNode;
 pub struct LimitNode;
 pub struct IfNode;
 pub struct HttpNode;
+pub struct CodeNode;
+pub struct FunctionNode;
+pub struct ScheduleNode;
+pub struct WebhookNode;
 
 impl Node for ManualTrigger {
     fn node_type(&self) -> &'static str {
@@ -226,8 +230,7 @@ impl Node for IfNode {
         "n8n-nodes-base.if"
     }
 
-    /// Belah item ke 2 cabang `[true, false]` menurut `condition`
-    /// (template `={{ }}`, truthy). Cabang = `main[0]` / `main[1]`.
+    /// Belah item ke 2 cabang `[true, false]` menurut `condition`.
     fn execute(
         &self,
         node: &WorkflowNode,
@@ -261,96 +264,214 @@ impl Node for HttpNode {
         "n8n-nodes-base.httpRequest"
     }
 
-    /// Subset v1: SATU request per eksekusi (input items hanya jadi konteks
-    /// ekspresi via item pertama — fan-out per item = tiket lanjutan).
+    /// Fan-out: SATU request per item input (tiap item = konteks ekspresi).
+    /// 0 item → 0 request. Request pertama yang gagal menggagalkan node.
     /// Parameter: `url` (wajib, template), `method` (default GET),
     /// `headers` (object, nilai di-render), `body` (JSON, di-render).
-    /// Output: `[{status, headers, body, url}]`; body JSON di-parse bila bisa.
+    /// Tiap output: `{status, headers, body, url}`.
     fn execute(
         &self,
         node: &WorkflowNode,
         items: Vec<Value>,
         ctx: &ExecContext,
     ) -> EngineResult<BranchOutputs> {
-        let item0 = items.first().unwrap_or(&Value::Null);
-        let ectx = ExprContext {
-            item: item0,
-            outputs: ctx.outputs,
-        };
-        let url_v = node
-            .parameters
-            .get("url")
-            .map(|v| render_value(v, &ectx))
-            .unwrap_or(Value::Null);
-        let url = url_v
-            .as_str()
-            .ok_or_else(|| EngineError::new("httpRequest: 'url' wajib string"))?
-            .to_string();
-        let method = node
-            .parameters
-            .get("method")
-            .and_then(Value::as_str)
-            .unwrap_or("GET")
-            .to_uppercase();
-        let mut headers = reqwest::header::HeaderMap::new();
-        if let Some(Value::Object(h)) = node.parameters.get("headers") {
-            for (k, v) in h {
-                let rendered = render_value(v, &ectx);
-                let s = match &rendered {
-                    Value::String(s) => s.clone(),
-                    Value::Number(n) => n.to_string(),
-                    Value::Bool(b) => b.to_string(),
-                    _ => {
-                        return Err(EngineError::new(format!(
-                            "httpRequest: nilai header '{k}' harus skalar"
-                        )))
-                    }
-                };
-                let name = reqwest::header::HeaderName::from_bytes(k.as_bytes())
-                    .map_err(|_| {
-                        EngineError::new(format!("httpRequest: nama header tak valid '{k}'"))
-                    })?;
-                let value = reqwest::header::HeaderValue::from_str(&s).map_err(|_| {
-                    EngineError::new(format!("httpRequest: nilai header '{k}' tak valid"))
+        let mut out = Vec::with_capacity(items.len());
+        for it in &items {
+            let ectx = ExprContext {
+                item: it,
+                outputs: ctx.outputs,
+            };
+            out.push(do_request(node, &ectx)?);
+        }
+        Ok(vec![out])
+    }
+}
+
+fn do_request(node: &WorkflowNode, ectx: &ExprContext) -> EngineResult<Value> {
+    let url_v = node
+        .parameters
+        .get("url")
+        .map(|v| render_value(v, ectx))
+        .unwrap_or(Value::Null);
+    let url = url_v
+        .as_str()
+        .ok_or_else(|| EngineError::new("httpRequest: 'url' wajib string"))?
+        .to_string();
+    let method = node
+        .parameters
+        .get("method")
+        .and_then(Value::as_str)
+        .unwrap_or("GET")
+        .to_uppercase();
+    let mut headers = reqwest::header::HeaderMap::new();
+    if let Some(Value::Object(h)) = node.parameters.get("headers") {
+        for (k, v) in h {
+            let rendered = render_value(v, ectx);
+            let s = match &rendered {
+                Value::String(s) => s.clone(),
+                Value::Number(n) => n.to_string(),
+                Value::Bool(b) => b.to_string(),
+                _ => {
+                    return Err(EngineError::new(format!(
+                        "httpRequest: nilai header '{k}' harus skalar"
+                    )))
+                }
+            };
+            let name = reqwest::header::HeaderName::from_bytes(k.as_bytes())
+                .map_err(|_| {
+                    EngineError::new(format!("httpRequest: nama header tak valid '{k}'"))
                 })?;
-                headers.insert(name, value);
-            }
+            let value = reqwest::header::HeaderValue::from_str(&s).map_err(|_| {
+                EngineError::new(format!("httpRequest: nilai header '{k}' tak valid"))
+            })?;
+            headers.insert(name, value);
         }
-        let client = reqwest::blocking::Client::builder()
-            .timeout(std::time::Duration::from_secs(30))
-            .build()
-            .map_err(|e| EngineError::new(format!("httpRequest: client: {e}")))?;
-        let http_method: reqwest::Method = method
-            .parse()
-            .map_err(|e| EngineError::new(format!("httpRequest: method: {e}")))?;
-        let mut req = client.request(http_method, url.clone());
-        req = req.headers(headers);
-        if let Some(body) = node.parameters.get("body") {
-            let rendered = render_value(body, &ectx);
-            req = req.json(&rendered);
-        }
-        let resp = req
-            .send()
-            .map_err(|e| EngineError::new(format!("httpRequest: {e}")))?;
-        let status = resp.status().as_u16();
-        let mut rh = Map::new();
-        for (k, v) in resp.headers().iter() {
-            rh.insert(
-                k.to_string(),
-                Value::String(v.to_str().unwrap_or("").to_string()),
-            );
-        }
-        let final_url = resp.url().to_string();
-        let text = resp
-            .text()
-            .map_err(|e| EngineError::new(format!("httpRequest: baca body: {e}")))?;
-        let body_v: Value = serde_json::from_str(&text).unwrap_or(Value::String(text));
-        let mut out = Map::new();
-        out.insert("status".to_string(), json!(status));
-        out.insert("headers".to_string(), Value::Object(rh));
-        out.insert("body".to_string(), body_v);
-        out.insert("url".to_string(), Value::String(final_url));
-        Ok(vec![vec![Value::Object(out)]])
+    }
+    let client = reqwest::blocking::Client::builder()
+        .timeout(std::time::Duration::from_secs(30))
+        .build()
+        .map_err(|e| EngineError::new(format!("httpRequest: client: {e}")))?;
+    let http_method: reqwest::Method = method
+        .parse()
+        .map_err(|e| EngineError::new(format!("httpRequest: method: {e}")))?;
+    let mut req = client.request(http_method, url.clone());
+    req = req.headers(headers);
+    if let Some(body) = node.parameters.get("body") {
+        let rendered = render_value(body, ectx);
+        req = req.json(&rendered);
+    }
+    let resp = req
+        .send()
+        .map_err(|e| EngineError::new(format!("httpRequest: {e}")))?;
+    let status = resp.status().as_u16();
+    let mut rh = Map::new();
+    for (k, v) in resp.headers().iter() {
+        rh.insert(
+            k.to_string(),
+            Value::String(v.to_str().unwrap_or("").to_string()),
+        );
+    }
+    let final_url = resp.url().to_string();
+    let text = resp
+        .text()
+        .map_err(|e| EngineError::new(format!("httpRequest: baca body: {e}")))?;
+    let body_v: Value = serde_json::from_str(&text).unwrap_or(Value::String(text));
+    let mut out = Map::new();
+    out.insert("status".to_string(), json!(status));
+    out.insert("headers".to_string(), Value::Object(rh));
+    out.insert("body".to_string(), body_v);
+    out.insert("url".to_string(), Value::String(final_url));
+    Ok(Value::Object(out))
+}
+
+impl Node for CodeNode {
+    fn node_type(&self) -> &'static str {
+        "n8n-nodes-base.code"
+    }
+
+    /// Script rhai atas `items` (lihat `run_code`).
+    fn execute(
+        &self,
+        node: &WorkflowNode,
+        items: Vec<Value>,
+        _ctx: &ExecContext,
+    ) -> EngineResult<BranchOutputs> {
+        Ok(vec![run_code(node, items)?])
+    }
+}
+
+impl Node for FunctionNode {
+    fn node_type(&self) -> &'static str {
+        "n8n-nodes-base.function"
+    }
+
+    /// Alias lama untuk `code` (kompat impor workflow n8n lama).
+    fn execute(
+        &self,
+        node: &WorkflowNode,
+        items: Vec<Value>,
+        _ctx: &ExecContext,
+    ) -> EngineResult<BranchOutputs> {
+        Ok(vec![run_code(node, items)?])
+    }
+}
+
+/// Script rhai: variabel `items` (array) tersedia; setelah eval, `items`
+/// dibaca kembali sebagai output. Non-object dibungkus `{"value": x}.
+/// TANPA sandbox: hanya jalankan script tepercaya milik sendiri.
+fn run_code(node: &WorkflowNode, items: Vec<Value>) -> EngineResult<Vec<Value>> {
+    let code = node
+        .parameters
+        .get("code")
+        .and_then(Value::as_str)
+        .ok_or_else(|| EngineError::new("code: parameter 'code' wajib string"))?;
+    let eng = rhai::Engine::new();
+    let dyn_items = rhai::serde::to_dynamic(&items)
+        .map_err(|e| EngineError::new(format!("code: {e}")))?;
+    let mut scope = rhai::Scope::new();
+    scope.push("items", dyn_items);
+    eng.eval_with_scope::<rhai::Dynamic>(&mut scope, code)
+        .map_err(|e| EngineError::new(format!("code: {e}")))?;
+    let back: rhai::Dynamic = scope
+        .get_value("items")
+        .ok_or_else(|| EngineError::new("code: variabel 'items' hilang"))?;
+    let arr: Vec<Value> = rhai::serde::from_dynamic(&back)
+        .map_err(|e| EngineError::new(format!("code: 'items' harus array: {e}")))?;
+    Ok(arr.into_iter().map(wrap_item).collect())
+}
+
+fn wrap_item(v: Value) -> Value {
+    match v {
+        Value::Object(_) => v,
+        other => json!({"value": other}),
+    }
+}
+
+impl Node for ScheduleNode {
+    fn node_type(&self) -> &'static str {
+        "n8n-nodes-base.scheduleTrigger"
+    }
+
+    /// Subset: emit SATU item `{scheduledAtEpoch, rule}`. Penjadwalan
+    /// sesungguhnya = cron/systemd eksternal yang memanggil CLI
+    /// (lihat README) — node ini penanda + metadata.
+    fn execute(
+        &self,
+        node: &WorkflowNode,
+        _items: Vec<Value>,
+        _ctx: &ExecContext,
+    ) -> EngineResult<BranchOutputs> {
+        let epoch = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_secs())
+            .unwrap_or(0);
+        let rule = node
+            .parameters
+            .get("rule")
+            .cloned()
+            .unwrap_or(Value::Null);
+        Ok(vec![vec![json!({"scheduledAtEpoch": epoch, "rule": rule})]])
+    }
+}
+
+impl Node for WebhookNode {
+    fn node_type(&self) -> &'static str {
+        "n8n-nodes-base.webhook"
+    }
+
+    /// Trigger: emit payload request dari server (`/hook/:path`).
+    /// Run manual (tanpa payload) → placeholder `{mode:"manual"}`.
+    fn execute(
+        &self,
+        _node: &WorkflowNode,
+        _items: Vec<Value>,
+        ctx: &ExecContext,
+    ) -> EngineResult<BranchOutputs> {
+        let item = ctx
+            .webhook
+            .cloned()
+            .unwrap_or(json!({"mode": "manual"}));
+        Ok(vec![vec![item]])
     }
 }
 
@@ -416,6 +537,10 @@ pub fn register_all(registry: &mut Registry) {
     registry.register(Arc::new(LimitNode));
     registry.register(Arc::new(IfNode));
     registry.register(Arc::new(HttpNode));
+    registry.register(Arc::new(CodeNode));
+    registry.register(Arc::new(FunctionNode));
+    registry.register(Arc::new(ScheduleNode));
+    registry.register(Arc::new(WebhookNode));
 }
 
 #[cfg(test)]
@@ -426,7 +551,10 @@ mod tests {
     use std::collections::HashMap;
 
     fn empty_ctx(outputs: &HashMap<String, BranchOutputs>) -> ExecContext<'_> {
-        ExecContext { outputs }
+        ExecContext {
+            outputs,
+            webhook: None,
+        }
     }
 
     fn set_node_with_values(values: serde_json::Value) -> WorkflowNode {
@@ -437,6 +565,45 @@ mod tests {
             type_version: 3.4,
             position: [0.0, 0.0],
             parameters: HashMap::from([("values".to_string(), values)]),
+            disabled: false,
+            extra: HashMap::new(),
+        }
+    }
+
+    fn canned_server(n: usize) -> (u16, std::thread::JoinHandle<()>) {
+        use std::io::{Read, Write};
+        use std::net::TcpListener;
+
+        let listener = TcpListener::bind("127.0.0.1:0").expect("bind loopback");
+        let port = listener.local_addr().expect("addr").port();
+        let handle = std::thread::spawn(move || {
+            for _ in 0..n {
+                let (mut stream, _) = listener.accept().expect("accept");
+                let mut buf = [0u8; 4096];
+                let _ = stream.read(&mut buf);
+                let body = r#"{"ok":true}"#;
+                let resp = format!(
+                    "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{}",
+                    body.len(),
+                    body
+                );
+                stream.write_all(resp.as_bytes()).expect("write");
+            }
+        });
+        (port, handle)
+    }
+
+    fn http_node(url: &str) -> WorkflowNode {
+        WorkflowNode {
+            id: "h".to_string(),
+            name: "HTTP".to_string(),
+            node_type: "n8n-nodes-base.httpRequest".to_string(),
+            type_version: 1.0,
+            position: [0.0, 0.0],
+            parameters: HashMap::from([
+                ("url".to_string(), serde_json::json!(url)),
+                ("method".to_string(), serde_json::json!("GET")),
+            ]),
             disabled: false,
             extra: HashMap::new(),
         }
@@ -656,40 +823,8 @@ mod tests {
 
     #[test]
     fn http_get_returns_canned_response() {
-        use std::io::{Read, Write};
-        use std::net::TcpListener;
-
-        let listener = TcpListener::bind("127.0.0.1:0").expect("bind loopback");
-        let port = listener.local_addr().expect("addr").port();
-        let handle = std::thread::spawn(move || {
-            let (mut stream, _) = listener.accept().expect("accept");
-            let mut buf = [0u8; 4096];
-            let _ = stream.read(&mut buf);
-            let body = r#"{"ok":true}"#;
-            let resp = format!(
-                "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{}",
-                body.len(),
-                body
-            );
-            stream.write_all(resp.as_bytes()).expect("write");
-        });
-
-        let node = WorkflowNode {
-            id: "h".to_string(),
-            name: "HTTP".to_string(),
-            node_type: "n8n-nodes-base.httpRequest".to_string(),
-            type_version: 1.0,
-            position: [0.0, 0.0],
-            parameters: HashMap::from([
-                (
-                    "url".to_string(),
-                    serde_json::json!(format!("http://127.0.0.1:{port}/echo")),
-                ),
-                ("method".to_string(), serde_json::json!("GET")),
-            ]),
-            disabled: false,
-            extra: HashMap::new(),
-        };
+        let (port, handle) = canned_server(1);
+        let node = http_node(&format!("http://127.0.0.1:{port}/echo"));
         let outputs = HashMap::new();
         let out = HttpNode
             .execute(&node, vec![serde_json::json!({})], &empty_ctx(&outputs))
@@ -699,5 +834,151 @@ mod tests {
         assert_eq!(out[0].len(), 1);
         assert_eq!(out[0][0]["status"], json!(200));
         assert_eq!(out[0][0]["body"], json!({"ok": true}));
+    }
+
+    #[test]
+    fn http_fans_out_one_request_per_item() {
+        let (port, handle) = canned_server(2);
+        let node = http_node(&format!("http://127.0.0.1:{port}/echo"));
+        let outputs = HashMap::new();
+        let out = HttpNode
+            .execute(
+                &node,
+                vec![
+                    serde_json::json!({"id": 1}),
+                    serde_json::json!({"id": 2}),
+                ],
+                &empty_ctx(&outputs),
+            )
+            .expect("exec");
+        handle.join().expect("server thread");
+        assert_eq!(out.len(), 1);
+        assert_eq!(out[0].len(), 2);
+        assert!(out[0].iter().all(|o| o["status"] == json!(200)));
+    }
+
+    #[test]
+    fn code_transforms_items_with_rhai() {
+        let node = WorkflowNode {
+            id: "c".to_string(),
+            name: "Code".to_string(),
+            node_type: "n8n-nodes-base.code".to_string(),
+            type_version: 1.0,
+            position: [0.0, 0.0],
+            parameters: HashMap::from([(
+                "code".to_string(),
+                serde_json::json!("let out = []; for it in items { out.push(it.n * 10); } items = out;"),
+            )]),
+            disabled: false,
+            extra: HashMap::new(),
+        };
+        let outputs = HashMap::new();
+        let out = CodeNode
+            .execute(
+                &node,
+                vec![
+                    serde_json::json!({"n": 1}),
+                    serde_json::json!({"n": 2}),
+                ],
+                &empty_ctx(&outputs),
+            )
+            .expect("exec");
+        assert_eq!(
+            out,
+            vec![vec![
+                serde_json::json!({"value": 10}),
+                serde_json::json!({"value": 20})
+            ]]
+        );
+    }
+
+    #[test]
+    fn code_rejects_non_array_items() {
+        let node = WorkflowNode {
+            id: "c".to_string(),
+            name: "Code".to_string(),
+            node_type: "n8n-nodes-base.code".to_string(),
+            type_version: 1.0,
+            position: [0.0, 0.0],
+            parameters: HashMap::from([(
+                "code".to_string(),
+                serde_json::json!("items = 42;"),
+            )]),
+            disabled: false,
+            extra: HashMap::new(),
+        };
+        let outputs = HashMap::new();
+        let err = CodeNode
+            .execute(&node, vec![serde_json::json!({})], &empty_ctx(&outputs))
+            .expect_err("must fail");
+        assert!(err.to_string().contains("'items' harus array"), "{err}");
+    }
+
+    #[test]
+    fn schedule_emits_epoch_and_rule() {
+        let node = WorkflowNode {
+            id: "s".to_string(),
+            name: "Schedule".to_string(),
+            node_type: "n8n-nodes-base.scheduleTrigger".to_string(),
+            type_version: 1.0,
+            position: [0.0, 0.0],
+            parameters: HashMap::from([(
+                "rule".to_string(),
+                serde_json::json!({"interval": 300}),
+            )]),
+            disabled: false,
+            extra: HashMap::new(),
+        };
+        let outputs = HashMap::new();
+        let out = ScheduleNode
+            .execute(&node, vec![], &empty_ctx(&outputs))
+            .expect("exec");
+        assert_eq!(out.len(), 1);
+        assert_eq!(out[0].len(), 1);
+        assert_eq!(out[0][0]["rule"], json!({"interval": 300}));
+        assert!(out[0][0]["scheduledAtEpoch"].is_number());
+    }
+
+    #[test]
+    fn webhook_emits_payload_when_present() {
+        let node = WorkflowNode {
+            id: "w".to_string(),
+            name: "Webhook".to_string(),
+            node_type: "n8n-nodes-base.webhook".to_string(),
+            type_version: 1.0,
+            position: [0.0, 0.0],
+            parameters: HashMap::from([("path".to_string(), serde_json::json!("demo"))]),
+            disabled: false,
+            extra: HashMap::new(),
+        };
+        let outputs = HashMap::new();
+        let payload = serde_json::json!({"a": 1});
+        let cx = ExecContext {
+            outputs: &outputs,
+            webhook: Some(&payload),
+        };
+        let out = WebhookNode
+            .execute(&node, vec![], &cx)
+            .expect("exec");
+        assert_eq!(out, vec![vec![serde_json::json!({"a": 1})]]);
+    }
+
+    #[test]
+    fn webhook_manual_placeholder_without_payload() {
+        let node = WorkflowNode {
+            id: "w".to_string(),
+            name: "Webhook".to_string(),
+            node_type: "n8n-nodes-base.webhook".to_string(),
+            type_version: 1.0,
+            position: [0.0, 0.0],
+            parameters: HashMap::new(),
+            disabled: false,
+            extra: HashMap::new(),
+        };
+        let outputs = HashMap::new();
+        let out = WebhookNode
+            .execute(&node, vec![], &empty_ctx(&outputs))
+            .expect("exec");
+        assert_eq!(out, vec![vec![serde_json::json!({"mode": "manual"})]]);
     }
 }

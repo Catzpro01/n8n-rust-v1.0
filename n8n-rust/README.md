@@ -1,86 +1,177 @@
-# n8n-rust v.1
+# n8n-rust v1 — v0.4.0
 
-Port Rust dari n8n. Target: **sefleksibel mungkin, ringan, cepat, efisien** —
-dengan tampilan **hampir sama seperti n8n asli** (syarat: 95%).
+Implementasi ulang [n8n](https://n8n.io) (workflow automation) dalam Rust:
+satu binary CLI + satu binary server HTTP dengan UI web embedded — tanpa
+Node.js, tanpa database, tanpa telemetri. Format workflow JSON kompatibel
+n8n (impor file n8n asli; node yang belum didukung dilaporkan eksplisit).
 
-Scope: **kompatibel format n8n** — impor/ekspor workflow JSON format n8n asli
-+ subset node yang bertambah bertahap.
+> Status: v0.4.0 — 12 node, scripting rhai, webhook hooks, riwayat run.
+> Personal project, dipakai sendiri. `cargo test` wajib hijau di mesin
+> dengan toolchain Rust (sandbox ini tidak punya cargo).
 
-## Prinsip desain
+## Isi
 
-- **Fleksibel** — node = trait + registry dinamis; parameter schemaless;
-  field JSON asing ditampung, tidak dibuang; ekspresi `={{ }}` per item;
-  node multi-output (cabang `main[i]`).
-- **Ringan** — core/engine/nodes/cli cuma butuh `serde` + `serde_json`
-  (+ `reqwest` blocking-rustls khusus node HTTP, tanpa OpenSSL sistem);
-  engine sinkron tanpa runtime async; CLI tanpa framework argumen.
-- **Kompatibel** — tipe JSON mengikuti struktur ekspor n8n; nama tipe node
-  persis (`n8n-nodes-base.*`).
+- [Mulai cepat](#mulai-cepat)
+- [CLI](#cli)
+- [Server HTTP + webhook](#server-http--webhook)
+- [Node yang didukung](#node-yang-didukung)
+- [Ekspresi `={{ }}`](#ekspresi---)
+- [Node Code (rhai)](#node-code-rhai)
+- [ScheduleTrigger + cron](#scheduletrigger--cron)
+- [UI web](#ui-web)
+- [Struktur crate](#struktur-crate)
+- [Batasan yang disengaja](#batasan-yang-disengaja)
 
-## Keunggulan vs n8n asli (nyata di kode ini, bukan janji)
-
-1. Satu binary: server + UI single-file embedded — tanpa Node.js, npm, build step.
-2. Offline-first: tanpa telemetri, tanpa CDN, tanpa akun.
-3. Startup milidetik, memori kecil (engine sinkron, tanpa Electron).
-4. Eksekusi deterministik + deteksi siklus yang menyebut nama node.
-5. Durasi per node tercatat di setiap run (observabilitas bawaan).
-6. Dry-run `explain`: rencana eksekusi tanpa menjalankan.
-7. Linter: tipe tak dikenal, edge gantung, node terisolasi, source non-trigger.
-8. Ekspresi bertipe-awet: satu `={{...}}` utuh tidak dipaksa jadi string.
-9. Roundtrip lossless: field asing (pinData, versionId, ...) tidak hilang.
-10. API JSON + UI tanpa-install: buka browser, rakit, Validate → Run.
-
-## Struktur
-
-```text
-n8n-rust/
-├── Cargo.toml            # workspace (0.3.0)
-├── fixtures/             # workflow JSON format-n8n untuk test & contoh
-├── crates/
-│   ├── n8n-core/         # Workflow/Node + serde + mini ekspresi {{ }}
-│   ├── n8n-engine/       # trait Node, Registry, executor cabang, lint
-│   ├── n8n-nodes/        # manualTrigger, set, noOp, filter, sort, limit,
-│   │                     # if (2 cabang), httpRequest (subset)
-│   ├── n8n-cli/          # validate / explain / run / nodes
-│   └── n8n-server/       # REST API + UI editor embedded (ui/app.html)
-└── web/                  # keputusan UI (baca web/README.md)
-```
-
-## Quickstart
+## Mulai cepat
 
 ```bash
-cd n8n-rust
-cargo test
-cargo run -p n8n-cli -- validate fixtures/manual-to-set.json
-cargo run -p n8n-cli -- explain fixtures/manual-to-set.json
-cargo run -p n8n-cli -- run fixtures/manual-to-set.json
-cargo run -p n8n-server   # UI editor: http://localhost:3000
+cargo build --release
+./target/release/n8n-cli validate n8n-rust/fixtures/manual-to-set.json
+./target/release/n8n-cli run n8n-rust/fixtures/manual-to-set.json --save report.json
+./target/release/n8n-server   # http://127.0.0.1:3000
 ```
 
-API: `GET /api/nodes`, `POST /api/validate`, `POST /api/explain`,
-`POST /api/run` (body = workflow JSON).
+## CLI
 
-## Subset ekspresi (jujur)
+```text
+n8n-cli validate <workflow.json>   # lint: error + warning deterministik
+n8n-cli explain <workflow.json>    # rencana urutan eksekusi (dry-run)
+n8n-cli run <workflow.json> [--save <report.json>]  # eksekusi + simpan laporan
+n8n-cli nodes                      # daftar 12 tipe node terdaftar
+```
 
-Didukung: `$json.a.b`, `$json["a"]`, `$json.arr[0]`,
-`$node["Nama"].json.a` (+`.first()`, cabang 0), operator
-`==` `!=` `>` `<` `>=` `<=`, fungsi `len()` `upper()` `lower()`,
-literal string/angka/bool/null.
-Belum: operator unary (`!`), fungsi multi-argumen, escape `\"`,
-`$("...")`, regex. Missing → Null lunak.
+Contoh `run`:
 
-## Subset httpRequest (jujur)
+```text
+urutan: Manual Trigger -> Set -> NoOp
+waktu: Manual Trigger=0ms, Set=0ms, NoOp=0ms (total 1ms)
+{ "NoOp": [[{"greeting": "halo", "n": 1}]] }
+tersimpan: report.json
+```
 
-Satu request per eksekusi (fan-out per item = tiket lanjutan).
-`url`/`method`/`headers`/`body` mendukung template; timeout 30 dtk;
-TLS via rustls (tanpa OpenSSL sistem). Output:
-`{status, headers, body, url}`.
+## Server HTTP + webhook
 
-## Status jujur (0.3.0)
+Satu binary melayani UI (`/`) dan REST API. State (hooks + riwayat run)
+in-memory — restart server menghapusnya.
 
-Ada: parse + roundtrip, ekspresi + operator + fungsi, 8 node,
-executor cabang + timing, lint + explain, CLI 4 perintah,
-server + UI editor (tambah/hapus node, sambung/hapus edge,
-edit parameters), 25 test.
-Belum: node Function/Schedule/Webhook-trigger, HTTP fan-out per item,
-tombol ekspor JSON di UI, persistensi eksekusi, auth (alat personal).
+| Method + path            | Fungsi                                              |
+|--------------------------|-----------------------------------------------------|
+| `GET /`                  | UI editor workflow (single-file, tanpa build)       |
+| `GET /api/nodes`         | daftar tipe node                                    |
+| `POST /api/validate`     | lint workflow (body = workflow JSON)                |
+| `POST /api/explain`      | rencana urutan eksekusi                             |
+| `POST /api/run`          | eksekusi workflow, tercatat di riwayat              |
+| `GET /api/runs`          | 50 ringkasan run terakhir (lama → baru)             |
+| `POST /api/hooks`        | daftarkan hook `{path, workflow}` → `201 "path"`    |
+| `GET /api/hooks`         | daftar path hook terdaftar                          |
+| `DELETE /api/hooks/:path`| hapus hook → `true`/`false`                         |
+| `POST /hook/:path`       | picu workflow; node webhook menerima payload        |
+
+Contoh webhook end-to-end:
+
+```bash
+# 1. daftarkan: workflow berisi node webhook -> set
+curl -s -X POST localhost:3000/api/hooks -H 'Content-Type: application/json' \
+  -d '{"path":"demo","workflow":{...}}'
+# 2. picu dengan body JSON + query
+curl -s -X POST 'localhost:3000/hook/demo?tag=a' -d '{"n":5}'
+# node webhook meng-emit SATU item:
+# {"method":"POST","path":"demo","query":{"tag":"a"},"headers":{...},"body":{"n":5}}
+```
+
+Run manual (CLI, `/api/run`, tombol Run di UI) tanpa payload membuat node
+webhook meng-emit placeholder `{"mode":"manual"}` — workflow tetap bisa
+diuji tanpa server hook.
+
+## Node yang didukung
+
+| Tipe | Fungsi |
+|------|--------|
+| `manualTrigger` | emit 1 item kosong |
+| `scheduleTrigger` | emit `{scheduledAtEpoch, rule}` — penanda + metadata (jadwal riil via cron, lihat bawah) |
+| `webhook` | emit payload request dari `/hook/:path`, atau `{mode:"manual"}` |
+| `set` | tambah/timpa field; dua bentuk parameter (`values`, `assignments`) |
+| `noOp` | teruskan item apa adanya |
+| `filter` | teruskan item yang `condition`-nya truthy |
+| `sort` | urutkan menurut `field`, `order` = `asc`/`desc` |
+| `limit` | teruskan maksimal `count` item pertama |
+| `if` | belah ke cabang `[true, false]` (output ganda pertama) |
+| `httpRequest` | **fan-out**: 1 request per item input; 0 item → 0 request |
+| `code` | script rhai atas variabel `items` |
+| `function` | alias `code` (kompat impor workflow n8n lama) |
+
+`httpRequest` (`url` wajib, `method` default GET, `headers` object,
+`body` JSON; semua nilai string me-render template): tiap output
+`{status, headers, body, url}`. Request pertama yang gagal menggagalkan
+node (fail-fast) — bungkus dengan pola retry bila perlu nanti.
+
+## Ekspresi `={{ }}`
+
+String parameter yang diawali `=` dirender per item: `={{ $json.nama }}`,
+`={{ $node["Set"].json.x }}`, operator `== != > < >= <= && || !`,
+fungsi `len()`, `upper()`, `lower()`. Nilai non-string (`Value::render_value`)
+ikut dirender rekursif (dipakai `httpRequest` untuk headers/body).
+
+## Node Code (rhai)
+
+Parameter `code` berisi script [rhai](https://rhai.rs):
+
+```rhai
+let total = 0;
+for it in items { total += it.n; }
+items = [{ "total": total }];
+```
+
+Aturan: variabel `items` (array) tersedia saat masuk dan **wajib array**
+saat keluar; item non-object dibungkus `{"value": x`. Error script
+menggagalkan node dengan pesan rhai asli.
+
+> Keamanan: engine rhai berjalan **tanpa sandbox** (bisa akses file/sistem
+> bila script memintanya — rhai standar membatasi, tapi jangan jalankan
+> script dari sumber tak tepercaya). Untuk personal use ini disengaja:
+> fleksibel penuh, tanggung jawab penuh.
+
+## ScheduleTrigger + cron
+
+Node `scheduleTrigger` TIDAK menjalankan jadwal sendiri — ia hanya menandai
+"workflow ini dimaksudkan terjadwal" dan menyertakan epoch + `rule` per run.
+Penjadwalan riil didelegasikan ke cron/systemd di mesin sendiri:
+
+```cron
+*/5 * * * * /opt/n8n-rust/n8n-cli run /opt/n8n-rust/wf/laporan.json --save /var/log/n8n-rust/laporan.json
+```
+
+Pola ini nol-dependency, survive reboot, dan log-nya file biasa.
+
+## UI web
+
+Editor visual di `GET /`: tambah 12 tipe node, drag-node, drag-dari-port
+untuk edge (aturan If: edge pertama = true, kedua = false), klik edge
+untuk hapus, edit parameters JSON, Validate/Explain/Run, badge urutan +
+durasi per node — dan tombol **Export JSON** untuk mengunduh workflow
+yang sedang diedit. Detail: [web/README.md](web/README.md).
+
+## Struktur crate
+
+```text
+crates/
+  n8n-core/    model Workflow + parser + expr (2 + 9 test)
+  n8n-engine/  planner topo + executor + linter (6 test)
+  n8n-nodes/   12 node + fixture e2e (15 test)
+  n8n-cli/     validate/explain/run --save/nodes
+  n8n-server/  axum: UI + REST + hooks + ring runs
+fixtures/manual-to-set.json   workflow contoh (dipakai 1 test e2e)
+web/README.md                 dokumentasi UI
+```
+
+Total: **32 test** (`cargo test --workspace`).
+
+## Batasan yang disengaja
+
+- State server in-memory (hooks + riwayat hilang saat restart).
+- Eksekusi sinkron sekuensial (satu workflow satu thread blocking).
+- Hook path satu segmen; hanya `POST /hook/:path`.
+- Subset ekspresi kecil (tanpa ternary, tanpa `$items()`, tanpa JMESPath).
+- rhai tanpa sandbox — script tepercaya saja.
+- DB, auth multi-user, antrean, dan telemetry: TIDAK ADA — dan tidak
+  direncanakan untuk personal use.

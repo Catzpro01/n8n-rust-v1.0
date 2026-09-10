@@ -47,6 +47,7 @@
   <button id="bExample">Contoh</button>
   <button id="bOpen">Buka JSON</button>
   <input type="file" id="file" accept="application/json" hidden>
+  <button id="bExport">Export JSON</button>
   <button id="bValidate">Validate</button>
   <button id="bExplain">Explain</button>
   <button id="bRun" class="primary">Run</button>
@@ -83,6 +84,10 @@ const COLORS = {
   "n8n-nodes-base.filter": "#8b5cf6",
   "n8n-nodes-base.sort": "#0d9488",
   "n8n-nodes-base.limit": "#64748b",
+  "n8n-nodes-base.code": "#7c3aed",
+  "n8n-nodes-base.function": "#a855f7",
+  "n8n-nodes-base.scheduleTrigger": "#ca8a04",
+  "n8n-nodes-base.webhook": "#ec4899",
   "n8n-nodes-base.noOp": "#9aa0ae"
 };
 const DISPLAY = {
@@ -93,6 +98,10 @@ const DISPLAY = {
   "n8n-nodes-base.filter": "Filter",
   "n8n-nodes-base.sort": "Sort",
   "n8n-nodes-base.limit": "Limit",
+  "n8n-nodes-base.code": "Code (rhai)",
+  "n8n-nodes-base.function": "Function (rhai)",
+  "n8n-nodes-base.scheduleTrigger": "Schedule Trigger",
+  "n8n-nodes-base.webhook": "Webhook",
   "n8n-nodes-base.noOp": "NoOp"
 };
 const DEFAULTS = {
@@ -101,7 +110,11 @@ const DEFAULTS = {
   "n8n-nodes-base.filter": {"condition": ""},
   "n8n-nodes-base.sort": {"field": "", "order": "asc"},
   "n8n-nodes-base.limit": {"count": 1},
-  "n8n-nodes-base.httpRequest": {"url": "", "method": "GET"}
+  "n8n-nodes-base.httpRequest": {"url": "", "method": "GET"},
+  "n8n-nodes-base.code": {"code": "// `items` = array item masuk; tulis kembali `items` sebagai output.\nitems = items;"},
+  "n8n-nodes-base.function": {"code": "// alias `code`: `items` masuk, tulis kembali `items`.\nitems = items;"},
+  "n8n-nodes-base.scheduleTrigger": {"rule": {}},
+  "n8n-nodes-base.webhook": {"path": "demo"}
 };
 
 const state = { wf: structuredClone(EXAMPLE), selected: null, report: null, diags: null, plan: null };
@@ -342,7 +355,7 @@ function renderPanel() {
     panel.appendChild(dl);
     const p = document.createElement("p");
     p.style.color = "#6b6b80"; p.style.fontSize = "13px";
-    p.textContent = "Drag dari lingkaran kanan node untuk menyambung edge. Klik edge untuk menghapus. Klik node untuk detail/edit.";
+    p.textContent = "Drag dari lingkaran kanan node untuk menyambung edge. Klik edge untuk menghapus. Klik node untuk detail/edit. Export JSON mengunduh workflow saat ini.";
     panel.appendChild(p);
   }
   if (state.diags) {
@@ -458,6 +471,17 @@ document.getElementById("file").onchange = ev => {
   rd.readAsText(f);
   ev.target.value = "";
 };
+document.getElementById("bExport").onclick = () => {
+  const blob = new Blob([JSON.stringify(state.wf, null, 2)], {type: "application/json"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  const base = (state.wf.name || "workflow").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "workflow";
+  a.download = base + ".json";
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+  setStatus("workflow diekspor sebagai " + a.download + ".", "ok");
+};
 document.getElementById("bValidate").onclick = async () => {
   try {
     const diags = await api("/api/validate", state.wf);
@@ -482,7 +506,7 @@ document.getElementById("bRun").onclick = async () => {
 };
 
 render();
-setStatus("siap. Tambah node / sambung edge via drag / edit parameters / Run.");
+setStatus("siap. Tambah node / sambung edge via drag / edit parameters / Export / Run.");
 </script>
 </body>
 </html>
