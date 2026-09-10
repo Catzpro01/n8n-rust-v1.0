@@ -22,18 +22,10 @@ jobs:
           workspaces: n8n-rust
       - name: cargo test
         run: set -o pipefail; cargo test --workspace --color never 2>&1 | tee /tmp/out.log
-      - name: Upload log penuh
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: log-${{ github.job }}
-          path: /tmp/out.log
       - name: Ekspor error sebagai anotasi
         if: failure()
         run: |
-          grep -E "^error" /tmp/out.log | head -30 | sed 's/^/::error::/' || true
-          grep "^failures:$" -A 10 /tmp/out.log | head -15 | sed 's/^/::error::/' || true
-          tail -15 /tmp/out.log | sed 's/^/::error::tail: /'
+          python3 -c "import sys;d=open('/tmp/out.log','rb').read().decode('utf-8','replace');d=d.replace('%','%25').replace(chr(13),'%0D').replace(chr(10),'%0A');print('::error::FULL-LOG:'+d[:60000])"
 
   clippy:
     name: cargo clippy
@@ -51,17 +43,10 @@ jobs:
           workspaces: n8n-rust
       - name: cargo clippy
         run: set -o pipefail; cargo clippy --workspace --all-targets --color never 2>&1 | tee /tmp/out.log
-      - name: Upload log penuh
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: log-${{ github.job }}
-          path: /tmp/out.log
       - name: Ekspor error sebagai anotasi
         if: failure()
         run: |
-          grep -E "^(error|warning)" /tmp/out.log | head -30 | sed 's/^/::error::/' || true
-          tail -15 /tmp/out.log | sed 's/^/::error::tail: /'
+          python3 -c "import sys;d=open('/tmp/out.log','rb').read().decode('utf-8','replace');d=d.replace('%','%25').replace(chr(13),'%0D').replace(chr(10),'%0A');print('::error::FULL-LOG:'+d[:60000])"
 
   fmt:
     name: cargo fmt
@@ -76,12 +61,7 @@ jobs:
           components: rustfmt
       - name: cargo fmt
         run: set -o pipefail; cargo fmt --all --check 2>&1 | tee /tmp/out.log
-      - name: Upload log penuh
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: log-${{ github.job }}
-          path: /tmp/out.log
       - name: Ekspor error sebagai anotasi
         if: failure()
-        run: head -150 /tmp/out.log | sed 's/^/::error::fmt:/'
+        run: |
+          python3 -c "import sys;d=open('/tmp/out.log','rb').read().decode('utf-8','replace');d=d.replace('%','%25').replace(chr(13),'%0D').replace(chr(10),'%0A');print('::error::FULL-LOG:'+d[:60000])"
