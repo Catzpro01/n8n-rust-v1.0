@@ -23,13 +23,13 @@ VueFlow tetap menjadi **upgrade path** masa depan: protokol REST
 
 - Layout: kanvas node + panel properti kanan + toolbar — sama.
 - Node cards: nama, tipe, status/urutan eksekusi, timing — sama.
-- Interaksi inti: drag-node, klik-untuk-detail, Validate/Explain/Run — sama.
-- Yang BOLEH beda (5%): connect-edge via drag (v1 baca edge dari JSON),
-  branding/logo, tema minor, menu lanjutan di luar v1.
+- Interaksi inti v0.3.0: tambah/hapus node, drag-node, sambung edge via
+  drag dari port (otomatis output[0]=true lalu output[1]=false untuk If),
+  klik-edge untuk hapus, edit parameters JSON, Validate/Explain/Run — ada.
+- Yang BOLEH beda (5%): branding/logo, tema minor, menu lanjutan di luar v1.
 
 ## Terbuka (calon tiket)
 
-1. Connect-edge via drag di kanvas + simpan kembali ke JSON.
-2. Edit parameters langsung di panel (saat ini baca-saja).
-3. Impor `.json` n8n asli yang besar (uji + virtualisasi bila perlu).
-4. Upgrade VueFlow bila kemiripan single-file mentok (kontrak REST siap).
+1. Tombol ekspor/unduh workflow JSON dari UI (saat ini searah: buka → edit → run).
+2. Impor `.json` n8n asli yang besar (uji + virtualisasi bila perlu).
+3. Upgrade VueFlow bila kemiripan single-file mentok (kontrak REST siap).

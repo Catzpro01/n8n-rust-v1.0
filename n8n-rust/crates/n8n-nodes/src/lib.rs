@@ -1,13 +1,14 @@
 //! n8n-nodes: node bawaan v1 (subset kecil yang tumbuh bertahap).
 //!
-//! v0.2.0: `manualTrigger`, `set` (+ekspresi), `noOp`, `filter`, `sort`,
-//! `limit`. Nilai string di parameter `set`/`filter`/`sort` dirender sebagai
-//! template `={{ }}` (lihat `n8n_core::expr`).
+//! v0.3.0: `manualTrigger`, `set` (+ekspresi), `noOp`, `filter`, `sort`,
+//! `limit`, `if` (2 cabang: [true, false]), `httpRequest` (subset).
+//! Nilai string di parameter dirender sebagai template `={{ }}`
+//! (lihat `n8n_core::expr`).
 
-use n8n_core::expr::{render, ExprContext};
+use n8n_core::expr::{render, render_value, ExprContext};
 use n8n_core::WorkflowNode;
-use n8n_engine::{EngineResult, ExecContext, Node, Registry};
-use serde_json::{Map, Value};
+use n8n_engine::{BranchOutputs, EngineResult, ExecContext, Node, Registry};
+use serde_json::{json, Map, Value};
 use std::sync::Arc;
 
 pub struct ManualTrigger;
@@ -16,6 +17,8 @@ pub struct NoOp;
 pub struct FilterNode;
 pub struct SortNode;
 pub struct LimitNode;
+pub struct IfNode;
+pub struct HttpNode;
 
 impl Node for ManualTrigger {
     fn node_type(&self) -> &'static str {
@@ -27,8 +30,8 @@ impl Node for ManualTrigger {
         _node: &WorkflowNode,
         _items: Vec<Value>,
         _ctx: &ExecContext,
-    ) -> EngineResult<Vec<Value>> {
-        Ok(vec![Value::Object(Map::new())])
+    ) -> EngineResult<BranchOutputs> {
+        Ok(vec![vec![Value::Object(Map::new())]])
     }
 }
 
@@ -42,8 +45,8 @@ impl Node for NoOp {
         _node: &WorkflowNode,
         items: Vec<Value>,
         _ctx: &ExecContext,
-    ) -> EngineResult<Vec<Value>> {
-        Ok(items)
+    ) -> EngineResult<BranchOutputs> {
+        Ok(vec![items])
     }
 }
 
@@ -57,9 +60,9 @@ impl Node for SetNode {
         node: &WorkflowNode,
         items: Vec<Value>,
         ctx: &ExecContext,
-    ) -> EngineResult<Vec<Value>> {
+    ) -> EngineResult<BranchOutputs> {
         if let Some(Value::Object(values)) = node.parameters.get("values") {
-            return Ok(items
+            let out: Vec<Value> = items
                 .into_iter()
                 .map(|it| {
                     let ectx = ExprContext {
@@ -78,7 +81,8 @@ impl Node for SetNode {
                         .collect();
                     merge_value(it, &rendered)
                 })
-                .collect());
+                .collect();
+            return Ok(vec![out]);
         }
         if let Some(list) = node
             .parameters
@@ -86,7 +90,7 @@ impl Node for SetNode {
             .and_then(|v| v.get("assignments"))
             .and_then(Value::as_array)
         {
-            return Ok(items
+            let out: Vec<Value> = items
                 .into_iter()
                 .map(|it| {
                     let ectx = ExprContext {
@@ -107,9 +111,10 @@ impl Node for SetNode {
                     }
                     merge_value(it, &values)
                 })
-                .collect());
+                .collect();
+            return Ok(vec![out]);
         }
-        Ok(items)
+        Ok(vec![items])
     }
 }
 
@@ -119,19 +124,18 @@ impl Node for FilterNode {
     }
 
     /// Hanya item yang `condition`-nya truthy yang diteruskan.
-    /// `condition` = template string (`={{ $json.flag }}`).
     fn execute(
         &self,
         node: &WorkflowNode,
         items: Vec<Value>,
         ctx: &ExecContext,
-    ) -> EngineResult<Vec<Value>> {
+    ) -> EngineResult<BranchOutputs> {
         let cond = node
             .parameters
             .get("condition")
             .and_then(Value::as_str)
             .unwrap_or("");
-        Ok(items
+        let out: Vec<Value> = items
             .into_iter()
             .filter(|it| {
                 let ectx = ExprContext {
@@ -140,7 +144,8 @@ impl Node for FilterNode {
                 };
                 truthy(&render(cond, &ectx))
             })
-            .collect())
+            .collect();
+        Ok(vec![out])
     }
 }
 
@@ -149,14 +154,13 @@ impl Node for SortNode {
         "n8n-nodes-base.sort"
     }
 
-    /// Urutkan item menurut field (`field`, mis. `"age"`),
-    /// `order`: `"asc"` (default) | `"desc"`.
+    /// Urutkan item menurut field (`field`), `order`: `"asc"` | `"desc"`.
     fn execute(
         &self,
         node: &WorkflowNode,
         items: Vec<Value>,
         ctx: &ExecContext,
-    ) -> EngineResult<Vec<Value>> {
+    ) -> EngineResult<BranchOutputs> {
         let field = node
             .parameters
             .get("field")
@@ -192,7 +196,7 @@ impl Node for SortNode {
                 ord
             }
         });
-        Ok(out)
+        Ok(vec![out])
     }
 }
 
@@ -207,13 +211,146 @@ impl Node for LimitNode {
         node: &WorkflowNode,
         items: Vec<Value>,
         _ctx: &ExecContext,
-    ) -> EngineResult<Vec<Value>> {
+    ) -> EngineResult<BranchOutputs> {
         let count = node
             .parameters
             .get("count")
             .and_then(Value::as_u64)
             .unwrap_or(1) as usize;
-        Ok(items.into_iter().take(count).collect())
+        Ok(vec![items.into_iter().take(count).collect()])
+    }
+}
+
+impl Node for IfNode {
+    fn node_type(&self) -> &'static str {
+        "n8n-nodes-base.if"
+    }
+
+    /// Belah item ke 2 cabang `[true, false]` menurut `condition`
+    /// (template `={{ }}`, truthy). Cabang = `main[0]` / `main[1]`.
+    fn execute(
+        &self,
+        node: &WorkflowNode,
+        items: Vec<Value>,
+        ctx: &ExecContext,
+    ) -> EngineResult<BranchOutputs> {
+        let cond = node
+            .parameters
+            .get("condition")
+            .and_then(Value::as_str)
+            .unwrap_or("");
+        let mut yes = Vec::new();
+        let mut no = Vec::new();
+        for it in items {
+            let ectx = ExprContext {
+                item: &it,
+                outputs: ctx.outputs,
+            };
+            if truthy(&render(cond, &ectx)) {
+                yes.push(it);
+            } else {
+                no.push(it);
+            }
+        }
+        Ok(vec![yes, no])
+    }
+}
+
+impl Node for HttpNode {
+    fn node_type(&self) -> &'static str {
+        "n8n-nodes-base.httpRequest"
+    }
+
+    /// Subset v1: SATU request per eksekusi (input items hanya jadi konteks
+    /// ekspresi via item pertama — fan-out per item = tiket lanjutan).
+    /// Parameter: `url` (wajib, template), `method` (default GET),
+    /// `headers` (object, nilai di-render), `body` (JSON, di-render).
+    /// Output: `[{status, headers, body, url}]`; body JSON di-parse bila bisa.
+    fn execute(
+        &self,
+        node: &WorkflowNode,
+        items: Vec<Value>,
+        ctx: &ExecContext,
+    ) -> EngineResult<BranchOutputs> {
+        let item0 = items.first().unwrap_or(&Value::Null);
+        let ectx = ExprContext {
+            item: item0,
+            outputs: ctx.outputs,
+        };
+        let url_v = node
+            .parameters
+            .get("url")
+            .map(|v| render_value(v, &ectx))
+            .unwrap_or(Value::Null);
+        let url = url_v
+            .as_str()
+            .ok_or_else(|| EngineError::new("httpRequest: 'url' wajib string"))?
+            .to_string();
+        let method = node
+            .parameters
+            .get("method")
+            .and_then(Value::as_str)
+            .unwrap_or("GET")
+            .to_uppercase();
+        let mut headers = reqwest::header::HeaderMap::new();
+        if let Some(Value::Object(h)) = node.parameters.get("headers") {
+            for (k, v) in h {
+                let rendered = render_value(v, &ectx);
+                let s = match &rendered {
+                    Value::String(s) => s.clone(),
+                    Value::Number(n) => n.to_string(),
+                    Value::Bool(b) => b.to_string(),
+                    _ => {
+                        return Err(EngineError::new(format!(
+                            "httpRequest: nilai header '{k}' harus skalar"
+                        )))
+                    }
+                };
+                let name = reqwest::header::HeaderName::from_bytes(k.as_bytes())
+                    .map_err(|_| {
+                        EngineError::new(format!("httpRequest: nama header tak valid '{k}'"))
+                    })?;
+                let value = reqwest::header::HeaderValue::from_str(&s).map_err(|_| {
+                    EngineError::new(format!("httpRequest: nilai header '{k}' tak valid"))
+                })?;
+                headers.insert(name, value);
+            }
+        }
+        let client = reqwest::blocking::Client::builder()
+            .timeout(std::time::Duration::from_secs(30))
+            .build()
+            .map_err(|e| EngineError::new(format!("httpRequest: client: {e}")))?;
+        let http_method: reqwest::Method = method
+            .parse()
+            .map_err(|e| EngineError::new(format!("httpRequest: method: {e}")))?;
+        let mut req = client.request(http_method, url.clone());
+        req = req.headers(headers);
+        if let Some(body) = node.parameters.get("body") {
+            let rendered = render_value(body, &ectx);
+            req = req.json(&rendered);
+        }
+        let resp = req
+            .send()
+            .map_err(|e| EngineError::new(format!("httpRequest: {e}")))?;
+        let status = resp.status().as_u16();
+        let mut rh = Map::new();
+        for (k, v) in resp.headers().iter() {
+            rh.insert(
+                k.to_string(),
+                Value::String(v.to_str().unwrap_or("").to_string()),
+            );
+        }
+        let final_url = resp.url().to_string();
+        let text = resp
+            .text()
+            .map_err(|e| EngineError::new(format!("httpRequest: baca body: {e}")))?;
+        let body_v: Value = serde_json::from_str(&text).unwrap_or(Value::String(text));
+        let mut out = Map::new();
+        out.insert("status".to_string(), json!(status));
+        out.insert("headers".to_string(), Value::Object(rh));
+        out.insert("body".to_string(), body_v);
+        out.insert("url".to_string(), Value::String(final_url));
+        Ok(vec![vec![Value::Object(out)]])
     }
 }
 
@@ -277,6 +414,8 @@ pub fn register_all(registry: &mut Registry) {
     registry.register(Arc::new(FilterNode));
     registry.register(Arc::new(SortNode));
     registry.register(Arc::new(LimitNode));
+    registry.register(Arc::new(IfNode));
+    registry.register(Arc::new(HttpNode));
 }
 
 #[cfg(test)]
@@ -286,7 +425,7 @@ mod tests {
     use n8n_engine::Engine;
     use std::collections::HashMap;
 
-    fn empty_ctx(outputs: &HashMap<String, Vec<Value>>) -> ExecContext<'_> {
+    fn empty_ctx(outputs: &HashMap<String, BranchOutputs>) -> ExecContext<'_> {
         ExecContext { outputs }
     }
 
@@ -319,7 +458,7 @@ mod tests {
             ]
         );
         assert_eq!(
-            report.outputs["NoOp"],
+            report.outputs["NoOp"][0],
             vec![serde_json::json!({ "greeting": "halo", "n": 1 })]
         );
         assert_eq!(report.durations_ms.len(), 3);
@@ -344,14 +483,13 @@ mod tests {
         let out = SetNode
             .execute(&node, vec![serde_json::json!({})], &empty_ctx(&outputs))
             .expect("exec");
-        assert_eq!(out, vec![serde_json::json!({ "a": 1 })]);
+        assert_eq!(out, vec![vec![serde_json::json!({ "a": 1 })]]);
     }
 
     #[test]
     fn set_renders_expressions_per_item() {
-        let node = set_node_with_values(
-            serde_json::json!({"who": "={{ $json.name }}", "n": 5}),
-        );
+        let node =
+            set_node_with_values(serde_json::json!({"who": "={{ $json.name }}", "n": 5}));
         let outputs = HashMap::new();
         let out = SetNode
             .execute(
@@ -362,7 +500,7 @@ mod tests {
             .expect("exec");
         assert_eq!(
             out,
-            vec![serde_json::json!({"name": "udi", "who": "udi", "n": 5})]
+            vec![vec![serde_json::json!({"name": "udi", "who": "udi", "n": 5})]]
         );
     }
 
@@ -370,14 +508,11 @@ mod tests {
     fn set_reads_other_node_output() {
         let node =
             set_node_with_values(serde_json::json!({"x": "={{ $node[\"Up\"].json.x }}"}));
-        let outputs = HashMap::from([(
-            "Up".to_string(),
-            vec![serde_json::json!({"x": 7})],
-        )]);
+        let outputs = HashMap::from([("Up".to_string(), vec![vec![json!({"x": 7})]])]);
         let out = SetNode
             .execute(&node, vec![serde_json::json!({})], &empty_ctx(&outputs))
             .expect("exec");
-        assert_eq!(out, vec![serde_json::json!({"x": 7})]);
+        assert_eq!(out, vec![vec![serde_json::json!({"x": 7})]]);
     }
 
     #[test]
@@ -410,10 +545,10 @@ mod tests {
             .expect("exec");
         assert_eq!(
             out,
-            vec![
+            vec![vec![
                 serde_json::json!({"keep": true}),
                 serde_json::json!({"keep": "x"})
-            ]
+            ]]
         );
     }
 
@@ -446,11 +581,11 @@ mod tests {
             .expect("exec");
         assert_eq!(
             out,
-            vec![
+            vec![vec![
                 serde_json::json!({"age": 1}),
                 serde_json::json!({"age": 2}),
                 serde_json::json!({"age": 3})
-            ]
+            ]]
         );
     }
 
@@ -478,6 +613,91 @@ mod tests {
                 &empty_ctx(&outputs),
             )
             .expect("exec");
-        assert_eq!(out, vec![serde_json::json!(1), serde_json::json!(2)]);
+        assert_eq!(
+            out,
+            vec![vec![serde_json::json!(1), serde_json::json!(2)]]
+        );
+    }
+
+    #[test]
+    fn if_splits_into_two_branches() {
+        let node = WorkflowNode {
+            id: "i".to_string(),
+            name: "If".to_string(),
+            node_type: "n8n-nodes-base.if".to_string(),
+            type_version: 1.0,
+            position: [0.0, 0.0],
+            parameters: HashMap::from([(
+                "condition".to_string(),
+                serde_json::json!("={{ $json.age > 18 }}"),
+            )]),
+            disabled: false,
+            extra: HashMap::new(),
+        };
+        let outputs = HashMap::new();
+        let out = IfNode
+            .execute(
+                &node,
+                vec![
+                    serde_json::json!({"age": 20}),
+                    serde_json::json!({"age": 10}),
+                ],
+                &empty_ctx(&outputs),
+            )
+            .expect("exec");
+        assert_eq!(
+            out,
+            vec![
+                vec![serde_json::json!({"age": 20})],
+                vec![serde_json::json!({"age": 10})]
+            ]
+        );
+    }
+
+    #[test]
+    fn http_get_returns_canned_response() {
+        use std::io::{Read, Write};
+        use std::net::TcpListener;
+
+        let listener = TcpListener::bind("127.0.0.1:0").expect("bind loopback");
+        let port = listener.local_addr().expect("addr").port();
+        let handle = std::thread::spawn(move || {
+            let (mut stream, _) = listener.accept().expect("accept");
+            let mut buf = [0u8; 4096];
+            let _ = stream.read(&mut buf);
+            let body = r#"{"ok":true}"#;
+            let resp = format!(
+                "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{}",
+                body.len(),
+                body
+            );
+            stream.write_all(resp.as_bytes()).expect("write");
+        });
+
+        let node = WorkflowNode {
+            id: "h".to_string(),
+            name: "HTTP".to_string(),
+            node_type: "n8n-nodes-base.httpRequest".to_string(),
+            type_version: 1.0,
+            position: [0.0, 0.0],
+            parameters: HashMap::from([
+                (
+                    "url".to_string(),
+                    serde_json::json!(format!("http://127.0.0.1:{port}/echo")),
+                ),
+                ("method".to_string(), serde_json::json!("GET")),
+            ]),
+            disabled: false,
+            extra: HashMap::new(),
+        };
+        let outputs = HashMap::new();
+        let out = HttpNode
+            .execute(&node, vec![serde_json::json!({})], &empty_ctx(&outputs))
+            .expect("exec");
+        handle.join().expect("server thread");
+        assert_eq!(out.len(), 1);
+        assert_eq!(out[0].len(), 1);
+        assert_eq!(out[0][0]["status"], json!(200));
+        assert_eq!(out[0][0]["body"], json!({"ok": true}));
     }
 }

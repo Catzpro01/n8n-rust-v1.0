@@ -66,26 +66,39 @@ impl Workflow {
         self.nodes.iter().find(|n| n.name == name)
     }
 
-    /// Nama node-node penerus via output `main` (semua branch), sesuai urutan edge.
+    /// Penerus per cabang output (`main[i]`, indeks = cabang) — untuk node
+    /// multi-output (If). Cabang tak berbentuk jadi list kosong (indeks tetap).
     /// Parsing defensif: bentuk yang tak dikenal dilewati, bukan error.
-    pub fn successors(&self, node_name: &str) -> Vec<String> {
-        let mut out = Vec::new();
+    pub fn branches(&self, node_name: &str) -> Vec<Vec<String>> {
         let entry = match self.connections.get(node_name) {
             Some(v) => v,
-            None => return out,
+            None => return Vec::new(),
         };
         let main = match entry.get("main").and_then(Value::as_array) {
             Some(a) => a,
-            None => return out,
+            None => return Vec::new(),
         };
-        for branch in main.iter().filter_map(Value::as_array) {
-            for link in branch.iter().filter_map(Value::as_object) {
-                if let Some(Value::String(name)) = link.get("node") {
-                    out.push(name.clone());
-                }
-            }
-        }
-        out
+        main.iter()
+            .map(|branch| {
+                branch
+                    .as_array()
+                    .map(|arr| {
+                        arr.iter()
+                            .filter_map(Value::as_object)
+                            .filter_map(|o| o.get("node"))
+                            .filter_map(Value::as_str)
+                            .map(str::to_string)
+                            .collect()
+                    })
+                    .unwrap_or_default()
+            })
+            .collect()
+    }
+
+    /// Nama node-node penerus via output `main` (semua cabang digabung),
+    /// sesuai urutan edge.
+    pub fn successors(&self, node_name: &str) -> Vec<String> {
+        self.branches(node_name).into_iter().flatten().collect()
     }
 
     pub fn edge_count(&self) -> usize {

@@ -1,8 +1,8 @@
 //! n8n-engine: executor workflow sinkron (tanpa runtime async — ringan).
 //!
-//! v0.2.0: node menerima `ExecContext` (output node lain untuk `$node[...]`),
-//! tiap run mencatat durasi per node, `explain` memberi rencana dry-run,
-//! dan `lint` memberi diagnostik error/warning deterministik.
+//! v0.3.0: node multi-output (`BranchOutputs`, indeks = cabang `main[i]`)
+//! untuk If-cabang; items node = gabungan output (pendahulu, cabang) yang
+//! mengarah padanya. `explain`, `lint`, dan timing tidak berubah bentuk.
 
 use n8n_core::{Workflow, WorkflowNode};
 use serde::{Deserialize, Serialize};
@@ -33,13 +33,17 @@ impl std::error::Error for EngineError {}
 
 pub type EngineResult<T> = Result<T, EngineError>;
 
-/// Konteks eksekusi: output semua node yang sudah jalan (kunci = nama node).
+/// Output node per cabang: indeks = cabang `main[i]` di connections.
+/// Node biasa mengembalikan persis 1 cabang.
+pub type BranchOutputs = Vec<Vec<Value>>;
+
+/// Konteks eksekusi: output semua node yang sudah jalan.
 pub struct ExecContext<'a> {
-    pub outputs: &'a HashMap<String, Vec<Value>>,
+    pub outputs: &'a HashMap<String, BranchOutputs>,
 }
 
 impl ExecContext<'_> {
-    pub fn output_of(&self, name: &str) -> Option<&Vec<Value>> {
+    pub fn output_of(&self, name: &str) -> Option<&BranchOutputs> {
         self.outputs.get(name)
     }
 }
@@ -48,13 +52,13 @@ impl ExecContext<'_> {
 pub trait Node: Send + Sync {
     /// Nama tipe persis n8n, mis. `"n8n-nodes-base.set"`.
     fn node_type(&self) -> &'static str;
-    /// `items` = gabungan output para pendahulu (urutan deterministik).
+    /// `items` = gabungan output para (pendahulu, cabang) — urutan edge.
     fn execute(
         &self,
         node: &WorkflowNode,
         items: Vec<Value>,
         ctx: &ExecContext,
-    ) -> EngineResult<Vec<Value>>;
+    ) -> EngineResult<BranchOutputs>;
 }
 
 #[derive(Default)]
@@ -81,8 +85,8 @@ impl Registry {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct RunReport {
-    /// Output per nama node.
-    pub outputs: HashMap<String, Vec<Value>>,
+    /// Output per nama node, per cabang.
+    pub outputs: HashMap<String, BranchOutputs>,
     /// Urutan eksekusi aktual.
     pub order: Vec<String>,
     /// Durasi per node (milidetik) — observabilitas bawaan tiap run.
@@ -104,20 +108,23 @@ pub struct Diagnostic {
 
 struct Plan {
     order: Vec<String>,
-    preds: HashMap<String, Vec<String>>,
+    /// Nama node → daftar (nama pendahulu, indeks cabang).
+    incoming: HashMap<String, Vec<(String, usize)>>,
 }
 
 /// Urutan topo (Kahn) deterministik sesuai urutan node di file.
 fn plan(workflow: &Workflow) -> EngineResult<Plan> {
     let enabled: Vec<&WorkflowNode> = workflow.nodes.iter().filter(|n| !n.disabled).collect();
-    let mut preds: HashMap<String, Vec<String>> = HashMap::new();
+    let mut incoming: HashMap<String, Vec<(String, usize)>> = HashMap::new();
     for n in &enabled {
-        preds.entry(n.name.clone()).or_default();
+        incoming.entry(n.name.clone()).or_default();
     }
     for n in &enabled {
-        for s in workflow.successors(&n.name) {
-            if let Some(list) = preds.get_mut(&s) {
-                list.push(n.name.clone());
+        for (bi, branch) in workflow.branches(&n.name).iter().enumerate() {
+            for s in branch {
+                if let Some(list) = incoming.get_mut(s) {
+                    list.push((n.name.clone(), bi));
+                }
             }
         }
     }
@@ -129,9 +136,9 @@ fn plan(workflow: &Workflow) -> EngineResult<Plan> {
             if done_set.contains(&n.name) {
                 continue;
             }
-            let ready = preds
+            let ready = incoming
                 .get(&n.name)
-                .map(|ps| ps.iter().all(|p| done_set.contains(p)))
+                .map(|ps| ps.iter().all(|(p, _)| done_set.contains(p)))
                 .unwrap_or(true);
             if !ready {
                 continue;
@@ -155,7 +162,10 @@ fn plan(workflow: &Workflow) -> EngineResult<Plan> {
             stuck.join(", ")
         )));
     }
-    Ok(Plan { order: done, preds })
+    Ok(Plan {
+        order: done,
+        incoming,
+    })
 }
 
 pub struct Engine;
@@ -170,16 +180,18 @@ impl Engine {
         let p = plan(workflow)?;
         let by_name: HashMap<&str, &WorkflowNode> =
             workflow.nodes.iter().map(|n| (n.name.as_str(), n)).collect();
-        let mut done: HashMap<String, Vec<Value>> = HashMap::new();
+        let mut done: HashMap<String, BranchOutputs> = HashMap::new();
         let mut durations_ms: HashMap<String, u128> = HashMap::new();
         for name in &p.order {
             let node = by_name.get(name.as_str()).copied().ok_or_else(|| {
                 EngineError::new(format!("plan menyebut node hilang '{name}'"))
             })?;
             let mut items = Vec::new();
-            if let Some(ps) = p.preds.get(name) {
-                for pr in ps {
-                    items.extend(done.get(pr).cloned().unwrap_or_default());
+            if let Some(ps) = p.incoming.get(name) {
+                for (pr, bi) in ps {
+                    if let Some(out) = done.get(pr).and_then(|b| b.get(*bi)) {
+                        items.extend(out.clone());
+                    }
                 }
             }
             let node_impl = registry.get(&node.node_type).ok_or_else(|| {
@@ -293,8 +305,8 @@ mod tests {
             _node: &WorkflowNode,
             _items: Vec<Value>,
             _ctx: &ExecContext,
-        ) -> EngineResult<Vec<Value>> {
-            Ok(vec![Value::String("e".to_string())])
+        ) -> EngineResult<BranchOutputs> {
+            Ok(vec![vec![Value::String("e".to_string())]])
         }
     }
 
@@ -307,8 +319,8 @@ mod tests {
             _node: &WorkflowNode,
             items: Vec<Value>,
             _ctx: &ExecContext,
-        ) -> EngineResult<Vec<Value>> {
-            Ok(items)
+        ) -> EngineResult<BranchOutputs> {
+            Ok(vec![items])
         }
     }
 
@@ -354,7 +366,10 @@ mod tests {
         );
         let report = Engine::run(&wf, &registry()).expect("run");
         assert_eq!(report.order, vec!["A".to_string(), "B".to_string()]);
-        assert_eq!(report.outputs["B"], vec![Value::String("e".to_string())]);
+        assert_eq!(
+            report.outputs["B"][0],
+            vec![Value::String("e".to_string())]
+        );
         assert_eq!(report.durations_ms.len(), 2);
     }
 
@@ -386,8 +401,6 @@ mod tests {
 
     #[test]
     fn explain_plans_without_executing() {
-        // Tipe tak dikenal: explain tetap sukses (tak butuh registry),
-        // run akan gagal. Itulah bedanya dry-run.
         let wf = workflow(
             vec![node("A", "test.missing"), node("B", "test.missing")],
             HashMap::from([(

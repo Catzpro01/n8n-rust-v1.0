@@ -66,7 +66,15 @@ async fn api_run(
     State(s): State<AppState>,
     Json(wf): Json<Workflow>,
 ) -> Result<Json<RunReport>, (StatusCode, String)> {
-    Engine::run(&wf, &s.registry)
-        .map(Json)
-        .map_err(|e| (StatusCode::BAD_REQUEST, e.to_string()))
+    // Engine sinkron (boleh blocking I/O seperti HTTP) -> jalan di thread pool
+    // blocking supaya executor async tak terhambat.
+    let reg = s.registry.clone();
+    match tokio::task::spawn_blocking(move || Engine::run(&wf, &reg)).await {
+        Ok(Ok(rep)) => Ok(Json(rep)),
+        Ok(Err(e)) => Err((StatusCode::BAD_REQUEST, e.to_string())),
+        Err(e) => Err((
+            StatusCode::INTERNAL_SERVER_ERROR,
+            format!("join: {e}"),
+        )),
+    }
 }

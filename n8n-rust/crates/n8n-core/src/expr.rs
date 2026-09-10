@@ -1,23 +1,24 @@
 //! Mini ekspresi `={{ }}` (subset n8n, tanpa dependensi).
 //!
-//! Bentuk yang didukung:
-//! - `$json.a.b` / `$json["a"].b` / `$json.arr[0]` — field item saat ini
-//! - `$node["Nama"].json.a.b` (boleh `.first()` setelah nama) — item PERTAMA
-//!   output node lain
+//! v0.3.0 didukung:
+//! - path: `$json.a.b`, `$json["a"]`, `$json.arr[0]`
+//! - antar-node: `$node["Nama"].json.a.b` (+`.first()`), cabang output 0
+//! - operator: `==` `!=` `>` `<` `>=` `<=` (angka numerik, sisanya string)
+//! - fungsi satu-argumen: `len(x)`, `upper(x)`, `lower(x)`
 //! - literal: `"str"`, `123`, `1.5`, `true`, `false`, `null`
-//! - selain itu (termasuk operator `==`/`>` dan fungsi) → Null, lunak.
-//!   n8n asli melempar error; subset ini memilih lunak + terdokumentasi.
+//! - selain itu → Null lunak (tak ada operator unary, tak ada escape `\"`).
 //!
 //! Render: bila SELURUH string adalah satu `={{...}}`, nilai asli
 //! dipertahankan tipenya; bila template campuran, interpolasi jadi string
 //! (missing → string kosong).
 
-use serde_json::Value;
+use serde_json::{json, Value};
 use std::collections::HashMap;
 
 pub struct ExprContext<'a> {
     pub item: &'a Value,
-    pub outputs: &'a HashMap<String, Vec<Value>>,
+    /// Output per nama node → per cabang → items. `$node` membaca cabang 0.
+    pub outputs: &'a HashMap<String, Vec<Vec<Value>>>,
 }
 
 pub fn render(template: &str, ctx: &ExprContext) -> Value {
@@ -46,6 +47,20 @@ pub fn render(template: &str, ctx: &ExprContext) -> Value {
     Value::String(out)
 }
 
+/// Render rekursif satu nilai: string → template, array/object → per elemen.
+pub fn render_value(v: &Value, ctx: &ExprContext) -> Value {
+    match v {
+        Value::String(s) => render(s, ctx),
+        Value::Array(a) => Value::Array(a.iter().map(|x| render_value(x, ctx)).collect()),
+        Value::Object(o) => Value::Object(
+            o.iter()
+                .map(|(k, x)| (k.clone(), render_value(x, ctx)))
+                .collect(),
+        ),
+        other => other.clone(),
+    }
+}
+
 fn single_placeholder(t: &str) -> Option<&str> {
     if t.starts_with("={{") && t.ends_with("}}") {
         let inner = &t[3..t.len() - 2];
@@ -61,6 +76,9 @@ fn eval(expr: &str, ctx: &ExprContext) -> Value {
     if e.is_empty() {
         return Value::Null;
     }
+    if let Some((l, op, r)) = split_operator(e) {
+        return apply_op(l, op, r, ctx);
+    }
     if let Some(rest) = e.strip_prefix("$json") {
         return drill(ctx.item, rest);
     }
@@ -72,6 +90,7 @@ fn eval(expr: &str, ctx: &ExprContext) -> Value {
         let first = ctx
             .outputs
             .get(&name)
+            .and_then(|branches| branches.first())
             .and_then(|items| items.first())
             .unwrap_or(&Value::Null);
         let r = rest.trim_start();
@@ -85,7 +104,123 @@ fn eval(expr: &str, ctx: &ExprContext) -> Value {
         };
         return drill(first, r);
     }
+    if e.ends_with(')') {
+        if let Some(open) = e.find('(') {
+            let name = e[..open].trim();
+            if !name.is_empty()
+                && name.chars().all(|c| c.is_alphanumeric() || c == '_')
+            {
+                let arg = e[open + 1..e.len() - 1].trim();
+                let v = eval(arg, ctx);
+                return apply_func(name, &v);
+            }
+        }
+    }
     serde_json::from_str(e).unwrap_or(Value::Null)
+}
+
+/// Belah di operator perbandingan level-0 pertama (di luar kutip/kurung).
+/// Operator 2-huruf dicek dulu supaya `>=` tak terbaca sebagai `>`.
+fn split_operator(e: &str) -> Option<(&str, &str, &str)> {
+    let bytes = e.as_bytes();
+    let mut quote: Option<u8> = None;
+    let mut depth = 0i32;
+    let mut i = 0;
+    while i < bytes.len() {
+        let c = bytes[i];
+        if let Some(q) = quote {
+            if c == q {
+                quote = None;
+            }
+            i += 1;
+            continue;
+        }
+        match c {
+            b'"' | b'\'' => {
+                quote = Some(c);
+                i += 1;
+            }
+            b'(' | b'[' => {
+                depth += 1;
+                i += 1;
+            }
+            b')' | b']' => {
+                depth -= 1;
+                i += 1;
+            }
+            _ => {
+                if depth == 0 {
+                    let rest = &e[i..];
+                    for op in ["==", "!=", ">=", "<=", ">", "<"] {
+                        if rest.starts_with(op) {
+                            return Some((e[..i].trim(), op, e[i + op.len()..].trim()));
+                        }
+                    }
+                }
+                i += 1;
+            }
+        }
+    }
+    None
+}
+
+fn apply_op(l: &str, op: &str, r: &str, ctx: &ExprContext) -> Value {
+    let lv = eval(l, ctx);
+    let rv = eval(r, ctx);
+    let b = match op {
+        "==" => lv == rv,
+        "!=" => lv != rv,
+        _ => compare_order(&lv, &rv, op),
+    };
+    Value::Bool(b)
+}
+
+fn compare_order(lv: &Value, rv: &Value, op: &str) -> bool {
+    match (lv, rv) {
+        (Value::Number(a), Value::Number(b)) => {
+            let (x, y) = (
+                a.as_f64().unwrap_or(f64::NAN),
+                b.as_f64().unwrap_or(f64::NAN),
+            );
+            match op {
+                ">" => x > y,
+                "<" => x < y,
+                ">=" => x >= y,
+                "<=" => x <= y,
+                _ => false,
+            }
+        }
+        _ => {
+            let (x, y) = (stringify(lv), stringify(rv));
+            match op {
+                ">" => x > y,
+                "<" => x < y,
+                ">=" => x >= y,
+                "<=" => x <= y,
+                _ => false,
+            }
+        }
+    }
+}
+
+fn apply_func(name: &str, v: &Value) -> Value {
+    match name {
+        "len" => match v {
+            Value::String(s) => json!(s.chars().count()),
+            Value::Array(a) => json!(a.len()),
+            Value::Object(o) => json!(o.len()),
+            _ => Value::Null,
+        },
+        "upper" => v
+            .as_str()
+            .map(|s| json!(s.to_uppercase()))
+            .unwrap_or(Value::Null),
+        "lower" => v
+            .as_str()
+            .map(|s| json!(s.to_lowercase()))
+            .unwrap_or(Value::Null),
+        _ => Value::Null,
+    }
 }
 
 /// `["Nama"]...` / `['Nama']...` → (Nama, sisa). Butuh kurung tutup.
@@ -178,7 +313,7 @@ mod tests {
     use super::*;
     use serde_json::json;
 
-    fn ctx<'a>(item: &'a Value, outputs: &'a HashMap<String, Vec<Value>>) -> ExprContext<'a> {
+    fn ctx<'a>(item: &'a Value, outputs: &'a HashMap<String, Vec<Vec<Value>>>) -> ExprContext<'a> {
         ExprContext { item, outputs }
     }
 
@@ -212,11 +347,24 @@ mod tests {
     #[test]
     fn node_reference_reads_first_item() {
         let item = json!({});
-        let outputs = HashMap::from([("Up".to_string(), vec![json!({"x": 7})])]);
+        let outputs = HashMap::from([("Up".to_string(), vec![vec![json!({"x": 7})]])]);
         let c = ctx(&item, &outputs);
         assert_eq!(render("={{ $node[\"Up\"].json.x }}", &c), json!(7));
         assert_eq!(
             render("={{ $node['Up'].first().json.x }}", &c),
+            json!(7)
+        );
+    }
+
+    #[test]
+    fn node_reference_reads_branch_zero_only() {
+        let item = json!({});
+        let outputs = HashMap::from([(
+            "If".to_string(),
+            vec![vec![json!({"x": 7})], vec![json!({"x": 9})]],
+        )]);
+        assert_eq!(
+            render("={{ $node[\"If\"].json.x }}", &ctx(&item, &outputs)),
             json!(7)
         );
     }
@@ -240,5 +388,33 @@ mod tests {
         assert_eq!(render("={{ \"s\" }}", &c), json!("s"));
         assert_eq!(render("={{ $json.arr[1] }}", &c), json!(20));
         assert_eq!(render("={{ $json[\"arr\"][0] }}", &c), json!(10));
+    }
+
+    #[test]
+    fn comparison_operators() {
+        let item = json!({"age": 20, "name": "udi"});
+        let outputs = HashMap::new();
+        let c = ctx(&item, &outputs);
+        assert_eq!(render("={{ $json.age > 18 }}", &c), json!(true));
+        assert_eq!(render("={{ $json.age < 18 }}", &c), json!(false));
+        assert_eq!(render("={{ $json.age >= 20 }}", &c), json!(true));
+        assert_eq!(render("={{ $json.age <= 19 }}", &c), json!(false));
+        assert_eq!(render("={{ $json.age == 20 }}", &c), json!(true));
+        assert_eq!(render("={{ $json.age != 20 }}", &c), json!(false));
+        assert_eq!(render("={{ $json.name == \"udi\" }}", &c), json!(true));
+        assert_eq!(render("={{ $json.name > \"a\" }}", &c), json!(true));
+    }
+
+    #[test]
+    fn functions_len_upper_lower() {
+        let item = json!({"name": "udi", "arr": [1, 2, 3]});
+        let outputs = HashMap::new();
+        let c = ctx(&item, &outputs);
+        assert_eq!(render("={{ len($json.arr) }}", &c), json!(3));
+        assert_eq!(render("={{ len($json.name) }}", &c), json!(3));
+        assert_eq!(render("={{ upper($json.name) }}", &c), json!("UDI"));
+        assert_eq!(render("={{ lower(\"A B\") }}", &c), json!("a b"));
+        assert_eq!(render("={{ len($json.arr) > 2 }}", &c), json!(true));
+        assert_eq!(render("={{ nope($json.name) }}", &c), Value::Null);
     }
 }
