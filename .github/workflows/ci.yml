@@ -21,7 +21,7 @@ jobs:
         with:
           workspaces: n8n-rust
       - name: cargo test
-        run: set -o pipefail; cargo test --workspace --color never 2>&1 | tee /tmp/out.log
+        run: set -o pipefail; RUSTFLAGS="-D warnings" cargo test --workspace --color never 2>&1 | tee /tmp/out.log
       - name: Ekspor error sebagai anotasi
         if: failure()
         run: |
@@ -75,7 +75,7 @@ jobs:
         with:
           workspaces: n8n-rust
       - name: cargo clippy
-        run: set -o pipefail; cargo clippy --workspace --all-targets --color never 2>&1 | tee /tmp/out.log
+        run: set -o pipefail; cargo clippy --workspace --all-targets --color never -- -D warnings 2>&1 | tee /tmp/out.log
       - name: Ekspor error sebagai anotasi
         if: failure()
         run: |
@@ -165,7 +165,7 @@ jobs:
               print(f"::error::LOG[{i+1}/{len(parts)}]:{m}")
           EOF
   fmt-b:
-    name: cargo fmt (nodes/server)
+    name: cargo fmt (nodes lib/filter)
     runs-on: ubuntu-latest
     defaults:
       run:
