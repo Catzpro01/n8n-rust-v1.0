@@ -1,18 +1,25 @@
 //! n8n-server: REST API + UI single-file embedded + webhook hooks.
 //!
-//! State in-memory (personal, sekali jalan): hooks terdaftar + ring 50
-//! ringkasan run terakhir. Restart = state hilang (terdokumentasi).
+//! v0.5.0 (fidelity n8n): route hook terima GET/POST/PUT/PATCH/DELETE;
+//! node webhook mengatur `httpMethod` (default GET, di-enforce → 404 bila
+//! salah ala n8n), `responseMode` (onReceived = laporan penuh; lastNode =
+//! tunggu selesai lalu bentuk body), `responseData`
+//! (allEntries/firstEntryJson/noResponseBody), `responseCode`.
+//! Beda disengaja: onReceived mengembalikan RunReport (n8n: ack
+//! "Workflow was started") — run lokal sinkron, laporan lebih berguna.
+//! State in-memory: restart = hooks + riwayat hilang (terdokumentasi).
 
 use axum::{
     body::Bytes,
     extract::{Path, Query, State},
-    http::{HeaderMap, StatusCode},
-    response::Html,
-    routing::{delete, get, post},
+    http::{HeaderMap, Method, StatusCode},
+    response::{Html, IntoResponse, Response},
+    routing::{delete, get, patch, post, put},
     Json, Router,
 };
 use n8n_core::Workflow;
 use n8n_engine::{Diagnostic, Engine, Registry, RunReport};
+use n8n_nodes::find_webhook;
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, VecDeque};
 use std::sync::{
@@ -64,7 +71,14 @@ async fn main() {
         .route("/api/runs", get(api_runs))
         .route("/api/hooks", post(api_hook_register).get(api_hook_list))
         .route("/api/hooks/:path", delete(api_hook_delete))
-        .route("/hook/:path", post(api_hook_fire))
+        .route(
+            "/hook/:path",
+            get(api_hook_fire)
+                .post(api_hook_fire)
+                .put(api_hook_fire)
+                .patch(api_hook_fire)
+                .delete(api_hook_fire),
+        )
         .with_state(state);
     let addr = "0.0.0.0:3000";
     let listener = tokio::net::TcpListener::bind(addr)
@@ -180,19 +194,45 @@ async fn api_hook_delete(
     Json(s.hooks.write().await.remove(&path).is_some())
 }
 
+fn hook_param<'a>(
+    wf: &'a Workflow,
+    key: &str,
+) -> Option<&'a serde_json::Value> {
+    find_webhook(wf).and_then(|n| n.parameters.get(key))
+}
+
 async fn api_hook_fire(
     State(s): State<AppState>,
     Path(path): Path<String>,
+    method: Method,
     Query(query): Query<HashMap<String, String>>,
     headers: HeaderMap,
     body: Bytes,
-) -> Result<Json<RunReport>, (StatusCode, String)> {
+) -> Result<Response, (StatusCode, String)> {
     let wf = s.hooks.read().await.get(&path).cloned();
     let wf =
         wf.ok_or_else(|| (StatusCode::NOT_FOUND, format!("hook tak dikenal: {path}")))?;
-    let text = String::from_utf8_lossy(&body);
-    let data: serde_json::Value =
-        serde_json::from_str(&text).unwrap_or(serde_json::Value::String(text.to_string()));
+    // n8n mendaftarkan webhook per (method, path): method salah → 404.
+    // Tanpa node webhook di workflow → semua method diterima (warisan 0.4).
+    if find_webhook(&wf).is_some() {
+        let want = hook_param(&wf, "httpMethod")
+            .and_then(serde_json::Value::as_str)
+            .unwrap_or("GET")
+            .to_uppercase();
+        if method.as_str() != want {
+            return Err((
+                StatusCode::NOT_FOUND,
+                format!("hook '{path}' tidak terdaftar untuk {method} (mau {want})"),
+            ));
+        }
+    }
+    let data: serde_json::Value = if body.is_empty() {
+        serde_json::Value::Null
+    } else {
+        let text = String::from_utf8_lossy(&body);
+        serde_json::from_str(&text)
+            .unwrap_or(serde_json::Value::String(text.to_string()))
+    };
     let mut hm = serde_json::Map::new();
     for (k, v) in headers.iter() {
         hm.insert(
@@ -201,7 +241,7 @@ async fn api_hook_fire(
         );
     }
     let payload = serde_json::json!({
-        "method": "POST",
+        "method": method.as_str(),
         "path": path,
         "query": query,
         "headers": hm,
@@ -211,19 +251,66 @@ async fn api_hook_fire(
     let name = wf.name.clone();
     let res =
         tokio::task::spawn_blocking(move || Engine::run_with(&wf, &reg, Some(payload))).await;
-    match res {
-        Ok(Ok(rep)) => {
-            let total = rep.durations_ms.values().sum();
-            record(&s, &name, true, rep.order.clone(), total);
-            Ok(Json(rep))
-        }
+    let rep = match res {
+        Ok(Ok(rep)) => rep,
         Ok(Err(e)) => {
             record(&s, &name, false, Vec::new(), 0);
-            Err((StatusCode::BAD_REQUEST, e.to_string()))
+            return Err((StatusCode::BAD_REQUEST, e.to_string()));
         }
-        Err(e) => Err((
-            StatusCode::INTERNAL_SERVER_ERROR,
-            format!("join: {e}"),
+        Err(e) => {
+            return Err((
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("join: {e}"),
+            ))
+        }
+    };
+    let total = rep.durations_ms.values().sum();
+    record(&s, &name, true, rep.order.clone(), total);
+
+    let mode = hook_param(&wf, "responseMode")
+        .and_then(serde_json::Value::as_str)
+        .unwrap_or("onReceived");
+    match mode {
+        "onReceived" => {
+            let v = serde_json::to_value(&rep)
+                .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+            Ok((StatusCode::OK, Json(v)).into_response())
+        }
+        "lastNode" => {
+            let code = hook_param(&wf, "responseCode")
+                .and_then(serde_json::Value::as_u64)
+                .unwrap_or(200);
+            let status =
+                StatusCode::from_u16(code as u16).unwrap_or(StatusCode::OK);
+            let items: Vec<serde_json::Value> = rep
+                .order
+                .last()
+                .and_then(|last| rep.outputs.get(last))
+                .map(|branches| branches.iter().flatten().cloned().collect())
+                .unwrap_or_default();
+            let data_mode = hook_param(&wf, "responseData")
+                .and_then(serde_json::Value::as_str)
+                .unwrap_or("firstEntryJson");
+            match data_mode {
+                "firstEntryJson" => {
+                    let first = items.into_iter().next().unwrap_or(serde_json::Value::Null);
+                    Ok((status, Json(first)).into_response())
+                }
+                "allEntries" => Ok((status, Json(items)).into_response()),
+                "noResponseBody" => Ok((status, "").into_response()),
+                "firstEntryBinary" => Err((
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "responseData 'firstEntryBinary' belum didukung (tanpa binary)".to_string(),
+                )),
+                other => Err((
+                    StatusCode::BAD_REQUEST,
+                    format!("responseData tak dikenal '{other}'"),
+                )),
+            }
+        }
+        other => Err((
+            StatusCode::BAD_REQUEST,
+            format!("responseMode tak dikenal '{other}'"),
         )),
     }
 }

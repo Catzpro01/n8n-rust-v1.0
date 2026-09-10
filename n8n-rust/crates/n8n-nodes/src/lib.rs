@@ -1,10 +1,23 @@
-//! n8n-nodes: node bawaan v1 (subset kecil yang tumbuh bertahap).
+//! n8n-nodes: node bawaan v1 — meniru parameter & perilaku n8n asli.
 //!
-//! v0.4.0: manualTrigger, set, noOp, filter, sort, limit, if (2 cabang),
-//! httpRequest (fan-out per item), code + function (rhai, var `items`),
-//! scheduleTrigger (penanda + metadata), webhook (payload dari server).
+//! v0.5.0 (fidelity pass terhadap n8n-io/n8n):
+//! - set: mode manual/raw, assignments + fields.values, include
+//!   all/none/selected/except, dot-notation (`options.dotNotation`)
+//! - if/filter: object `conditions` n8n (lihat `filter.rs`) + string
+//!   `condition` lawas sebagai fallback
+//! - sort: `type` simple/random/code + `sortFieldsUi` + case-insensitive
+//! - limit: `maxItems` + `keep` firstItems/lastItems
+//! - code/function: `mode` runOnceForAllItems/runOnceForEachItem (rhai)
+//! - httpRequest: fan-out per item + `options.timeout` (ms, default 300000)
+//!   + responseFormat autodetect/json/text
+//! - scheduleTrigger: field output persis n8n (UTC) + echo `rule`
+//! - webhook: emit payload server; `httpMethod`/`responseMode`/`responseData`/
+//!   `responseCode` dibaca server (lihat n8n-server)
 //! Nilai string di parameter dirender sebagai template `={{ }}`.
 
+mod filter;
+
+use filter::{evaluate as eval_conditions, resolve_opts};
 use n8n_core::expr::{render, render_value, ExprContext};
 use n8n_core::WorkflowNode;
 use n8n_engine::{BranchOutputs, EngineError, EngineResult, ExecContext, Node, Registry};
@@ -24,11 +37,139 @@ pub struct FunctionNode;
 pub struct ScheduleNode;
 pub struct WebhookNode;
 
+// ---------------------------------------------------------------------------
+// Path helper ala lodash get/set/unset (subset: segmen object + indeks array)
+// ---------------------------------------------------------------------------
+
+fn get_path<'a>(v: &'a Value, dotted: &str) -> Option<&'a Value> {
+    let mut cur = v;
+    for seg in dotted.split('.') {
+        if seg.is_empty() {
+            return None;
+        }
+        match cur {
+            Value::Array(a) => {
+                let idx: usize = seg.parse().ok()?;
+                cur = a.get(idx)?;
+            }
+            Value::Object(o) => {
+                cur = o.get(seg)?;
+            }
+            _ => return None,
+        }
+    }
+    Some(cur)
+}
+
+fn set_path(root: &mut Map<String, Value>, dotted: &str, value: Value) {
+    let segs: Vec<&str> = dotted.split('.').filter(|s| !s.is_empty()).collect();
+    if segs.is_empty() {
+        return;
+    }
+    let mut pending = Some(value);
+    let mut holder = Value::Object(std::mem::take(root));
+    let mut cur = &mut holder;
+    for (i, seg) in segs.iter().enumerate() {
+        let last = i + 1 == segs.len();
+        if matches!(cur, Value::Array(_)) {
+            if let Ok(n) = seg.parse::<usize>() {
+                let a = cur.as_array_mut().expect("array");
+                while a.len() <= n {
+                    a.push(Value::Null);
+                }
+                if last {
+                    a[n] = pending.take().unwrap_or(Value::Null);
+                    break;
+                }
+                cur = &mut a[n];
+                if cur.is_null() {
+                    *cur = Value::Object(Map::new());
+                }
+                continue;
+            }
+        }
+        if !cur.is_object() {
+            *cur = Value::Object(Map::new());
+        }
+        let o = cur.as_object_mut().expect("object");
+        if last {
+            o.insert(seg.to_string(), pending.take().unwrap_or(Value::Null));
+            break;
+        }
+        cur = o
+            .entry(seg.to_string())
+            .or_insert(Value::Object(Map::new()));
+    }
+    if let Value::Object(m) = holder {
+        *root = m;
+    }
+}
+
+fn unset_path(root: &mut Map<String, Value>, dotted: &str) {
+    let segs: Vec<&str> = dotted.split('.').filter(|s| !s.is_empty()).collect();
+    if segs.is_empty() {
+        return;
+    }
+    let mut holder = Value::Object(std::mem::take(root));
+    {
+        let mut cur = &mut holder;
+        for (i, seg) in segs.iter().enumerate() {
+            let last = i + 1 == segs.len();
+            match cur {
+                Value::Array(a) => {
+                    let n: usize = match seg.parse() {
+                        Ok(n) => n,
+                        Err(_) => break,
+                    };
+                    if last {
+                        if n < a.len() {
+                            a[n] = Value::Null;
+                        }
+                        break;
+                    }
+                    if n >= a.len() {
+                        break;
+                    }
+                    cur = &mut a[n];
+                }
+                Value::Object(o) => {
+                    if last {
+                        o.remove(*seg);
+                        break;
+                    }
+                    match o.get_mut(*seg) {
+                        Some(next) => cur = next,
+                        None => break,
+                    }
+                }
+                _ => break,
+            }
+        }
+    }
+    if let Value::Object(m) = holder {
+        *root = m;
+    }
+}
+
+fn split_csv(v: &Value) -> Vec<String> {
+    v.as_str()
+        .unwrap_or("")
+        .split(',')
+        .map(|s| s.trim().to_string())
+        .filter(|s| !s.is_empty())
+        .collect()
+}
+
+// ---------------------------------------------------------------------------
+// Trigger + passthrough
+// ---------------------------------------------------------------------------
+
 impl Node for ManualTrigger {
     fn node_type(&self) -> &'static str {
         "n8n-nodes-base.manualTrigger"
     }
 
+    /// n8n: emit `[{}]` (satu item kosong).
     fn execute(
         &self,
         _node: &WorkflowNode,
@@ -54,6 +195,10 @@ impl Node for NoOp {
     }
 }
 
+// ---------------------------------------------------------------------------
+// Set — mode manual/raw, include, dot-notation (n8n Set v2/v3)
+// ---------------------------------------------------------------------------
+
 impl Node for SetNode {
     fn node_type(&self) -> &'static str {
         "n8n-nodes-base.set"
@@ -65,61 +210,220 @@ impl Node for SetNode {
         items: Vec<Value>,
         ctx: &ExecContext,
     ) -> EngineResult<BranchOutputs> {
-        if let Some(Value::Object(values)) = node.parameters.get("values") {
-            let out: Vec<Value> = items
-                .into_iter()
-                .map(|it| {
-                    let ectx = ExprContext {
-                        item: &it,
-                        outputs: ctx.outputs,
-                    };
-                    let rendered: Map<String, Value> = values
-                        .iter()
-                        .map(|(k, v)| {
-                            let nv = match v {
-                                Value::String(s) => render(s, &ectx),
-                                other => other.clone(),
-                            };
-                            (k.clone(), nv)
-                        })
-                        .collect();
-                    merge_value(it, &rendered)
-                })
-                .collect();
+        let mode = node
+            .parameters
+            .get("mode")
+            .and_then(Value::as_str)
+            .unwrap_or("manual");
+        if mode == "raw" {
+            let mut out = Vec::with_capacity(items.len());
+            for it in &items {
+                let ectx = ExprContext {
+                    item: it,
+                    outputs: ctx.outputs,
+                };
+                out.push(set_raw(node, &ectx)?);
+            }
             return Ok(vec![out]);
         }
-        if let Some(list) = node
+        if mode != "manual" {
+            return Err(EngineError::new(format!(
+                "set: mode tak dikenal '{mode}'"
+            )));
+        }
+        let include = node
             .parameters
-            .get("assignments")
-            .and_then(|v| v.get("assignments"))
-            .and_then(Value::as_array)
-        {
-            let out: Vec<Value> = items
-                .into_iter()
-                .map(|it| {
-                    let ectx = ExprContext {
-                        item: &it,
-                        outputs: ctx.outputs,
-                    };
-                    let mut values = Map::new();
-                    for a in list.iter().filter_map(Value::as_object) {
-                        if let (Some(Value::String(name)), Some(value)) =
-                            (a.get("name"), a.get("value"))
-                        {
-                            let nv = match value {
-                                Value::String(s) => render(s, &ectx),
-                                other => other.clone(),
+            .get("include")
+            .and_then(Value::as_str)
+            .unwrap_or("all");
+        let dot = node
+            .parameters
+            .get("options")
+            .and_then(|o| o.get("dotNotation"))
+            .and_then(Value::as_bool)
+            .unwrap_or(true);
+        let mut out = Vec::with_capacity(items.len());
+        for it in &items {
+            let ectx = ExprContext {
+                item: it,
+                outputs: ctx.outputs,
+            };
+            let mut base = match include {
+                "all" => it.as_object().cloned().unwrap_or_default(),
+                "none" => Map::new(),
+                "selected" => {
+                    let mut m = Map::new();
+                    let fields = render_value(
+                        node.parameters
+                            .get("includeFields")
+                            .unwrap_or(&Value::Null),
+                        &ectx,
+                    );
+                    for key in split_csv(&fields) {
+                        let v = if dot {
+                            get_path(it, &key).cloned()
+                        } else {
+                            it.get(&key).cloned()
+                        };
+                        if let Some(v) = v {
+                            let target = if dot && key.contains('.') {
+                                key.rsplit('.').next().unwrap_or(&key)
+                            } else {
+                                key.as_str()
                             };
-                            values.insert(name.clone(), nv);
+                            if dot {
+                                set_path(&mut m, target, v);
+                            } else {
+                                m.insert(target.to_string(), v);
+                            }
                         }
                     }
-                    merge_value(it, &values)
-                })
-                .collect();
-            return Ok(vec![out]);
+                    m
+                }
+                "except" => {
+                    let mut m = it.as_object().cloned().unwrap_or_default();
+                    let fields = render_value(
+                        node.parameters
+                            .get("excludeFields")
+                            .unwrap_or(&Value::Null),
+                        &ectx,
+                    );
+                    for key in split_csv(&fields) {
+                        if dot {
+                            unset_path(&mut m, &key);
+                        } else {
+                            m.remove(&key);
+                        }
+                    }
+                    m
+                }
+                other => {
+                    return Err(EngineError::new(format!(
+                        "set: include tak dikenal '{other}'"
+                    )))
+                }
+            };
+            for (k, v) in set_new_fields(node, &ectx)? {
+                if dot {
+                    set_path(&mut base, &k, v);
+                } else {
+                    base.insert(k, v);
+                }
+            }
+            out.push(Value::Object(base));
         }
-        Ok(vec![items])
+        Ok(vec![out])
     }
+}
+
+/// Field baru: `assignments` (n8n v3) → `fields.values` (n8n v1/v2) →
+/// `values` (ekstensi n8n-rust).
+fn set_new_fields(
+    node: &WorkflowNode,
+    ectx: &ExprContext,
+) -> EngineResult<Map<String, Value>> {
+    if let Some(list) = node
+        .parameters
+        .get("assignments")
+        .and_then(|v| v.get("assignments"))
+        .and_then(Value::as_array)
+    {
+        let mut m = Map::new();
+        for a in list.iter().filter_map(Value::as_object) {
+            if let (Some(Value::String(name)), Some(value)) = (a.get("name"), a.get("value")) {
+                m.insert(name.clone(), render_value(value, ectx));
+            }
+        }
+        return Ok(m);
+    }
+    if let Some(list) = node
+        .parameters
+        .get("fields")
+        .and_then(|v| v.get("values"))
+        .and_then(Value::as_array)
+    {
+        let mut m = Map::new();
+        for f in list.iter().filter_map(Value::as_object) {
+            let name = f.get("name").and_then(Value::as_str);
+            let t = f
+                .get("type")
+                .and_then(Value::as_str)
+                .unwrap_or("stringValue");
+            let rendered = render_value(f.get(t).unwrap_or(&Value::Null), ectx);
+            let val = match (&rendered, t) {
+                (Value::String(s), "objectValue" | "arrayValue") => {
+                    serde_json::from_str(s).unwrap_or(rendered.clone())
+                }
+                _ => rendered,
+            };
+            if let Some(n) = name {
+                m.insert(n.to_string(), val);
+            }
+        }
+        return Ok(m);
+    }
+    if let Some(Value::Object(values)) = node.parameters.get("values") {
+        return Ok(values
+            .iter()
+            .map(|(k, v)| {
+                let nv = match v {
+                    Value::String(s) => render(s, ectx),
+                    other => other.clone(),
+                };
+                (k.clone(), nv)
+            })
+            .collect());
+    }
+    Ok(Map::new())
+}
+
+/// Mode raw: `jsonOutput` di-render lalu HARUS parse jadi object.
+fn set_raw(node: &WorkflowNode, ectx: &ExprContext) -> EngineResult<Value> {
+    let raw = node
+        .parameters
+        .get("jsonOutput")
+        .map(|v| render_value(v, ectx))
+        .unwrap_or(Value::Null);
+    let text = raw.as_str().ok_or_else(|| {
+        EngineError::new("set: mode raw butuh 'jsonOutput' string")
+    })?;
+    let parsed: Value = serde_json::from_str(text)
+        .map_err(|e| EngineError::new(format!("set: jsonOutput bukan JSON: {e}")))?;
+    match parsed {
+        Value::Object(_) => Ok(parsed),
+        _ => Err(EngineError::new(
+            "set: jsonOutput harus object JSON (array/primitif ditolak)",
+        )),
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Filter + If — conditions n8n (+ fallback string `condition` lawas)
+// ---------------------------------------------------------------------------
+
+fn check_item(
+    node: &WorkflowNode,
+    item: &Value,
+    ctx: &ExecContext,
+    index: usize,
+) -> EngineResult<bool> {
+    let ectx = ExprContext {
+        item,
+        outputs: ctx.outputs,
+    };
+    if let Some(conds) = node.parameters.get("conditions") {
+        if conds.is_object() {
+            let opts = resolve_opts(conds, node.parameters.get("options"));
+            let render = |v: &Value| render_value(v, &ectx);
+            return eval_conditions(conds, index, &render, &opts);
+        }
+    }
+    let cond = node
+        .parameters
+        .get("condition")
+        .and_then(Value::as_str)
+        .unwrap_or("");
+    Ok(truthy(&render(cond, &ectx)))
 }
 
 impl Node for FilterNode {
@@ -127,101 +431,20 @@ impl Node for FilterNode {
         "n8n-nodes-base.filter"
     }
 
-    /// Hanya item yang `condition`-nya truthy yang diteruskan.
+    /// n8n Filter: teruskan item yang lolos `conditions`.
     fn execute(
         &self,
         node: &WorkflowNode,
         items: Vec<Value>,
         ctx: &ExecContext,
     ) -> EngineResult<BranchOutputs> {
-        let cond = node
-            .parameters
-            .get("condition")
-            .and_then(Value::as_str)
-            .unwrap_or("");
-        let out: Vec<Value> = items
-            .into_iter()
-            .filter(|it| {
-                let ectx = ExprContext {
-                    item: it,
-                    outputs: ctx.outputs,
-                };
-                truthy(&render(cond, &ectx))
-            })
-            .collect();
-        Ok(vec![out])
-    }
-}
-
-impl Node for SortNode {
-    fn node_type(&self) -> &'static str {
-        "n8n-nodes-base.sort"
-    }
-
-    /// Urutkan item menurut field (`field`), `order`: `"asc"` | `"desc"`.
-    fn execute(
-        &self,
-        node: &WorkflowNode,
-        items: Vec<Value>,
-        ctx: &ExecContext,
-    ) -> EngineResult<BranchOutputs> {
-        let field = node
-            .parameters
-            .get("field")
-            .and_then(Value::as_str)
-            .unwrap_or("");
-        let desc = node
-            .parameters
-            .get("order")
-            .and_then(Value::as_str)
-            .map(|s| s.eq_ignore_ascii_case("desc"))
-            .unwrap_or(false);
-        let template = format!("={{{{ $json.{field} }}}}");
-        let mut out = items;
-        out.sort_by(|a, b| {
-            let ka = render(
-                &template,
-                &ExprContext {
-                    item: a,
-                    outputs: ctx.outputs,
-                },
-            );
-            let kb = render(
-                &template,
-                &ExprContext {
-                    item: b,
-                    outputs: ctx.outputs,
-                },
-            );
-            let ord = compare_values(&ka, &kb);
-            if desc {
-                ord.reverse()
-            } else {
-                ord
+        let mut out = Vec::new();
+        for (i, it) in items.into_iter().enumerate() {
+            if check_item(node, &it, ctx, i)? {
+                out.push(it);
             }
-        });
+        }
         Ok(vec![out])
-    }
-}
-
-impl Node for LimitNode {
-    fn node_type(&self) -> &'static str {
-        "n8n-nodes-base.limit"
-    }
-
-    /// Teruskan maksimal `count` item pertama (default 1).
-    fn execute(
-        &self,
-        node: &WorkflowNode,
-        items: Vec<Value>,
-        _ctx: &ExecContext,
-    ) -> EngineResult<BranchOutputs> {
-        let count = node
-            .parameters
-            .get("count")
-            .and_then(Value::as_u64)
-            .unwrap_or(1) as usize;
-        Ok(vec![items.into_iter().take(count).collect()])
     }
 }
 
@@ -230,26 +453,17 @@ impl Node for IfNode {
         "n8n-nodes-base.if"
     }
 
-    /// Belah item ke 2 cabang `[true, false]` menurut `condition`.
+    /// n8n If: belah ke `[true, false]` menurut `conditions`.
     fn execute(
         &self,
         node: &WorkflowNode,
         items: Vec<Value>,
         ctx: &ExecContext,
     ) -> EngineResult<BranchOutputs> {
-        let cond = node
-            .parameters
-            .get("condition")
-            .and_then(Value::as_str)
-            .unwrap_or("");
         let mut yes = Vec::new();
         let mut no = Vec::new();
-        for it in items {
-            let ectx = ExprContext {
-                item: &it,
-                outputs: ctx.outputs,
-            };
-            if truthy(&render(cond, &ectx)) {
+        for (i, it) in items.into_iter().enumerate() {
+            if check_item(node, &it, ctx, i)? {
                 yes.push(it);
             } else {
                 no.push(it);
@@ -259,16 +473,262 @@ impl Node for IfNode {
     }
 }
 
+// ---------------------------------------------------------------------------
+// Sort — type simple/random/code (n8n Transform/Sort)
+// ---------------------------------------------------------------------------
+
+struct SortField {
+    name: String,
+    /// 1 = ascending, -1 = descending.
+    dir: i32,
+}
+
+impl Node for SortNode {
+    fn node_type(&self) -> &'static str {
+        "n8n-nodes-base.sort"
+    }
+
+    fn execute(
+        &self,
+        node: &WorkflowNode,
+        items: Vec<Value>,
+        _ctx: &ExecContext,
+    ) -> EngineResult<BranchOutputs> {
+        let sort_type = node
+            .parameters
+            .get("type")
+            .and_then(Value::as_str)
+            .unwrap_or("simple");
+        match sort_type {
+            "random" => {
+                let mut out = items;
+                shuffle(&mut out);
+                return Ok(vec![out]);
+            }
+            "code" => {
+                return Err(EngineError::new(
+                    "sort: type 'code' butuh JavaScript (n8n) — gunakan node Code (rhai) untuk comparator kustom",
+                ))
+            }
+            "simple" => {}
+            other => {
+                return Err(EngineError::new(format!(
+                    "sort: type tak dikenal '{other}'"
+                )))
+            }
+        }
+        let dot = !node
+            .parameters
+            .get("options")
+            .and_then(|o| o.get("disableDotNotation"))
+            .and_then(Value::as_bool)
+            .unwrap_or(false);
+        let fields = sort_fields(node)?;
+        for f in &fields {
+            let found = items.iter().any(|it| sort_get(it, &f.name, dot).is_some());
+            if !found {
+                return Err(EngineError::new(format!(
+                    "sort: Couldn't find the field '{}' in the input data",
+                    f.name
+                )));
+            }
+        }
+        let mut out = items;
+        out.sort_by(|a, b| {
+            for f in &fields {
+                let ord = cmp_field(sort_get(a, &f.name, dot), sort_get(b, &f.name, dot));
+                if ord != std::cmp::Ordering::Equal {
+                    return if f.dir == 1 { ord } else { ord.reverse() };
+                }
+            }
+            std::cmp::Ordering::Equal
+        });
+        Ok(vec![out])
+    }
+}
+
+/// `sortFieldsUi.sortField[]` n8n, fallback `field`+`order` lawas.
+fn sort_fields(node: &WorkflowNode) -> EngineResult<Vec<SortField>> {
+    if let Some(list) = node
+        .parameters
+        .get("sortFieldsUi")
+        .and_then(|v| v.get("sortField"))
+        .and_then(Value::as_array)
+    {
+        let mut fields = Vec::new();
+        for f in list.iter().filter_map(Value::as_object) {
+            let name = f
+                .get("fieldName")
+                .and_then(Value::as_str)
+                .unwrap_or("")
+                .to_string();
+            let dir = match f.get("order").and_then(Value::as_str).unwrap_or("ascending") {
+                "ascending" | "asc" => 1,
+                "descending" | "desc" => -1,
+                other => {
+                    return Err(EngineError::new(format!(
+                        "sort: order tak dikenal '{other}'"
+                    )))
+                }
+            };
+            fields.push(SortField { name, dir });
+        }
+        if fields.is_empty() {
+            return Err(EngineError::new(
+                "sort: No sorting specified. Please add a field to sort by",
+            ));
+        }
+        return Ok(fields);
+    }
+    if let Some(field) = node.parameters.get("field").and_then(Value::as_str) {
+        let dir = match node
+            .parameters
+            .get("order")
+            .and_then(Value::as_str)
+            .unwrap_or("asc")
+        {
+            "asc" | "ascending" => 1,
+            "desc" | "descending" => -1,
+            other => {
+                return Err(EngineError::new(format!(
+                    "sort: order tak dikenal '{other}'"
+                )))
+            }
+        };
+        return Ok(vec![SortField {
+            name: field.to_string(),
+            dir,
+        }]);
+    }
+    Err(EngineError::new(
+        "sort: No sorting specified. Please add a field to sort by",
+    ))
+}
+
+fn sort_get<'a>(item: &'a Value, field: &str, dot: bool) -> Option<&'a Value> {
+    if dot {
+        get_path(item, field)
+    } else {
+        item.get(field)
+    }
+}
+
+/// String case-insensitive (n8n), angka numerik, sisanya peringkat tipe.
+fn cmp_field(a: Option<&Value>, b: Option<&Value>) -> std::cmp::Ordering {
+    use std::cmp::Ordering;
+    let a = a.unwrap_or(&Value::Null);
+    let b = b.unwrap_or(&Value::Null);
+    match (a, b) {
+        (Value::String(x), Value::String(y)) => {
+            x.to_lowercase().cmp(&y.to_lowercase())
+        }
+        (Value::Number(x), Value::Number(y)) => {
+            let xf = x.as_f64().unwrap_or(f64::NAN);
+            let yf = y.as_f64().unwrap_or(f64::NAN);
+            xf.partial_cmp(&yf).unwrap_or(Ordering::Equal)
+        }
+        (Value::Bool(x), Value::Bool(y)) => x.cmp(y),
+        _ => {
+            if a == b {
+                return Ordering::Equal;
+            }
+            rank(a).cmp(&rank(b))
+        }
+    }
+}
+
+fn rank(v: &Value) -> u8 {
+    match v {
+        Value::Null => 0,
+        Value::Bool(_) => 1,
+        Value::Number(_) => 2,
+        Value::String(_) => 3,
+        Value::Array(_) => 4,
+        Value::Object(_) => 5,
+    }
+}
+
+/// Fisher–Yates dengan xorshift64 (tanpa crate rand).
+fn shuffle<T>(v: &mut [T]) {
+    use std::time::{SystemTime, UNIX_EPOCH};
+    let mut s = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|d| d.as_nanos() as u64)
+        .unwrap_or(0x9e37_79b9_7f4a_7c15)
+        .wrapping_add(v.len() as u64)
+        .wrapping_mul(0xbf58_476d_1ce4_e5b9);
+    if s == 0 {
+        s = 0xdead_beef_cafe_f00d;
+    }
+    for i in (1..v.len()).rev() {
+        s ^= s << 13;
+        s ^= s >> 7;
+        s ^= s << 17;
+        let j = (s % (i as u64 + 1)) as usize;
+        v.swap(i, j);
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Limit — maxItems + keep (n8n Transform/Limit)
+// ---------------------------------------------------------------------------
+
+impl Node for LimitNode {
+    fn node_type(&self) -> &'static str {
+        "n8n-nodes-base.limit"
+    }
+
+    fn execute(
+        &self,
+        node: &WorkflowNode,
+        items: Vec<Value>,
+        _ctx: &ExecContext,
+    ) -> EngineResult<BranchOutputs> {
+        let max = node
+            .parameters
+            .get("maxItems")
+            .and_then(Value::as_i64)
+            .or_else(|| node.parameters.get("count").and_then(Value::as_i64))
+            .unwrap_or(1);
+        let keep = node
+            .parameters
+            .get("keep")
+            .and_then(Value::as_str)
+            .unwrap_or("firstItems");
+        if keep != "firstItems" && keep != "lastItems" {
+            return Err(EngineError::new(format!(
+                "limit: keep tak dikenal '{keep}'"
+            )));
+        }
+        let len = items.len() as i64;
+        if max >= len {
+            return Ok(vec![items]);
+        }
+        if max <= 0 {
+            return Ok(vec![Vec::new()]);
+        }
+        let n = max as usize;
+        let out = if keep == "firstItems" {
+            items.into_iter().take(n).collect()
+        } else {
+            items.into_iter().skip(items.len() - n).collect()
+        };
+        Ok(vec![out])
+    }
+}
+
+// ---------------------------------------------------------------------------
+// HTTP — fan-out per item + options n8n (timeout, responseFormat)
+// ---------------------------------------------------------------------------
+
 impl Node for HttpNode {
     fn node_type(&self) -> &'static str {
         "n8n-nodes-base.httpRequest"
     }
 
-    /// Fan-out: SATU request per item input (tiap item = konteks ekspresi).
-    /// 0 item → 0 request. Request pertama yang gagal menggagalkan node.
-    /// Parameter: `url` (wajib, template), `method` (default GET),
-    /// `headers` (object, nilai di-render), `body` (JSON, di-render).
-    /// Tiap output: `{status, headers, body, url}`.
+    /// Fan-out: SATU request per item input. 0 item → 0 request.
+    /// Beda disengaja vs n8n: status ≥ 400 TIDAK error — selalu output
+    /// `{status, headers, body, url}` (engine belum punya error-output).
     fn execute(
         &self,
         node: &WorkflowNode,
@@ -303,6 +763,22 @@ fn do_request(node: &WorkflowNode, ectx: &ExprContext) -> EngineResult<Value> {
         .and_then(Value::as_str)
         .unwrap_or("GET")
         .to_uppercase();
+    let options = node.parameters.get("options");
+    let timeout_ms = options
+        .and_then(|o| o.get("timeout"))
+        .and_then(Value::as_u64)
+        .unwrap_or(300_000);
+    let format = options
+        .and_then(|o| o.get("response"))
+        .and_then(|r| r.get("response"))
+        .and_then(|r| r.get("responseFormat"))
+        .and_then(Value::as_str)
+        .or_else(|| {
+            options
+                .and_then(|o| o.get("responseFormat"))
+                .and_then(Value::as_str)
+        })
+        .unwrap_or("autodetect");
     let mut headers = reqwest::header::HeaderMap::new();
     if let Some(Value::Object(h)) = node.parameters.get("headers") {
         for (k, v) in h {
@@ -317,10 +793,9 @@ fn do_request(node: &WorkflowNode, ectx: &ExprContext) -> EngineResult<Value> {
                     )))
                 }
             };
-            let name = reqwest::header::HeaderName::from_bytes(k.as_bytes())
-                .map_err(|_| {
-                    EngineError::new(format!("httpRequest: nama header tak valid '{k}'"))
-                })?;
+            let name = reqwest::header::HeaderName::from_bytes(k.as_bytes()).map_err(|_| {
+                EngineError::new(format!("httpRequest: nama header tak valid '{k}'"))
+            })?;
             let value = reqwest::header::HeaderValue::from_str(&s).map_err(|_| {
                 EngineError::new(format!("httpRequest: nilai header '{k}' tak valid"))
             })?;
@@ -328,7 +803,7 @@ fn do_request(node: &WorkflowNode, ectx: &ExprContext) -> EngineResult<Value> {
         }
     }
     let client = reqwest::blocking::Client::builder()
-        .timeout(std::time::Duration::from_secs(30))
+        .timeout(std::time::Duration::from_millis(timeout_ms))
         .build()
         .map_err(|e| EngineError::new(format!("httpRequest: client: {e}")))?;
     let http_method: reqwest::Method = method
@@ -355,7 +830,23 @@ fn do_request(node: &WorkflowNode, ectx: &ExprContext) -> EngineResult<Value> {
     let text = resp
         .text()
         .map_err(|e| EngineError::new(format!("httpRequest: baca body: {e}")))?;
-    let body_v: Value = serde_json::from_str(&text).unwrap_or(Value::String(text));
+    let body_v = match format {
+        "text" => Value::String(text),
+        "json" => serde_json::from_str(&text).map_err(|e| {
+            EngineError::new(format!("httpRequest: response bukan JSON valid: {e}"))
+        })?,
+        "file" => {
+            return Err(EngineError::new(
+                "httpRequest: responseFormat 'file' belum didukung (tanpa penyimpanan binary)",
+            ))
+        }
+        "autodetect" => serde_json::from_str(&text).unwrap_or(Value::String(text)),
+        other => {
+            return Err(EngineError::new(format!(
+                "httpRequest: responseFormat tak dikenal '{other}'"
+            )))
+        }
+    };
     let mut out = Map::new();
     out.insert("status".to_string(), json!(status));
     out.insert("headers".to_string(), Value::Object(rh));
@@ -364,19 +855,42 @@ fn do_request(node: &WorkflowNode, ectx: &ExprContext) -> EngineResult<Value> {
     Ok(Value::Object(out))
 }
 
+// ---------------------------------------------------------------------------
+// Code / Function — rhai dengan mode n8n
+// ---------------------------------------------------------------------------
+
+fn code_mode(node: &WorkflowNode) -> &str {
+    node.parameters
+        .get("mode")
+        .and_then(Value::as_str)
+        .unwrap_or("runOnceForAllItems")
+}
+
+fn run_code_mode(
+    node: &WorkflowNode,
+    items: Vec<Value>,
+) -> EngineResult<Vec<Value>> {
+    match code_mode(node) {
+        "runOnceForAllItems" => run_code(node, items),
+        "runOnceForEachItem" => run_code_each(node, items),
+        other => Err(EngineError::new(format!(
+            "code: mode tak dikenal '{other}'"
+        ))),
+    }
+}
+
 impl Node for CodeNode {
     fn node_type(&self) -> &'static str {
         "n8n-nodes-base.code"
     }
 
-    /// Script rhai atas `items` (lihat `run_code`).
     fn execute(
         &self,
         node: &WorkflowNode,
         items: Vec<Value>,
         _ctx: &ExecContext,
     ) -> EngineResult<BranchOutputs> {
-        Ok(vec![run_code(node, items)?])
+        Ok(vec![run_code_mode(node, items)?])
     }
 }
 
@@ -392,13 +906,11 @@ impl Node for FunctionNode {
         items: Vec<Value>,
         _ctx: &ExecContext,
     ) -> EngineResult<BranchOutputs> {
-        Ok(vec![run_code(node, items)?])
+        Ok(vec![run_code_mode(node, items)?])
     }
 }
 
-/// Script rhai: variabel `items` (array) tersedia; setelah eval, `items`
-/// dibaca kembali sebagai output. Non-object dibungkus `{"value": x}.
-/// TANPA sandbox: hanya jalankan script tepercaya milik sendiri.
+/// runOnceForAllItems: `items` masuk array, wajib array keluar.
 fn run_code(node: &WorkflowNode, items: Vec<Value>) -> EngineResult<Vec<Value>> {
     let code = node
         .parameters
@@ -406,8 +918,8 @@ fn run_code(node: &WorkflowNode, items: Vec<Value>) -> EngineResult<Vec<Value>> 
         .and_then(Value::as_str)
         .ok_or_else(|| EngineError::new("code: parameter 'code' wajib string"))?;
     let eng = rhai::Engine::new();
-    let dyn_items = rhai::serde::to_dynamic(&items)
-        .map_err(|e| EngineError::new(format!("code: {e}")))?;
+    let dyn_items =
+        rhai::serde::to_dynamic(&items).map_err(|e| EngineError::new(format!("code: {e}")))?;
     let mut scope = rhai::Scope::new();
     scope.push("items", dyn_items);
     eng.eval_with_scope::<rhai::Dynamic>(&mut scope, code)
@@ -420,6 +932,40 @@ fn run_code(node: &WorkflowNode, items: Vec<Value>) -> EngineResult<Vec<Value>> 
     Ok(arr.into_iter().map(wrap_item).collect())
 }
 
+/// runOnceForEachItem: script per item dengan `item` + `index`.
+/// `item` akhir array → di-spread; kalau tidak → satu item.
+fn run_code_each(node: &WorkflowNode, items: Vec<Value>) -> EngineResult<Vec<Value>> {
+    let code = node
+        .parameters
+        .get("code")
+        .and_then(Value::as_str)
+        .ok_or_else(|| EngineError::new("code: parameter 'code' wajib string"))?;
+    let eng = rhai::Engine::new();
+    let mut out = Vec::new();
+    for (i, it) in items.into_iter().enumerate() {
+        let dyn_item =
+            rhai::serde::to_dynamic(&it).map_err(|e| EngineError::new(format!("code: {e}")))?;
+        let mut scope = rhai::Scope::new();
+        scope.push("item", dyn_item);
+        scope.push("index", i as i64);
+        eng.eval_with_scope::<rhai::Dynamic>(&mut scope, code)
+            .map_err(|e| EngineError::new(format!("code: {e}")))?;
+        let back: rhai::Dynamic = scope
+            .get_value("item")
+            .ok_or_else(|| EngineError::new("code: variabel 'item' hilang"))?;
+        if back.is_array() {
+            let arr: Vec<Value> = rhai::serde::from_dynamic(&back)
+                .map_err(|e| EngineError::new(format!("code: {e}")))?;
+            out.extend(arr.into_iter().map(wrap_item));
+        } else {
+            let v: Value = rhai::serde::from_dynamic(&back)
+                .map_err(|e| EngineError::new(format!("code: {e}")))?;
+            out.push(wrap_item(v));
+        }
+    }
+    Ok(out)
+}
+
 fn wrap_item(v: Value) -> Value {
     match v {
         Value::Object(_) => v,
@@ -427,32 +973,70 @@ fn wrap_item(v: Value) -> Value {
     }
 }
 
+// ---------------------------------------------------------------------------
+// ScheduleTrigger — field output persis n8n (UTC)
+// ---------------------------------------------------------------------------
+
 impl Node for ScheduleNode {
     fn node_type(&self) -> &'static str {
         "n8n-nodes-base.scheduleTrigger"
     }
 
-    /// Subset: emit SATU item `{scheduledAtEpoch, rule}`. Penjadwalan
-    /// sesungguhnya = cron/systemd eksternal yang memanggil CLI
-    /// (lihat README) — node ini penanda + metadata.
+    /// Emit field yang sama seperti n8n (zona UTC — n8n memakai timezone
+    /// workflow; ekstensi: echo `rule` apa adanya untuk metadata cron).
+    /// Penjadwalan sesungguhnya = cron/systemd eksternal (lihat README).
     fn execute(
         &self,
         node: &WorkflowNode,
         _items: Vec<Value>,
         _ctx: &ExecContext,
     ) -> EngineResult<BranchOutputs> {
-        let epoch = std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .map(|d| d.as_secs())
-            .unwrap_or(0);
         let rule = node
             .parameters
             .get("rule")
             .cloned()
             .unwrap_or(Value::Null);
-        Ok(vec![vec![json!({"scheduledAtEpoch": epoch, "rule": rule})]])
+        Ok(vec![vec![schedule_item(&rule)]])
     }
 }
+
+fn schedule_item(rule: &Value) -> Value {
+    use chrono::{Datelike, Timelike};
+    let now = chrono::Utc::now();
+    let day = now.day();
+    let suffix = match day {
+        1 | 21 | 31 => "st",
+        2 | 22 => "nd",
+        3 | 23 => "rd",
+        _ => "th",
+    };
+    let h24 = now.hour();
+    let h12 = match h24 % 12 {
+        0 => 12,
+        h => h,
+    };
+    let ampm = if h24 < 12 { "am" } else { "pm" };
+    let time = format!("{}:{:02}:{:02} {}", h12, now.minute(), now.second(), ampm);
+    let month = now.format("%B").to_string();
+    json!({
+        "timestamp": now.to_rfc3339_opts(chrono::SecondsFormat::Millis, false),
+        "Readable date": format!("{} {}{} {}, {}", month, day, suffix, now.year(), time),
+        "Readable time": time,
+        "Day of week": now.format("%A").to_string(),
+        "Year": now.format("%Y").to_string(),
+        "Month": month,
+        "Day of month": now.format("%d").to_string(),
+        "Hour": now.format("%H").to_string(),
+        "Minute": now.format("%M").to_string(),
+        "Second": now.format("%S").to_string(),
+        "Timezone": "UTC (UTC+00:00)",
+        "rule": rule,
+    })
+}
+
+// ---------------------------------------------------------------------------
+// Webhook — emit payload server (response diatur server)
+// ---------------------------------------------------------------------------
 
 impl Node for WebhookNode {
     fn node_type(&self) -> &'static str {
@@ -475,20 +1059,17 @@ impl Node for WebhookNode {
     }
 }
 
-fn merge_value(item: Value, values: &Map<String, Value>) -> Value {
-    match item {
-        Value::Object(mut o) => {
-            o.extend(values.clone());
-            Value::Object(o)
-        }
-        other => {
-            let mut o = Map::new();
-            o.insert("value".to_string(), other);
-            o.extend(values.clone());
-            Value::Object(o)
-        }
-    }
+/// Cari node webhook pertama (dipakai server untuk responseMode dkk).
+pub fn find_webhook(workflow: &n8n_core::Workflow) -> Option<&WorkflowNode> {
+    workflow
+        .nodes
+        .iter()
+        .find(|n| n.node_type == "n8n-nodes-base.webhook")
 }
+
+// ---------------------------------------------------------------------------
+// Util
+// ---------------------------------------------------------------------------
 
 fn truthy(v: &Value) -> bool {
     match v {
@@ -501,30 +1082,6 @@ fn truthy(v: &Value) -> bool {
         }
         Value::Array(a) => !a.is_empty(),
         Value::Object(o) => !o.is_empty(),
-    }
-}
-
-fn compare_values(a: &Value, b: &Value) -> std::cmp::Ordering {
-    use std::cmp::Ordering;
-    let rank = |v: &Value| -> u8 {
-        match v {
-            Value::Null => 0,
-            Value::Bool(_) => 1,
-            Value::Number(_) => 2,
-            Value::String(_) => 3,
-            Value::Array(_) => 4,
-            Value::Object(_) => 5,
-        }
-    };
-    match (a, b) {
-        (Value::Number(x), Value::Number(y)) => {
-            let xf = x.as_f64().unwrap_or(f64::NAN);
-            let yf = y.as_f64().unwrap_or(f64::NAN);
-            xf.partial_cmp(&yf).unwrap_or(Ordering::Equal)
-        }
-        (Value::String(x), Value::String(y)) => x.cmp(y),
-        (Value::Bool(x), Value::Bool(y)) => x.cmp(y),
-        _ => rank(a).cmp(&rank(b)),
     }
 }
 
@@ -557,20 +1114,20 @@ mod tests {
         }
     }
 
-    fn set_node_with_values(values: serde_json::Value) -> WorkflowNode {
+    fn mk(id: &str, name: &str, t: &str, parameters: HashMap<String, Value>) -> WorkflowNode {
         WorkflowNode {
-            id: "s".to_string(),
-            name: "Set".to_string(),
-            node_type: "n8n-nodes-base.set".to_string(),
-            type_version: 3.4,
+            id: id.to_string(),
+            name: name.to_string(),
+            node_type: t.to_string(),
+            type_version: 1.0,
             position: [0.0, 0.0],
-            parameters: HashMap::from([("values".to_string(), values)]),
+            parameters,
             disabled: false,
             extra: HashMap::new(),
         }
     }
 
-    fn canned_server(n: usize) -> (u16, std::thread::JoinHandle<()>) {
+    fn canned_server_with(n: usize, body: &'static str) -> (u16, std::thread::JoinHandle<()>) {
         use std::io::{Read, Write};
         use std::net::TcpListener;
 
@@ -581,7 +1138,6 @@ mod tests {
                 let (mut stream, _) = listener.accept().expect("accept");
                 let mut buf = [0u8; 4096];
                 let _ = stream.read(&mut buf);
-                let body = r#"{"ok":true}"#;
                 let resp = format!(
                     "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{}",
                     body.len(),
@@ -593,20 +1149,20 @@ mod tests {
         (port, handle)
     }
 
+    fn canned_server(n: usize) -> (u16, std::thread::JoinHandle<()>) {
+        canned_server_with(n, r#"{"ok":true}"#)
+    }
+
     fn http_node(url: &str) -> WorkflowNode {
-        WorkflowNode {
-            id: "h".to_string(),
-            name: "HTTP".to_string(),
-            node_type: "n8n-nodes-base.httpRequest".to_string(),
-            type_version: 1.0,
-            position: [0.0, 0.0],
-            parameters: HashMap::from([
-                ("url".to_string(), serde_json::json!(url)),
-                ("method".to_string(), serde_json::json!("GET")),
+        mk(
+            "h",
+            "HTTP",
+            "n8n-nodes-base.httpRequest",
+            HashMap::from([
+                ("url".to_string(), json!(url)),
+                ("method".to_string(), json!("GET")),
             ]),
-            disabled: false,
-            extra: HashMap::new(),
-        }
+        )
     }
 
     #[test]
@@ -626,86 +1182,211 @@ mod tests {
         );
         assert_eq!(
             report.outputs["NoOp"][0],
-            vec![serde_json::json!({ "greeting": "halo", "n": 1 })]
+            vec![json!({ "greeting": "halo", "n": 1 })]
         );
         assert_eq!(report.durations_ms.len(), 3);
     }
 
     #[test]
     fn set_supports_n8n_assignments_shape() {
-        let node = WorkflowNode {
-            id: "s".to_string(),
-            name: "Set".to_string(),
-            node_type: "n8n-nodes-base.set".to_string(),
-            type_version: 3.4,
-            position: [0.0, 0.0],
-            parameters: HashMap::from([(
+        let node = mk(
+            "s",
+            "Set",
+            "n8n-nodes-base.set",
+            HashMap::from([(
                 "assignments".to_string(),
-                serde_json::json!({ "assignments": [{ "name": "a", "value": 1 }] }),
+                json!({ "assignments": [{ "name": "a", "value": 1 }] }),
             )]),
-            disabled: false,
-            extra: HashMap::new(),
-        };
+        );
         let outputs = HashMap::new();
         let out = SetNode
-            .execute(&node, vec![serde_json::json!({})], &empty_ctx(&outputs))
+            .execute(&node, vec![json!({})], &empty_ctx(&outputs))
             .expect("exec");
-        assert_eq!(out, vec![vec![serde_json::json!({ "a": 1 })]]);
+        assert_eq!(out, vec![vec![json!({ "a": 1 })]]);
     }
 
     #[test]
     fn set_renders_expressions_per_item() {
-        let node =
-            set_node_with_values(serde_json::json!({"who": "={{ $json.name }}", "n": 5}));
+        let node = mk(
+            "s",
+            "Set",
+            "n8n-nodes-base.set",
+            HashMap::from([(
+                "values".to_string(),
+                json!({"who": "={{ $json.name }}", "n": 5}),
+            )]),
+        );
         let outputs = HashMap::new();
         let out = SetNode
-            .execute(
-                &node,
-                vec![serde_json::json!({"name": "udi"})],
-                &empty_ctx(&outputs),
-            )
+            .execute(&node, vec![json!({"name": "udi"})], &empty_ctx(&outputs))
             .expect("exec");
         assert_eq!(
             out,
-            vec![vec![serde_json::json!({"name": "udi", "who": "udi", "n": 5})]]
+            vec![vec![json!({"name": "udi", "who": "udi", "n": 5})]]
         );
     }
 
     #[test]
     fn set_reads_other_node_output() {
-        let node =
-            set_node_with_values(serde_json::json!({"x": "={{ $node[\"Up\"].json.x }}"}));
+        let node = mk(
+            "s",
+            "Set",
+            "n8n-nodes-base.set",
+            HashMap::from([(
+                "values".to_string(),
+                json!({"x": "={{ $node[\"Up\"].json.x }}"}),
+            )]),
+        );
         let outputs = HashMap::from([("Up".to_string(), vec![vec![json!({"x": 7})]])]);
         let out = SetNode
-            .execute(&node, vec![serde_json::json!({})], &empty_ctx(&outputs))
+            .execute(&node, vec![json!({})], &empty_ctx(&outputs))
             .expect("exec");
-        assert_eq!(out, vec![vec![serde_json::json!({"x": 7})]]);
+        assert_eq!(out, vec![vec![json!({"x": 7})]]);
+    }
+
+    #[test]
+    fn set_include_none_and_selected() {
+        let node = mk(
+            "s",
+            "Set",
+            "n8n-nodes-base.set",
+            HashMap::from([
+                ("include".to_string(), json!("none")),
+                (
+                    "assignments".to_string(),
+                    json!({ "assignments": [{ "name": "a", "value": 1 }] }),
+                ),
+            ]),
+        );
+        let outputs = HashMap::new();
+        let out = SetNode
+            .execute(
+                &node,
+                vec![json!({"drop": true})],
+                &empty_ctx(&outputs),
+            )
+            .expect("exec");
+        assert_eq!(out, vec![vec![json!({"a": 1})]]);
+
+        let node = mk(
+            "s",
+            "Set",
+            "n8n-nodes-base.set",
+            HashMap::from([
+                ("include".to_string(), json!("selected")),
+                ("includeFields".to_string(), json!("keep, missing")),
+                (
+                    "assignments".to_string(),
+                    json!({ "assignments": [{ "name": "a", "value": 1 }] }),
+                ),
+            ]),
+        );
+        let out = SetNode
+            .execute(
+                &node,
+                vec![json!({"keep": 9, "drop": 8})],
+                &empty_ctx(&outputs),
+            )
+            .expect("exec");
+        assert_eq!(out, vec![vec![json!({"keep": 9, "a": 1})]]);
+    }
+
+    #[test]
+    fn set_dot_notation_nested_and_except() {
+        let node = mk(
+            "s",
+            "Set",
+            "n8n-nodes-base.set",
+            HashMap::from([
+                ("include".to_string(), json!("except")),
+                ("excludeFields".to_string(), json!("gone")),
+                (
+                    "assignments".to_string(),
+                    json!({ "assignments": [{ "name": "a.b", "value": 5 }] }),
+                ),
+            ]),
+        );
+        let outputs = HashMap::new();
+        let out = SetNode
+            .execute(
+                &node,
+                vec![json!({"keep": 1, "gone": 2})],
+                &empty_ctx(&outputs),
+            )
+            .expect("exec");
+        assert_eq!(
+            out,
+            vec![vec![json!({"keep": 1, "a": {"b": 5}})]]
+        );
+    }
+
+    #[test]
+    fn set_fields_values_legacy_shape() {
+        let node = mk(
+            "s",
+            "Set",
+            "n8n-nodes-base.set",
+            HashMap::from([(
+                "fields".to_string(),
+                json!({ "values": [
+                    {"name": "s", "type": "stringValue", "stringValue": "x"},
+                    {"name": "n", "type": "numberValue", "numberValue": 4},
+                    {"name": "b", "type": "booleanValue", "booleanValue": true},
+                    {"name": "o", "type": "objectValue", "objectValue": {"k": 1}}
+                ] }),
+            )]),
+        );
+        let outputs = HashMap::new();
+        let out = SetNode
+            .execute(&node, vec![json!({})], &empty_ctx(&outputs))
+            .expect("exec");
+        assert_eq!(
+            out,
+            vec![vec![json!({"s": "x", "n": 4, "b": true, "o": {"k": 1}})]]
+        );
+    }
+
+    #[test]
+    fn set_raw_mode_parses_json_output() {
+        let node = mk(
+            "s",
+            "Set",
+            "n8n-nodes-base.set",
+            HashMap::from([
+                ("mode".to_string(), json!("raw")),
+                (
+                    "jsonOutput".to_string(),
+                    json!("={\"who\": \"={{ $json.name }}\"}"),
+                ),
+            ]),
+        );
+        let outputs = HashMap::new();
+        let out = SetNode
+            .execute(&node, vec![json!({"name": "udi"})], &empty_ctx(&outputs))
+            .expect("exec");
+        assert_eq!(out, vec![vec![json!({"who": "udi"})]]);
     }
 
     #[test]
     fn filter_keeps_only_truthy_items() {
-        let node = WorkflowNode {
-            id: "f".to_string(),
-            name: "Filter".to_string(),
-            node_type: "n8n-nodes-base.filter".to_string(),
-            type_version: 1.0,
-            position: [0.0, 0.0],
-            parameters: HashMap::from([(
+        let node = mk(
+            "f",
+            "Filter",
+            "n8n-nodes-base.filter",
+            HashMap::from([(
                 "condition".to_string(),
-                serde_json::json!("={{ $json.keep }}"),
+                json!("={{ $json.keep }}"),
             )]),
-            disabled: false,
-            extra: HashMap::new(),
-        };
+        );
         let outputs = HashMap::new();
         let out = FilterNode
             .execute(
                 &node,
                 vec![
-                    serde_json::json!({"keep": true}),
-                    serde_json::json!({"keep": false}),
-                    serde_json::json!({"keep": 0}),
-                    serde_json::json!({"keep": "x"}),
+                    json!({"keep": true}),
+                    json!({"keep": false}),
+                    json!({"keep": 0}),
+                    json!({"keep": "x"}),
                 ],
                 &empty_ctx(&outputs),
             )
@@ -713,35 +1394,93 @@ mod tests {
         assert_eq!(
             out,
             vec![vec![
-                serde_json::json!({"keep": true}),
-                serde_json::json!({"keep": "x"})
+                json!({"keep": true}),
+                json!({"keep": "x"})
             ]]
         );
     }
 
     #[test]
-    fn sort_orders_by_field() {
-        let node = WorkflowNode {
-            id: "s".to_string(),
-            name: "Sort".to_string(),
-            node_type: "n8n-nodes-base.sort".to_string(),
-            type_version: 1.0,
-            position: [0.0, 0.0],
-            parameters: HashMap::from([
-                ("field".to_string(), serde_json::json!("age")),
-                ("order".to_string(), serde_json::json!("asc")),
+    fn filter_conditions_object() {
+        let node = mk(
+            "f",
+            "Filter",
+            "n8n-nodes-base.filter",
+            HashMap::from([(
+                "conditions".to_string(),
+                json!({
+                    "combinator": "and",
+                    "conditions": [{
+                        "leftValue": "={{ $json.age }}",
+                        "rightValue": 18,
+                        "operator": {"type": "number", "operation": "gte"}
+                    }],
+                    "options": {}
+                }),
+            )]),
+        );
+        let outputs = HashMap::new();
+        let out = FilterNode
+            .execute(
+                &node,
+                vec![json!({"age": 20}), json!({"age": 10})],
+                &empty_ctx(&outputs),
+            )
+            .expect("exec");
+        assert_eq!(out, vec![vec![json!({"age": 20})]]);
+    }
+
+    #[test]
+    fn sort_orders_by_legacy_field() {
+        let node = mk(
+            "s",
+            "Sort",
+            "n8n-nodes-base.sort",
+            HashMap::from([
+                ("field".to_string(), json!("age")),
+                ("order".to_string(), json!("asc")),
             ]),
-            disabled: false,
-            extra: HashMap::new(),
-        };
+        );
+        let outputs = HashMap::new();
+        let out = SortNode
+            .execute(
+                &node,
+                vec![json!({"age": 3}), json!({"age": 1}), json!({"age": 2})],
+                &empty_ctx(&outputs),
+            )
+            .expect("exec");
+        assert_eq!(
+            out,
+            vec![vec![
+                json!({"age": 1}),
+                json!({"age": 2}),
+                json!({"age": 3})
+            ]]
+        );
+    }
+
+    #[test]
+    fn sort_fields_ui_multi_and_case_insensitive() {
+        let node = mk(
+            "s",
+            "Sort",
+            "n8n-nodes-base.sort",
+            HashMap::from([(
+                "sortFieldsUi".to_string(),
+                json!({ "sortField": [
+                    {"fieldName": "g", "order": "ascending"},
+                    {"fieldName": "name", "order": "descending"}
+                ] }),
+            )]),
+        );
         let outputs = HashMap::new();
         let out = SortNode
             .execute(
                 &node,
                 vec![
-                    serde_json::json!({"age": 3}),
-                    serde_json::json!({"age": 1}),
-                    serde_json::json!({"age": 2}),
+                    json!({"g": 1, "name": "budi"}),
+                    json!({"g": 1, "name": "Andi"}),
+                    json!({"g": 0, "name": "Zed"}),
                 ],
                 &empty_ctx(&outputs),
             )
@@ -749,65 +1488,139 @@ mod tests {
         assert_eq!(
             out,
             vec![vec![
-                serde_json::json!({"age": 1}),
-                serde_json::json!({"age": 2}),
-                serde_json::json!({"age": 3})
+                json!({"g": 0, "name": "Zed"}),
+                json!({"g": 1, "name": "budi"}),
+                json!({"g": 1, "name": "Andi"})
             ]]
         );
     }
 
     #[test]
-    fn limit_takes_first_n() {
-        let node = WorkflowNode {
-            id: "l".to_string(),
-            name: "Limit".to_string(),
-            node_type: "n8n-nodes-base.limit".to_string(),
-            type_version: 1.0,
-            position: [0.0, 0.0],
-            parameters: HashMap::from([("count".to_string(), serde_json::json!(2))]),
-            disabled: false,
-            extra: HashMap::new(),
-        };
+    fn sort_missing_field_is_error() {
+        let node = mk(
+            "s",
+            "Sort",
+            "n8n-nodes-base.sort",
+            HashMap::from([(
+                "sortFieldsUi".to_string(),
+                json!({ "sortField": [{"fieldName": "nope", "order": "ascending"}] }),
+            )]),
+        );
         let outputs = HashMap::new();
+        let err = SortNode
+            .execute(&node, vec![json!({"a": 1})], &empty_ctx(&outputs))
+            .expect_err("must fail");
+        assert!(err.to_string().contains("Couldn't find the field"), "{err}");
+    }
+
+    #[test]
+    fn sort_random_keeps_same_items() {
+        let node = mk(
+            "s",
+            "Sort",
+            "n8n-nodes-base.sort",
+            HashMap::from([("type".to_string(), json!("random"))]),
+        );
+        let outputs = HashMap::new();
+        let items = vec![json!({"n": 1}), json!({"n": 2}), json!({"n": 3})];
+        let out = SortNode
+            .execute(&node, items.clone(), &empty_ctx(&outputs))
+            .expect("exec");
+        let mut got = out[0].clone();
+        let mut want = items;
+        got.sort_by_key(|v| v["n"].as_i64().unwrap_or(0));
+        want.sort_by_key(|v| v["n"].as_i64().unwrap_or(0));
+        assert_eq!(got, want);
+    }
+
+    #[test]
+    fn limit_max_items_and_keep() {
+        let outputs = HashMap::new();
+        let first = mk(
+            "l",
+            "Limit",
+            "n8n-nodes-base.limit",
+            HashMap::from([("maxItems".to_string(), json!(2))]),
+        );
         let out = LimitNode
             .execute(
+                &first,
+                vec![json!(1), json!(2), json!(3)],
+                &empty_ctx(&outputs),
+            )
+            .expect("exec");
+        assert_eq!(out, vec![vec![json!(1), json!(2)]]);
+        let last = mk(
+            "l",
+            "Limit",
+            "n8n-nodes-base.limit",
+            HashMap::from([
+                ("maxItems".to_string(), json!(2)),
+                ("keep".to_string(), json!("lastItems")),
+            ]),
+        );
+        let out = LimitNode
+            .execute(&last, vec![json!(1), json!(2), json!(3)], &empty_ctx(&outputs))
+            .expect("exec");
+        assert_eq!(out, vec![vec![json!(2), json!(3)]]);
+    }
+
+    #[test]
+    fn if_splits_by_legacy_condition() {
+        let node = mk(
+            "i",
+            "If",
+            "n8n-nodes-base.if",
+            HashMap::from([(
+                "condition".to_string(),
+                json!("={{ $json.age > 18 }}"),
+            )]),
+        );
+        let outputs = HashMap::new();
+        let out = IfNode
+            .execute(
                 &node,
-                vec![
-                    serde_json::json!(1),
-                    serde_json::json!(2),
-                    serde_json::json!(3),
-                ],
+                vec![json!({"age": 20}), json!({"age": 10})],
                 &empty_ctx(&outputs),
             )
             .expect("exec");
         assert_eq!(
             out,
-            vec![vec![serde_json::json!(1), serde_json::json!(2)]]
+            vec![
+                vec![json!({"age": 20})],
+                vec![json!({"age": 10})]
+            ]
         );
     }
 
     #[test]
-    fn if_splits_into_two_branches() {
-        let node = WorkflowNode {
-            id: "i".to_string(),
-            name: "If".to_string(),
-            node_type: "n8n-nodes-base.if".to_string(),
-            type_version: 1.0,
-            position: [0.0, 0.0],
-            parameters: HashMap::from([(
-                "condition".to_string(),
-                serde_json::json!("={{ $json.age > 18 }}"),
+    fn if_conditions_object() {
+        let node = mk(
+            "i",
+            "If",
+            "n8n-nodes-base.if",
+            HashMap::from([(
+                "conditions".to_string(),
+                json!({
+                    "combinator": "or",
+                    "conditions": [
+                        {"leftValue": "={{ $json.tag }}", "rightValue": "vip",
+                         "operator": {"type": "string", "operation": "equals"}},
+                        {"leftValue": "={{ $json.age }}", "rightValue": 65,
+                         "operator": {"type": "number", "operation": "gte"}}
+                    ],
+                    "options": {}
+                }),
             )]),
-            disabled: false,
-            extra: HashMap::new(),
-        };
+        );
         let outputs = HashMap::new();
         let out = IfNode
             .execute(
                 &node,
                 vec![
-                    serde_json::json!({"age": 20}),
-                    serde_json::json!({"age": 10}),
+                    json!({"tag": "VIP", "age": 30}),
+                    json!({"tag": "x", "age": 70}),
+                    json!({"tag": "x", "age": 30}),
                 ],
                 &empty_ctx(&outputs),
             )
@@ -815,8 +1628,8 @@ mod tests {
         assert_eq!(
             out,
             vec![
-                vec![serde_json::json!({"age": 20})],
-                vec![serde_json::json!({"age": 10})]
+                vec![json!({"tag": "VIP", "age": 30}), json!({"tag": "x", "age": 70})],
+                vec![json!({"tag": "x", "age": 30})]
             ]
         );
     }
@@ -827,7 +1640,7 @@ mod tests {
         let node = http_node(&format!("http://127.0.0.1:{port}/echo"));
         let outputs = HashMap::new();
         let out = HttpNode
-            .execute(&node, vec![serde_json::json!({})], &empty_ctx(&outputs))
+            .execute(&node, vec![json!({})], &empty_ctx(&outputs))
             .expect("exec");
         handle.join().expect("server thread");
         assert_eq!(out.len(), 1);
@@ -844,10 +1657,7 @@ mod tests {
         let out = HttpNode
             .execute(
                 &node,
-                vec![
-                    serde_json::json!({"id": 1}),
-                    serde_json::json!({"id": 2}),
-                ],
+                vec![json!({"id": 1}), json!({"id": 2})],
                 &empty_ctx(&outputs),
             )
             .expect("exec");
@@ -858,127 +1668,190 @@ mod tests {
     }
 
     #[test]
+    fn http_response_format_text_keeps_raw() {
+        let (port, handle) = canned_server(1);
+        let mut node = http_node(&format!("http://127.0.0.1:{port}/echo"));
+        node.parameters.insert(
+            "options".to_string(),
+            json!({"responseFormat": "text"}),
+        );
+        let outputs = HashMap::new();
+        let out = HttpNode
+            .execute(&node, vec![json!({})], &empty_ctx(&outputs))
+            .expect("exec");
+        handle.join().expect("server thread");
+        assert_eq!(out[0][0]["body"], json!(r#"{"ok":true}"#));
+    }
+
+    #[test]
+    fn http_response_format_json_rejects_text() {
+        let (port, handle) = canned_server_with(1, "bukan json{{{");
+        let mut node = http_node(&format!("http://127.0.0.1:{port}/echo"));
+        node.parameters.insert(
+            "options".to_string(),
+            json!({"response": {"response": {"responseFormat": "json"}}}),
+        );
+        let outputs = HashMap::new();
+        let err = HttpNode
+            .execute(&node, vec![json!({})], &empty_ctx(&outputs))
+            .expect_err("must fail");
+        handle.join().expect("server thread");
+        assert!(err.to_string().contains("bukan JSON valid"), "{err}");
+    }
+
+    #[test]
     fn code_transforms_items_with_rhai() {
-        let node = WorkflowNode {
-            id: "c".to_string(),
-            name: "Code".to_string(),
-            node_type: "n8n-nodes-base.code".to_string(),
-            type_version: 1.0,
-            position: [0.0, 0.0],
-            parameters: HashMap::from([(
+        let node = mk(
+            "c",
+            "Code",
+            "n8n-nodes-base.code",
+            HashMap::from([(
                 "code".to_string(),
-                serde_json::json!("let out = []; for it in items { out.push(it.n * 10); } items = out;"),
+                json!("let out = []; for it in items { out.push(it.n * 10); } items = out;"),
             )]),
-            disabled: false,
-            extra: HashMap::new(),
-        };
+        );
         let outputs = HashMap::new();
         let out = CodeNode
             .execute(
                 &node,
-                vec![
-                    serde_json::json!({"n": 1}),
-                    serde_json::json!({"n": 2}),
-                ],
+                vec![json!({"n": 1}), json!({"n": 2})],
                 &empty_ctx(&outputs),
             )
             .expect("exec");
         assert_eq!(
             out,
-            vec![vec![
-                serde_json::json!({"value": 10}),
-                serde_json::json!({"value": 20})
-            ]]
+            vec![vec![json!({"value": 10}), json!({"value": 20})]]
         );
     }
 
     #[test]
     fn code_rejects_non_array_items() {
-        let node = WorkflowNode {
-            id: "c".to_string(),
-            name: "Code".to_string(),
-            node_type: "n8n-nodes-base.code".to_string(),
-            type_version: 1.0,
-            position: [0.0, 0.0],
-            parameters: HashMap::from([(
-                "code".to_string(),
-                serde_json::json!("items = 42;"),
-            )]),
-            disabled: false,
-            extra: HashMap::new(),
-        };
+        let node = mk(
+            "c",
+            "Code",
+            "n8n-nodes-base.code",
+            HashMap::from([("code".to_string(), json!("items = 42;"))]),
+        );
         let outputs = HashMap::new();
         let err = CodeNode
-            .execute(&node, vec![serde_json::json!({})], &empty_ctx(&outputs))
+            .execute(&node, vec![json!({})], &empty_ctx(&outputs))
             .expect_err("must fail");
         assert!(err.to_string().contains("'items' harus array"), "{err}");
     }
 
     #[test]
-    fn schedule_emits_epoch_and_rule() {
-        let node = WorkflowNode {
-            id: "s".to_string(),
-            name: "Schedule".to_string(),
-            node_type: "n8n-nodes-base.scheduleTrigger".to_string(),
-            type_version: 1.0,
-            position: [0.0, 0.0],
-            parameters: HashMap::from([(
+    fn code_each_item_mode_with_index() {
+        let node = mk(
+            "c",
+            "Code",
+            "n8n-nodes-base.code",
+            HashMap::from([
+                ("mode".to_string(), json!("runOnceForEachItem")),
+                (
+                    "code".to_string(),
+                    json!("item.n = item.n + index; item;"),
+                ),
+            ]),
+        );
+        let outputs = HashMap::new();
+        let out = CodeNode
+            .execute(
+                &node,
+                vec![json!({"n": 10}), json!({"n": 10})],
+                &empty_ctx(&outputs),
+            )
+            .expect("exec");
+        assert_eq!(out, vec![vec![json!({"n": 10}), json!({"n": 11})]]);
+    }
+
+    #[test]
+    fn code_each_item_spreads_array() {
+        let node = mk(
+            "c",
+            "Code",
+            "n8n-nodes-base.code",
+            HashMap::from([
+                ("mode".to_string(), json!("runOnceForEachItem")),
+                ("code".to_string(), json!("item = [1, 2];")),
+            ]),
+        );
+        let outputs = HashMap::new();
+        let out = CodeNode
+            .execute(&node, vec![json!({})], &empty_ctx(&outputs))
+            .expect("exec");
+        assert_eq!(
+            out,
+            vec![vec![json!({"value": 1}), json!({"value": 2})]]
+        );
+    }
+
+    #[test]
+    fn schedule_emits_n8n_fields() {
+        let node = mk(
+            "s",
+            "Schedule",
+            "n8n-nodes-base.scheduleTrigger",
+            HashMap::from([(
                 "rule".to_string(),
-                serde_json::json!({"interval": 300}),
+                json!({"interval": [{"field": "days"}]}),
             )]),
-            disabled: false,
-            extra: HashMap::new(),
-        };
+        );
         let outputs = HashMap::new();
         let out = ScheduleNode
             .execute(&node, vec![], &empty_ctx(&outputs))
             .expect("exec");
         assert_eq!(out.len(), 1);
         assert_eq!(out[0].len(), 1);
-        assert_eq!(out[0][0]["rule"], json!({"interval": 300}));
-        assert!(out[0][0]["scheduledAtEpoch"].is_number());
+        let item = &out[0][0];
+        for key in [
+            "timestamp",
+            "Readable date",
+            "Readable time",
+            "Day of week",
+            "Year",
+            "Month",
+            "Day of month",
+            "Hour",
+            "Minute",
+            "Second",
+            "Timezone",
+        ] {
+            assert!(item.get(key).and_then(Value::as_str).is_some(), "{key}");
+        }
+        assert_eq!(item["rule"], json!({"interval": [{"field": "days"}]}));
+        assert_eq!(item["Timezone"], json!("UTC (UTC+00:00)"));
     }
 
     #[test]
     fn webhook_emits_payload_when_present() {
-        let node = WorkflowNode {
-            id: "w".to_string(),
-            name: "Webhook".to_string(),
-            node_type: "n8n-nodes-base.webhook".to_string(),
-            type_version: 1.0,
-            position: [0.0, 0.0],
-            parameters: HashMap::from([("path".to_string(), serde_json::json!("demo"))]),
-            disabled: false,
-            extra: HashMap::new(),
-        };
+        let node = mk(
+            "w",
+            "Webhook",
+            "n8n-nodes-base.webhook",
+            HashMap::from([("path".to_string(), json!("demo"))]),
+        );
         let outputs = HashMap::new();
-        let payload = serde_json::json!({"a": 1});
+        let payload = json!({"a": 1});
         let cx = ExecContext {
             outputs: &outputs,
             webhook: Some(&payload),
         };
-        let out = WebhookNode
-            .execute(&node, vec![], &cx)
-            .expect("exec");
-        assert_eq!(out, vec![vec![serde_json::json!({"a": 1})]]);
+        let out = WebhookNode.execute(&node, vec![], &cx).expect("exec");
+        assert_eq!(out, vec![vec![json!({"a": 1})]]);
     }
 
     #[test]
     fn webhook_manual_placeholder_without_payload() {
-        let node = WorkflowNode {
-            id: "w".to_string(),
-            name: "Webhook".to_string(),
-            node_type: "n8n-nodes-base.webhook".to_string(),
-            type_version: 1.0,
-            position: [0.0, 0.0],
-            parameters: HashMap::new(),
-            disabled: false,
-            extra: HashMap::new(),
-        };
+        let node = mk(
+            "w",
+            "Webhook",
+            "n8n-nodes-base.webhook",
+            HashMap::new(),
+        );
         let outputs = HashMap::new();
         let out = WebhookNode
             .execute(&node, vec![], &empty_ctx(&outputs))
             .expect("exec");
-        assert_eq!(out, vec![vec![serde_json::json!({"mode": "manual"})]]);
+        assert_eq!(out, vec![vec![json!({"mode": "manual"})]]);
     }
 }

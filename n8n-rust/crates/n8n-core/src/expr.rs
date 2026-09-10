@@ -1,8 +1,10 @@
-//! Mini ekspresi `={{ }}` (subset n8n, tanpa dependensi).
+//! Mini ekspresi `={{ }}` (subset n8n, tanpa dependensi JS).
 //!
-//! v0.3.0 didukung:
+//! v0.5.0 didukung:
 //! - path: `$json.a.b`, `$json["a"]`, `$json.arr[0]`
-//! - antar-node: `$node["Nama"].json.a.b` (+`.first()`), cabang output 0
+//! - antar-node: `$node["Nama"].json.a.b` (+`.first()`), cabang output 0;
+//!   alias persis n8n: `$('Nama')` / `$("Nama")`
+//! - waktu: `$now` (RFC3339 milidetik, UTC), `$today` (tengah malam UTC)
 //! - operator: `==` `!=` `>` `<` `>=` `<=` (angka numerik, sisanya string)
 //! - fungsi satu-argumen: `len(x)`, `upper(x)`, `lower(x)`
 //! - literal: `"str"`, `123`, `1.5`, `true`, `false`, `null`
@@ -87,22 +89,19 @@ fn eval(expr: &str, ctx: &ExprContext) -> Value {
             Some(x) => x,
             None => return Value::Null,
         };
-        let first = ctx
-            .outputs
-            .get(&name)
-            .and_then(|branches| branches.first())
-            .and_then(|items| items.first())
-            .unwrap_or(&Value::Null);
-        let r = rest.trim_start();
-        let r = r
-            .strip_prefix(".first()")
-            .map(str::trim_start)
-            .unwrap_or(r);
-        let r = match r.strip_prefix(".json") {
-            Some(x) => x,
-            None => return Value::Null,
-        };
-        return drill(first, r);
+        return node_drill(ctx.outputs, &name, rest);
+    }
+    if let Some(rest) = e.strip_prefix("$(") {
+        return paren_node(rest, ctx);
+    }
+    if e == "$now" {
+        return json!(
+            chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Millis, false)
+        );
+    }
+    if e == "$today" {
+        let d = chrono::Utc::now().date_naive();
+        return json!(format!("{}T00:00:00+00:00", d.format("%Y-%m-%d")));
     }
     if e.ends_with(')') {
         if let Some(open) = e.find('(') {
@@ -117,6 +116,50 @@ fn eval(expr: &str, ctx: &ExprContext) -> Value {
         }
     }
     serde_json::from_str(e).unwrap_or(Value::Null)
+}
+
+/// `$('Nama')` / `$("Nama")` — alias n8n untuk `$node["Nama"]`.
+fn paren_node(rest: &str, ctx: &ExprContext) -> Value {
+    let rest = rest.trim_start();
+    let q = rest.chars().next().unwrap_or(' ');
+    if q != '"' && q != '\'' {
+        return Value::Null;
+    }
+    let end = match rest[1..].find(q) {
+        Some(i) => i,
+        None => return Value::Null,
+    };
+    let name = &rest[1..1 + end];
+    let after = rest[1 + end + 1..].trim_start();
+    let after = match after.strip_prefix(')') {
+        Some(x) => x,
+        None => return Value::Null,
+    };
+    node_drill(ctx.outputs, name, after)
+}
+
+/// Ambil item pertama cabang 0 `name`, lalu telusuri akhiran
+/// [`.first()`]`.json...`. Akhiran tanpa `.json` → Null (seperti n8n).
+fn node_drill(
+    outputs: &HashMap<String, Vec<Vec<Value>>>,
+    name: &str,
+    rest: &str,
+) -> Value {
+    let first = outputs
+        .get(name)
+        .and_then(|branches| branches.first())
+        .and_then(|items| items.first())
+        .unwrap_or(&Value::Null);
+    let r = rest.trim_start();
+    let r = r
+        .strip_prefix(".first()")
+        .map(str::trim_start)
+        .unwrap_or(r);
+    let r = match r.strip_prefix(".json") {
+        Some(x) => x,
+        None => return Value::Null,
+    };
+    drill(first, r)
 }
 
 /// Belah di operator perbandingan level-0 pertama (di luar kutip/kurung).
@@ -293,7 +336,7 @@ fn drill(base: &Value, rest: &str) -> Value {
                 }
             }
         } else {
-            return Value::Null;
+            return Value::Null,
         }
     }
 }
@@ -366,6 +409,34 @@ mod tests {
         assert_eq!(
             render("={{ $node[\"If\"].json.x }}", &ctx(&item, &outputs)),
             json!(7)
+        );
+    }
+
+    #[test]
+    fn dollar_paren_is_node_alias() {
+        let item = json!({});
+        let outputs = HashMap::from([("Up".to_string(), vec![vec![json!({"x": 7})]])]);
+        let c = ctx(&item, &outputs);
+        assert_eq!(render("={{ $('Up').json.x }}", &c), json!(7));
+        assert_eq!(render("={{ $(\"Up\").json.x }}", &c), json!(7));
+        assert_eq!(render("={{ $('Up').first().json.x }}", &c), json!(7));
+    }
+
+    #[test]
+    fn now_and_today_are_iso_strings() {
+        let item = json!({});
+        let outputs = HashMap::new();
+        let c = ctx(&item, &outputs);
+        let now = render("={{ $now }}", &c);
+        let s = now.as_str().expect("string");
+        assert!(s.contains('T') && s.contains('+'), "{s}");
+        let today = render("={{ $today }}", &c);
+        assert!(
+            today
+                .as_str()
+                .expect("string")
+                .ends_with("T00:00:00+00:00"),
+            "{today}"
         );
     }
 

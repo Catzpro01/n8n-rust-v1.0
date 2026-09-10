@@ -105,16 +105,16 @@ const DISPLAY = {
   "n8n-nodes-base.noOp": "NoOp"
 };
 const DEFAULTS = {
-  "n8n-nodes-base.set": {"values": {}},
-  "n8n-nodes-base.if": {"condition": ""},
-  "n8n-nodes-base.filter": {"condition": ""},
-  "n8n-nodes-base.sort": {"field": "", "order": "asc"},
-  "n8n-nodes-base.limit": {"count": 1},
+  "n8n-nodes-base.set": {"mode": "manual", "include": "all", "assignments": {"assignments": []}},
+  "n8n-nodes-base.if": {"conditions": {"combinator": "and", "conditions": [], "options": {}}},
+  "n8n-nodes-base.filter": {"conditions": {"combinator": "and", "conditions": [], "options": {}}},
+  "n8n-nodes-base.sort": {"type": "simple", "sortFieldsUi": {"sortField": [{"fieldName": "", "order": "ascending"}]}},
+  "n8n-nodes-base.limit": {"maxItems": 1, "keep": "firstItems"},
   "n8n-nodes-base.httpRequest": {"url": "", "method": "GET"},
-  "n8n-nodes-base.code": {"code": "// `items` = array item masuk; tulis kembali `items` sebagai output.\nitems = items;"},
-  "n8n-nodes-base.function": {"code": "// alias `code`: `items` masuk, tulis kembali `items`.\nitems = items;"},
-  "n8n-nodes-base.scheduleTrigger": {"rule": {}},
-  "n8n-nodes-base.webhook": {"path": "demo"}
+  "n8n-nodes-base.code": {"mode": "runOnceForAllItems", "code": "// `items` = array item masuk; tulis kembali `items` sebagai output.\nitems = items;"},
+  "n8n-nodes-base.function": {"mode": "runOnceForAllItems", "code": "// alias `code`: `items` masuk, tulis kembali `items`.\nitems = items;"},
+  "n8n-nodes-base.scheduleTrigger": {"rule": {"interval": [{"field": "days"}]}},
+  "n8n-nodes-base.webhook": {"path": "demo", "httpMethod": "GET", "responseMode": "onReceived"}
 };
 
 const state = { wf: structuredClone(EXAMPLE), selected: null, report: null, diags: null, plan: null };
