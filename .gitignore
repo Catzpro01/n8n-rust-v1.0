@@ -1,0 +1,16 @@
+# Security: Private keys & credentials
+*_id_ed25519*
+id_*
+*.pem
+*.key
+*.token
+*.env
+.env*
+!.env.example
+
+# Build artifacts & caches
+target/
+Cargo.lock.bak
+*.log
+.DS_Store
+Thumbs.db

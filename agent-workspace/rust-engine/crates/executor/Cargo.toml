@@ -12,3 +12,5 @@ tokio = { workspace = true }
 tracing = { workspace = true }
 nodes-core = { workspace = true }
 async-trait = { workspace = true }
+envelope = { workspace = true }
+

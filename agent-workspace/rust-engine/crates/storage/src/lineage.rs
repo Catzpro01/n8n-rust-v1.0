@@ -225,6 +225,36 @@ impl LineageRepo {
         Ok(())
     }
 
+    /// Insert lineage edges in batch within a single atomic transaction (ADR-v2-STORAGE)
+    pub fn insert_lineage_edges_batch(&self, edges: &[LineageEdge]) -> Result<(), StorageError> {
+        if edges.is_empty() {
+            return Ok(());
+        }
+        let mut c = self.db.conn.lock().unwrap();
+        let tx = c.transaction()?;
+        {
+            let mut stmt = tx.prepare(
+                "INSERT INTO lineage_edge (execution_id, output_ref, repr, inputs_exact, inputs_range, inputs_digest, unknown_reason, rule_id, rule_ver, content_hash) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)"
+            )?;
+            for edge in edges {
+                stmt.execute(params![
+                    edge.execution_id,
+                    edge.output_ref,
+                    edge.repr,
+                    edge.inputs_exact,
+                    edge.inputs_range,
+                    edge.inputs_digest,
+                    edge.unknown_reason,
+                    edge.rule_id,
+                    edge.rule_ver,
+                    edge.content_hash
+                ])?;
+            }
+        }
+        tx.commit()?;
+        Ok(())
+    }
+
     /// Query lineage edges by execution
     pub fn get_lineage_edges(&self, execution_id: ExecutionId) -> Result<Vec<LineageEdge>, StorageError> {
         let c = self.db.conn.lock().unwrap();
