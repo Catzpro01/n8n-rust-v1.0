@@ -44,5 +44,5 @@ cargo run -p n8n-cli -- nodes
 
 Yang sudah ada: parse + roundtrip format n8n, eksekutor topo-order
 deterministik, 3 node bawaan, CLI. Yang BELUM: ekspresi n8n (`={{ }}`),
-pass-through node disabled, node HTTP/Function, server/API, UI.
+pass-through node disabled, node HTTP/Function, server/API, scaffold web/.
 Lihat `web/README.md` untuk keputusan UI yang masih terbuka.

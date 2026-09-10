@@ -13,7 +13,7 @@
 | Lokasi | Status |
 |---|---|
 | `.claude/skills/<nama>/` | 37 upstream + 36 custom = 73, byte-identical upstream |
-| `.agents/skills/<nama>/` | Mirror identik (73) |
+| `.agents/skills/<nama>/` | Mirror identik (74) |
 | `agent-workspace/skills-mattpocock/` | DIHAPUS saat wipe v1 — salinan penuh terakhir ada di tag `pre-v1-wipe` |
 
 ## Daftar 37 skill upstream (disync)
