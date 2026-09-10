@@ -1,4 +1,4 @@
-# UI web n8n-rust v0.6.0
+# UI web n8n-rust v0.7.0
 
 Editor workflow single-file (`crates/n8n-server/ui/app.html`),
 disajikan embedded oleh binary server di `GET /`. Tanpa toolchain JS,
@@ -6,7 +6,7 @@ tanpa bundler, tanpa dependensi CDN — buka browser, langsung pakai.
 
 ## Fitur
 
-- Canvas SVG: 18 tipe node, drag untuk pindah, badge warna per tipe.
+- Canvas SVG: 19 tipe node, drag untuk pindah, badge warna per tipe.
 - Edge: drag dari lingkaran kanan node sumber ke node target; klik edge
   untuk menghapus. Aturan If: edge pertama = cabang true (abu-abu),
   edge kedua = false (kuning). Switch: edge baru mengisi cabang kosong

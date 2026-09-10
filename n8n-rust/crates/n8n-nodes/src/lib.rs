@@ -20,6 +20,8 @@
 //! `merge.rs`), dateTime (lihat `datetime.rs`), respondToWebhook
 //! (passthrough; server membaca paramsnya), wait (subset tidur),
 //! stopAndError (selalu gagal).
+//!
+//! v0.7.0: executeCommand (perintah shell host via `sh -c`).
 
 mod datetime;
 mod filter;
@@ -52,6 +54,7 @@ pub struct DateTimeNode;
 pub struct RespondNode;
 pub struct WaitNode;
 pub struct StopNode;
+pub struct ExecNode;
 
 // ---------------------------------------------------------------------------
 // Path helper ala lodash get/set/unset (subset: segmen object + indeks array)
@@ -1347,6 +1350,69 @@ impl Node for StopNode {
     }
 }
 
+// ---------------------------------------------------------------------------
+// ExecuteCommand — perintah shell host (n8n Execute Command)
+// ---------------------------------------------------------------------------
+
+impl Node for ExecNode {
+    fn node_type(&self) -> &'static str {
+        "n8n-nodes-base.executeCommand"
+    }
+
+    /// Sekali per eksekusi: `command` di-render sebagai template lalu
+    /// dijalankan via `sh -c`. Output satu item `{command, stdout,
+    /// stderr, exitCode}`. Exit != 0 → error kecuali
+    /// `options.continueOnFail: true`.
+    fn execute(
+        &self,
+        node: &WorkflowNode,
+        items: Vec<Value>,
+        ctx: &ExecContext,
+    ) -> EngineResult<BranchOutputs> {
+        let null = Value::Null;
+        let ectx = ExprContext {
+            item: items.first().unwrap_or(&null),
+            outputs: ctx.outputs,
+        };
+        let cmd_v =
+            render_value(node.parameters.get("command").unwrap_or(&Value::Null), &ectx);
+        let cmd = cmd_v
+            .as_str()
+            .ok_or_else(|| EngineError::new("executeCommand: 'command' wajib string"))?;
+        if cmd.trim().is_empty() {
+            return Err(EngineError::new("executeCommand: 'command' kosong"));
+        }
+        let out = std::process::Command::new("sh")
+            .arg("-c")
+            .arg(cmd)
+            .output()
+            .map_err(|e| EngineError::new(format!("executeCommand: {e}")))?;
+        let code = out.status.code();
+        let item = json!({
+            "command": cmd,
+            "stdout": String::from_utf8_lossy(&out.stdout).to_string(),
+            "stderr": String::from_utf8_lossy(&out.stderr).to_string(),
+            "exitCode": code,
+        });
+        if !out.status.success() {
+            let forgiving = node
+                .parameters
+                .get("options")
+                .and_then(|o| o.get("continueOnFail"))
+                .and_then(Value::as_bool)
+                .unwrap_or(false);
+            if !forgiving {
+                let c = match code {
+                    Some(c) => c.to_string(),
+                    None => "signal".to_string(),
+                };
+                return Err(EngineError::new(format!("executeCommand: exit tidak-nol ({c})")));
+            }
+        }
+        Ok(vec![vec![item]])
+    }
+}
+
 /// Cari node webhook pertama (dipakai server untuk responseMode dkk).
 pub fn find_webhook(workflow: &n8n_core::Workflow) -> Option<&WorkflowNode> {
     workflow
@@ -1392,6 +1458,7 @@ pub fn register_all(registry: &mut Registry) {
     registry.register(Arc::new(RespondNode));
     registry.register(Arc::new(WaitNode));
     registry.register(Arc::new(StopNode));
+    registry.register(Arc::new(ExecNode));
 }
 
 #[cfg(test)]
@@ -2351,5 +2418,62 @@ mod tests {
             .execute(&node, vec![], &empty_ctx(&outputs))
             .expect_err("must fail");
         assert!(err.to_string().contains("Error:"), "{err}");
+    }
+
+    #[test]
+    fn exec_runs_shell_and_captures_output() {
+        let node = mk(
+            "e",
+            "Exec",
+            "n8n-nodes-base.executeCommand",
+            HashMap::from([("command".to_string(), json!("echo halo"))]),
+        );
+        let outputs = HashMap::new();
+        let out = ExecNode
+            .execute(&node, vec![json!({})], &empty_ctx(&outputs))
+            .expect("exec");
+        assert_eq!(
+            out,
+            vec![vec![json!({
+                "command": "echo halo",
+                "stdout": "halo\n",
+                "stderr": "",
+                "exitCode": 0
+            })]]
+        );
+    }
+
+    #[test]
+    fn exec_nonzero_is_error_by_default() {
+        let node = mk(
+            "e",
+            "Exec",
+            "n8n-nodes-base.executeCommand",
+            HashMap::from([("command".to_string(), json!("exit 3"))]),
+        );
+        let outputs = HashMap::new();
+        let err = ExecNode
+            .execute(&node, vec![], &empty_ctx(&outputs))
+            .expect_err("must fail");
+        assert!(err.to_string().contains("exit tidak-nol (3)"), "{err}");
+    }
+
+    #[test]
+    fn exec_continue_on_fail_keeps_item() {
+        let node = mk(
+            "e",
+            "Exec",
+            "n8n-nodes-base.executeCommand",
+            HashMap::from([
+                ("command".to_string(), json!("echo oops >&2; exit 3")),
+                ("options".to_string(), json!({"continueOnFail": true})),
+            ]),
+        );
+        let outputs = HashMap::new();
+        let out = ExecNode
+            .execute(&node, vec![], &empty_ctx(&outputs))
+            .expect("exec");
+        assert_eq!(out[0][0]["exitCode"], json!(3));
+        assert_eq!(out[0][0]["stderr"], json!("oops\n"));
     }
 }

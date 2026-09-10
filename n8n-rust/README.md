@@ -1,14 +1,14 @@
-# n8n-rust v1 — v0.6.0
+# n8n-rust v1 — v0.7.0
 
 Implementasi ulang [n8n](https://n8n.io) (workflow automation) dalam Rust:
 satu binary CLI + satu binary server HTTP dengan UI web embedded — tanpa
 Node.js, tanpa database, tanpa telemetri. Format workflow JSON kompatibel
 n8n (impor file n8n asli; node yang belum didukung dilaporkan eksplisit).
 
-> Status: v0.6.0 — completion: 18 node (switch/merge/dateTime/respond/
-> wait/stopAndError baru, parameter & perilaku n8n) + responseNode webhook.
-> Personal project, dipakai sendiri. `cargo test` wajib hijau di mesin
-> dengan toolchain Rust (sandbox ini tidak punya cargo).
+> Status: v0.7.0 — 19 node (+ executeCommand: perintah shell host via
+> `sh -c`) + responseNode webhook. Personal project, dipakai sendiri.
+> `cargo test` wajib hijau di mesin dengan toolchain Rust (sandbox ini
+> tidak punya cargo).
 
 ## Isi
 
@@ -40,7 +40,7 @@ cargo build --release
 n8n-cli validate <workflow.json>   # lint: error + warning deterministik
 n8n-cli explain <workflow.json>    # rencana urutan eksekusi (dry-run)
 n8n-cli run <workflow.json> [--save <report.json>]  # eksekusi + simpan laporan
-n8n-cli nodes                      # daftar 18 tipe node terdaftar
+n8n-cli nodes                      # daftar 19 tipe node terdaftar
 ```
 
 ## Server HTTP + webhook
@@ -112,6 +112,7 @@ webhook meng-emit placeholder `{"mode":"manual"}`.
 | `httpRequest` | fan-out 1 request/item; `options.timeout` ms (default 300000); responseFormat autodetect/json/text |
 | `code` | `mode` runOnceForAllItems/runOnceForEachItem; script rhai |
 | `function` | alias `code` |
+| `executeCommand` | `command` (template) via `sh -c` → `{command, stdout, stderr, exitCode}`; exit != 0 error kecuali `options.continueOnFail` |
 | `switch` | N cabang `rules.values[].conditions` + else; `fallbackOutput` extra/none |
 | `merge` | `mode` append/chooseBranch/combine (byPosition/byFields/all; SQL ditolak) |
 | `dateTime` | 7 operasi (current/add/subtract/format/round/between/extract) |
@@ -154,6 +155,9 @@ Detail per node:
   menolak month/year; pecahan unit kalender dipotong ke integer.
 - **wait**: subset — tidur sinkron lalu teruskan. Resume pasif/webhook
   n8n tidak dimodelkan (butuh scheduler).
+- **executeCommand**: jalan sekali per eksekusi (abaikan item input —
+  subset disengaja). Perintah apa pun yang ada di host (curl, ffmpeg,
+  python, …) sehingga node yang belum ada bisa diakali via shell.
 
 ## Conditions If/Filter
 
@@ -227,7 +231,7 @@ Bentuk `rule` mengikuti n8n: `{"interval": [{"field": "days"}]}`
 
 ## UI web
 
-Editor visual di `GET /`: tambah 18 tipe node (template parameter bentuk
+Editor visual di `GET /`: tambah 19 tipe node (template parameter bentuk
 n8n), drag-node, drag-dari-port untuk edge (If: pertama = true, kedua =
 false; Switch: cabang kosong pertama), klik edge untuk hapus, edit
 parameters JSON, Export JSON,
@@ -239,14 +243,14 @@ Validate/Explain/Run, badge urutan + durasi. Detail: [web/README.md](web/README.
 crates/
   n8n-core/    model Workflow + parser + expr ($node alias, $now/$today) (2 + 11 test)
   n8n-engine/  planner topo + executor + linter + multi-input (7 test)
-  n8n-nodes/   18 node: lib (38) + filter (8) + merge (8) + datetime (7) test
+  n8n-nodes/   19 node: lib (41) + filter (8) + merge (8) + datetime (7) test
   n8n-cli/     validate/explain/run --save/nodes
   n8n-server/  axum: UI + REST + hooks (multi-method, responseMode/responseNode) + ring runs
 fixtures/manual-to-set.json   workflow contoh (dipakai 1 test e2e)
 web/README.md                 dokumentasi UI
 ```
 
-Total: **81 test** (`cargo test --workspace`).
+Total: **84 test** (`cargo test --workspace`).
 
 Referensi perilaku n8n asli (dibaca saat v0.5.0–v0.6.0, implementasi
 tetap orisinal): `packages/workflow/src/node-parameters/filter-parameter.ts`,

@@ -94,7 +94,8 @@ const COLORS = {
   "n8n-nodes-base.dateTime": "#4d7c0f",
   "n8n-nodes-base.respondToWebhook": "#be185d",
   "n8n-nodes-base.wait": "#6d28d9",
-  "n8n-nodes-base.stopAndError": "#b91c1c"
+  "n8n-nodes-base.stopAndError": "#b91c1c",
+  "n8n-nodes-base.executeCommand": "#166534"
 };
 const DISPLAY = {
   "n8n-nodes-base.manualTrigger": "Manual Trigger",
@@ -114,7 +115,8 @@ const DISPLAY = {
   "n8n-nodes-base.dateTime": "DateTime",
   "n8n-nodes-base.respondToWebhook": "Respond to Webhook",
   "n8n-nodes-base.wait": "Wait",
-  "n8n-nodes-base.stopAndError": "Stop And Error"
+  "n8n-nodes-base.stopAndError": "Stop And Error",
+  "n8n-nodes-base.executeCommand": "Execute Command"
 };
 const DEFAULTS = {
   "n8n-nodes-base.set": {"mode": "manual", "include": "all", "assignments": {"assignments": []}},
@@ -132,7 +134,8 @@ const DEFAULTS = {
   "n8n-nodes-base.dateTime": {"operation": "getCurrentDate", "includeTime": true},
   "n8n-nodes-base.respondToWebhook": {"respondWith": "json", "responseBody": "={{ $json }}", "responseCode": 200},
   "n8n-nodes-base.wait": {"amount": 5, "unit": "seconds"},
-  "n8n-nodes-base.stopAndError": {"errorType": "errorMessage", "message": "Stopped"}
+  "n8n-nodes-base.stopAndError": {"errorType": "errorMessage", "message": "Stopped"},
+  "n8n-nodes-base.executeCommand": {"command": "echo halo"}
 };
 
 const state = { wf: structuredClone(EXAMPLE), selected: null, report: null, diags: null, plan: null };
