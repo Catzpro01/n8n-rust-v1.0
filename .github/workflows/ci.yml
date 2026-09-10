@@ -1,0 +1,35 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  ci:
+    name: test + clippy + fmt
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: n8n-rust
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Toolchain stable + komponen
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: n8n-rust
+
+      - name: cargo test
+        run: cargo test --workspace
+
+      - name: cargo clippy
+        run: cargo clippy --workspace --all-targets -- -D warnings
+
+      - name: cargo fmt
+        run: cargo fmt --all --check
