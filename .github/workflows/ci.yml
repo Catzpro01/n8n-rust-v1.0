@@ -21,14 +21,13 @@ jobs:
         with:
           workspaces: n8n-rust
       - name: cargo test
-        run: set -o pipefail; cargo test --workspace 2>&1 | tee /tmp/out.log
+        run: set -o pipefail; cargo test --workspace --color never 2>&1 | tee /tmp/out.log
       - name: Ekspor error sebagai anotasi
         if: failure()
         run: |
-          sed 's/\x1b\[[0-9;]*m//g' /tmp/out.log > /tmp/clean.log
-          grep -E "^error" /tmp/clean.log | head -30 | sed 's/^/::error::/' || true
-          grep -E "^(failures:|test .* FAILED)" /tmp/clean.log | head -10 | sed 's/^/::error::/' || true
-          tail -15 /tmp/clean.log | sed 's/^/::error::tail: /'
+          grep -E "^error" /tmp/out.log | head -30 | sed 's/^/::error::/' || true
+          grep "^failures:$" -A 10 /tmp/out.log | head -15 | sed 's/^/::error::/' || true
+          tail -15 /tmp/out.log | sed 's/^/::error::tail: /'
 
   clippy:
     name: cargo clippy
@@ -45,13 +44,12 @@ jobs:
         with:
           workspaces: n8n-rust
       - name: cargo clippy
-        run: set -o pipefail; cargo clippy --workspace --all-targets 2>&1 | tee /tmp/out.log; test ${PIPESTATUS[0]} -eq 0
+        run: set -o pipefail; cargo clippy --workspace --all-targets --color never 2>&1 | tee /tmp/out.log
       - name: Ekspor error sebagai anotasi
         if: failure()
         run: |
-          sed 's/\x1b\[[0-9;]*m//g' /tmp/out.log > /tmp/clean.log
-          grep -E "^(error|warning)" /tmp/clean.log | head -30 | sed 's/^/::error::/' || true
-          tail -15 /tmp/clean.log | sed 's/^/::error::tail: /'
+          grep -E "^(error|warning)" /tmp/out.log | head -30 | sed 's/^/::error::/' || true
+          tail -15 /tmp/out.log | sed 's/^/::error::tail: /'
 
   fmt:
     name: cargo fmt
