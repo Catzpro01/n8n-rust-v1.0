@@ -336,7 +336,7 @@ fn drill(base: &Value, rest: &str) -> Value {
                 }
             }
         } else {
-            return Value::Null,
+            return Value::Null;
         }
     }
 }

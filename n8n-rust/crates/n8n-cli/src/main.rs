@@ -48,8 +48,7 @@ fn need_path(arg: Option<&String>) -> Result<&str, String> {
 }
 
 fn load_workflow(path: &str) -> Result<Workflow, String> {
-    let raw =
-        std::fs::read_to_string(path).map_err(|e| format!("baca '{path}' gagal: {e}"))?;
+    let raw = std::fs::read_to_string(path).map_err(|e| format!("baca '{path}' gagal: {e}"))?;
     Workflow::from_json(&raw).map_err(|e| format!("parse '{path}' gagal: {e}"))
 }
 
