@@ -1,15 +1,17 @@
-//! n8n-server: REST API premium + UI embedded + webhook hooks + observability.
+//! n8n-server: REST API + UI single-file embedded + webhook hooks.
 //!
-//! # Quality upgrades v1.1
-//! - Config via env: `PORT`, `HOST`, `RUST_LOG`
-//! - Health check `/health`, metrics `/api/metrics`, openapi `/api/openapi.json`
-//! - CORS, security headers, request-id middleware
-//! - Structured logging (tracing-like via println with timestamp)
-//! - Graceful shutdown (Ctrl+C)
-//! - Rate limiting in-memory per IP (simple)
-//! - Validation error with node context
-//! - Run history ring buffer + pagination query
-//! - Webhook: method enforcement 404, responseMode onReceived/lastNode/responseNode
+//! v0.5.0 (fidelity n8n): route hook terima GET/POST/PUT/PATCH/DELETE;
+//! node webhook mengatur `httpMethod` (default GET, di-enforce → 404 bila
+//! salah ala n8n), `responseMode` (onReceived = laporan penuh; lastNode =
+//! tunggu selesai lalu bentuk body), `responseData`
+//! (allEntries/firstEntryJson/noResponseBody), `responseCode`.
+//! Beda disengaja: onReceived mengembalikan RunReport (n8n: ack
+//! "Workflow was started") — run lokal sinkron, laporan lebih berguna.
+//! State in-memory: restart = hooks + riwayat hilang (terdokumentasi).
+//!
+//! v0.6.0: `responseMode: "responseNode"` — webhook node menunjuk node
+//! respondToWebhook (`respondWith` json/text/redirect; stream ditolak).
+//! Template `={{ }}` di responseBody dirender via n8n-core expr.
 
 use axum::{
     body::Bytes,
@@ -28,39 +30,14 @@ use std::sync::{
     atomic::{AtomicU64, Ordering},
     Arc, Mutex,
 };
-use std::time::Instant;
 use tokio::sync::RwLock;
 
-// ── Config ───────────────────────────────────────────────────────────────
-#[derive(Debug, Clone)]
-struct AppConfig {
-    host: String,
-    port: u16,
-}
-
-impl AppConfig {
-    fn from_env() -> Self {
-        let host = std::env::var("HOST").unwrap_or_else(|_| "0.0.0.0".to_string());
-        let port = std::env::var("PORT")
-            .ok()
-            .and_then(|p| p.parse().ok())
-            .unwrap_or(3000);
-        Self { host, port }
-    }
-
-    fn addr(&self) -> String {
-        format!("{}:{}", self.host, self.port)
-    }
-}
-
-// ── State ────────────────────────────────────────────────────────────────
 #[derive(Clone)]
 struct AppState {
     registry: Arc<Registry>,
     hooks: Arc<RwLock<HashMap<String, Workflow>>>,
     runs: Arc<Mutex<VecDeque<RunSummary>>>,
     next_id: Arc<AtomicU64>,
-    start_at: Instant,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -79,40 +56,23 @@ struct HookReg {
     workflow: Workflow,
 }
 
-#[derive(Debug, Deserialize)]
-struct RunsQuery {
-    limit: Option<usize>,
-}
-
-// ── Main ─────────────────────────────────────────────────────────────────
 #[tokio::main]
 async fn main() {
-    let cfg = AppConfig::from_env();
     let mut registry = Registry::default();
     n8n_nodes::register_all(&mut registry);
-    log_info(&format!(
-        "n8n-rust v1.1 — {} node types registered",
-        registry.len()
-    ));
-
     let state = AppState {
         registry: Arc::new(registry),
         hooks: Arc::new(RwLock::new(HashMap::new())),
         runs: Arc::new(Mutex::new(VecDeque::new())),
         next_id: Arc::new(AtomicU64::new(1)),
-        start_at: Instant::now(),
     };
-
     let app = Router::new()
         .route("/", get(index))
-        .route("/health", get(health))
         .route("/api/nodes", get(api_nodes))
         .route("/api/validate", post(api_validate))
         .route("/api/explain", post(api_explain))
         .route("/api/run", post(api_run))
         .route("/api/runs", get(api_runs))
-        .route("/api/metrics", get(api_metrics))
-        .route("/api/openapi.json", get(api_openapi))
         .route("/api/hooks", post(api_hook_register).get(api_hook_list))
         .route("/api/hooks/:path", delete(api_hook_delete))
         .route(
@@ -123,101 +83,20 @@ async fn main() {
                 .patch(api_hook_fire)
                 .delete(api_hook_fire),
         )
-        .with_state(state.clone())
-        .layer(axum::middleware::from_fn(security_headers))
-        .layer(axum::middleware::from_fn(request_id_mw));
-
-    let addr = cfg.addr();
-    log_info(&format!("listening on http://{addr}"));
-    log_info("routes: / /health /api/nodes /api/validate /api/explain /api/run /api/runs /api/metrics /api/hooks /hook/:path");
-
-    let listener = tokio::net::TcpListener::bind(&addr)
+        .with_state(state);
+    let addr = "0.0.0.0:3000";
+    let listener = tokio::net::TcpListener::bind(addr)
         .await
-        .expect("bind failed");
-
-    // graceful shutdown
-    axum::serve(listener, app)
-        .with_graceful_shutdown(shutdown_signal())
-        .await
-        .expect("serve failed");
-
-    log_info("shutdown complete");
+        .expect("bind 0.0.0.0:3000");
+    println!("n8n-rust server: http://{addr}");
+    axum::serve(listener, app).await.expect("serve");
 }
 
-async fn shutdown_signal() {
-    let _ = tokio::signal::ctrl_c().await;
-    log_info("shutdown signal received, draining…");
-}
-
-// ── Middleware ───────────────────────────────────────────────────────────
-async fn security_headers(
-    req: axum::extract::Request,
-    next: axum::middleware::Next,
-) -> Response {
-    let mut res = next.run(req).await;
-    let h = res.headers_mut();
-    h.insert(
-        header::X_CONTENT_TYPE_OPTIONS,
-        HeaderValue::from_static("nosniff"),
-    );
-    h.insert(header::X_FRAME_OPTIONS, HeaderValue::from_static("DENY"));
-    h.insert(
-        header::X_XSS_PROTECTION,
-        HeaderValue::from_static("1; mode=block"),
-    );
-    h.insert(
-        header::REFERER,
-        HeaderValue::from_static("strict-origin-when-cross-origin"),
-    );
-    h.insert(
-        "Cross-Origin-Opener-Policy",
-        HeaderValue::from_static("same-origin"),
-    );
-    h
-}
-
-async fn request_id_mw(
-    mut req: axum::extract::Request,
-    next: axum::middleware::Next,
-) -> Response {
-    let id = format!("{:x}", rand_u64());
-    req.headers_mut().insert(
-        HeaderName::from_static("x-request-id"),
-        HeaderValue::from_str(&id).unwrap_or(HeaderValue::from_static("0")),
-    );
-    let mut res = next.run(req).await;
-    res.headers_mut().insert(
-        HeaderName::from_static("x-request-id"),
-        HeaderValue::from_str(&id).unwrap_or(HeaderValue::from_static("0")),
-    );
-    res
-}
-
-fn rand_u64() -> u64 {
-    use std::time::{SystemTime, UNIX_EPOCH};
-    SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .map(|d| d.as_nanos() as u64)
-        .unwrap_or(0)
-        .wrapping_mul(0x9e3779b97f4a7c15)
-}
-
-// ── Helpers ──────────────────────────────────────────────────────────────
 fn now_epoch() -> u64 {
     std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .map(|d| d.as_secs())
         .unwrap_or(0)
-}
-
-fn log_info(msg: &str) {
-    let ts = chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Millis, true);
-    println!("[{ts}] INFO {msg}");
-}
-
-fn log_err(msg: &str) {
-    let ts = chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Millis, true);
-    eprintln!("[{ts}] ERROR {msg}");
 }
 
 fn record(state: &AppState, workflow: &str, ok: bool, order: Vec<String>, total_ms: u128) {
@@ -231,37 +110,13 @@ fn record(state: &AppState, workflow: &str, ok: bool, order: Vec<String>, total_
         order,
         total_ms,
     });
-    while runs.len() > 100 {
+    while runs.len() > 50 {
         runs.pop_front();
     }
 }
 
-// ── Handlers ─────────────────────────────────────────────────────────────
 async fn index() -> Html<&'static str> {
     Html(include_str!("../ui/app.html"))
-}
-
-#[derive(Serialize)]
-struct Health {
-    status: String,
-    uptime_secs: u64,
-    version: String,
-    nodes: usize,
-    hooks: usize,
-    runs: usize,
-}
-
-async fn health(State(s): State<AppState>) -> Json<Health> {
-    let hooks = s.hooks.read().await.len();
-    let runs = s.runs.lock().unwrap_or_else(|e| e.into_inner()).len();
-    Json(Health {
-        status: "ok".to_string(),
-        uptime_secs: s.start_at.elapsed().as_secs(),
-        version: env!("CARGO_PKG_VERSION").to_string(),
-        nodes: s.registry.len(),
-        hooks,
-        runs,
-    })
 }
 
 async fn api_nodes(State(s): State<AppState>) -> Json<Vec<String>> {
@@ -272,14 +127,7 @@ async fn api_validate(
     State(s): State<AppState>,
     Json(wf): Json<Workflow>,
 ) -> Json<Vec<Diagnostic>> {
-    let diags = Engine::lint(&wf, &s.registry);
-    log_info(&format!(
-        "validate '{}' — {} diags ({} err)",
-        wf.name,
-        diags.len(),
-        diags.iter().filter(|d| d.level == n8n_engine::Level::Error).count()
-    ));
-    Json(diags)
+    Json(Engine::lint(&wf, &s.registry))
 }
 
 async fn api_explain(Json(wf): Json<Workflow>) -> Result<Json<Vec<String>>, (StatusCode, String)> {
@@ -292,84 +140,28 @@ async fn api_run(
     State(s): State<AppState>,
     Json(wf): Json<Workflow>,
 ) -> Result<Json<RunReport>, (StatusCode, String)> {
+    // Engine sinkron (boleh blocking I/O seperti HTTP) -> thread pool
+    // blocking supaya executor async tak terhambat.
     let reg = s.registry.clone();
     let name = wf.name.clone();
-    let t0 = Instant::now();
     let res = tokio::task::spawn_blocking(move || Engine::run(&wf, &reg)).await;
     match res {
         Ok(Ok(rep)) => {
-            let elapsed = t0.elapsed().as_millis();
-            log_info(&format!(
-                "run '{}' OK order={:?} total={}ms wall={}ms",
-                name,
-                rep.order,
-                rep.total_ms,
-                elapsed
-            ));
-            let total = rep.total_ms;
+            let total = rep.durations_ms.values().sum();
             record(&s, &name, true, rep.order.clone(), total);
             Ok(Json(rep))
         }
         Ok(Err(e)) => {
-            log_err(&format!("run '{}' FAIL: {e}", name));
             record(&s, &name, false, Vec::new(), 0);
             Err((StatusCode::BAD_REQUEST, e.to_string()))
         }
-        Err(e) => {
-            log_err(&format!("run join error: {e}"));
-            Err((StatusCode::INTERNAL_SERVER_ERROR, format!("join: {e}")))
-        }
+        Err(e) => Err((StatusCode::INTERNAL_SERVER_ERROR, format!("join: {e}"))),
     }
 }
 
-async fn api_runs(
-    State(s): State<AppState>,
-    Query(q): Query<RunsQuery>,
-) -> Json<Vec<RunSummary>> {
+async fn api_runs(State(s): State<AppState>) -> Json<Vec<RunSummary>> {
     let runs = s.runs.lock().unwrap_or_else(|e| e.into_inner());
-    let limit = q.limit.unwrap_or(50).min(100);
-    let v: Vec<RunSummary> = runs.iter().cloned().rev().take(limit).collect();
-    Json(v)
-}
-
-#[derive(Serialize)]
-struct Metrics {
-    uptime_secs: u64,
-    total_runs: u64,
-    hooks: usize,
-    nodes: usize,
-    version: String,
-}
-
-async fn api_metrics(State(s): State<AppState>) -> Json<Metrics> {
-    let hooks = s.hooks.read().await.len();
-    let total_runs = s.next_id.load(Ordering::SeqCst) - 1;
-    Json(Metrics {
-        uptime_secs: s.start_at.elapsed().as_secs(),
-        total_runs,
-        hooks,
-        nodes: s.registry.len(),
-        version: env!("CARGO_PKG_VERSION").to_string(),
-    })
-}
-
-async fn api_openapi() -> Json<serde_json::Value> {
-    Json(serde_json::json!({
-        "openapi":"3.0.0",
-        "info":{"title":"n8n-rust API","version":env!("CARGO_PKG_VERSION"),"description":"Workflow automation - Rust port of n8n"},
-        "paths":{
-            "/health":{"get":{"summary":"Health check"}},
-            "/api/nodes":{"get":{"summary":"List node types"}},
-            "/api/validate":{"post":{"summary":"Lint workflow"}},
-            "/api/explain":{"post":{"summary":"Explain execution order"}},
-            "/api/run":{"post":{"summary":"Run workflow"}},
-            "/api/runs":{"get":{"summary":"Run history"}},
-            "/api/metrics":{"get":{"summary":"Server metrics"}},
-            "/api/hooks":{"get":{"summary":"List hooks"},"post":{"summary":"Register hook"}},
-            "/api/hooks/{path}":{"delete":{"summary":"Delete hook"}},
-            "/hook/{path}":{"get":{"summary":"Fire hook"},"post":{"summary":"Fire hook"},"put":{"summary":"Fire hook"},"patch":{"summary":"Fire hook"},"delete":{"summary":"Fire hook"}}
-        }
-    }))
+    Json(runs.iter().cloned().collect())
 }
 
 async fn api_hook_register(
@@ -377,22 +169,12 @@ async fn api_hook_register(
     Json(reg): Json<HookReg>,
 ) -> Result<(StatusCode, Json<String>), (StatusCode, String)> {
     let path = reg.path.trim().trim_matches('/').to_string();
-    if path.is_empty() || path.contains('/') || path.len() > 64 {
+    if path.is_empty() || path.contains('/') {
         return Err((
             StatusCode::BAD_REQUEST,
-            "hook path harus satu segmen 1-64 char (mis. 'demo')".to_string(),
+            "hook path harus satu segmen (mis. 'demo')".to_string(),
         ));
     }
-    if !path
-        .chars()
-        .all(|c| c.is_alphanumeric() || c == '-' || c == '_' )
-    {
-        return Err((
-            StatusCode::BAD_REQUEST,
-            "hook path hanya alphanumeric, -, _".to_string(),
-        ));
-    }
-    log_info(&format!("hook register '{}' workflow='{}'", path, reg.workflow.name));
     s.hooks.write().await.insert(path.clone(), reg.workflow);
     Ok((StatusCode::CREATED, Json(path)))
 }
@@ -405,17 +187,16 @@ async fn api_hook_list(State(s): State<AppState>) -> Json<Vec<String>> {
 }
 
 async fn api_hook_delete(State(s): State<AppState>, Path(path): Path<String>) -> Json<bool> {
-    let removed = s.hooks.write().await.remove(&path).is_some();
-    if removed {
-        log_info(&format!("hook delete '{path}'"));
-    }
-    Json(removed)
+    Json(s.hooks.write().await.remove(&path).is_some())
 }
 
 fn hook_param<'a>(wf: &'a Workflow, key: &str) -> Option<&'a serde_json::Value> {
     find_webhook(wf).and_then(|n| n.parameters.get(key))
 }
 
+/// Render `responseBody` node respond: string `={{ }}` dirender dengan
+/// konteks item pertama output node itu; non-string dipakai apa adanya.
+/// Absen → semua items sebagai array.
 fn respond_json(
     body: Option<&serde_json::Value>,
     items: &[serde_json::Value],
@@ -467,7 +248,8 @@ async fn api_hook_fire(
 ) -> Result<Response, (StatusCode, String)> {
     let wf = s.hooks.read().await.get(&path).cloned();
     let wf = wf.ok_or_else(|| (StatusCode::NOT_FOUND, format!("hook tak dikenal: {path}")))?;
-
+    // n8n mendaftarkan webhook per (method, path): method salah → 404.
+    // Tanpa node webhook di workflow → semua method diterima (warisan 0.4).
     if find_webhook(&wf).is_some() {
         let want = hook_param(&wf, "httpMethod")
             .and_then(serde_json::Value::as_str)
@@ -480,14 +262,12 @@ async fn api_hook_fire(
             ));
         }
     }
-
     let data: serde_json::Value = if body.is_empty() {
         serde_json::Value::Null
     } else {
         let text = String::from_utf8_lossy(&body);
         serde_json::from_str(&text).unwrap_or(serde_json::Value::String(text.to_string()))
     };
-
     let mut hm = serde_json::Map::new();
     for (k, v) in headers.iter() {
         hm.insert(
@@ -495,7 +275,6 @@ async fn api_hook_fire(
             serde_json::Value::String(v.to_str().unwrap_or("").to_string()),
         );
     }
-
     let payload = serde_json::json!({
         "method": method.as_str(),
         "path": path,
@@ -503,33 +282,26 @@ async fn api_hook_fire(
         "headers": hm,
         "body": data,
     });
-
-    log_info(&format!("hook fire '{path}' {method} query={:?}", query.keys().collect::<Vec<_>>()));
-
     let reg = s.registry.clone();
     let name = wf.name.clone();
+    // `wf` dipakai lagi setelah run (responseMode) → clone untuk thread.
     let wf_run = wf.clone();
     let res =
         tokio::task::spawn_blocking(move || Engine::run_with(&wf_run, &reg, Some(payload))).await;
-
     let rep = match res {
         Ok(Ok(rep)) => rep,
         Ok(Err(e)) => {
             record(&s, &name, false, Vec::new(), 0);
-            log_err(&format!("hook '{path}' run FAIL: {e}"));
             return Err((StatusCode::BAD_REQUEST, e.to_string()));
         }
         Err(e) => return Err((StatusCode::INTERNAL_SERVER_ERROR, format!("join: {e}"))),
     };
-
-    let total = rep.total_ms;
+    let total = rep.durations_ms.values().sum();
     record(&s, &name, true, rep.order.clone(), total);
-    log_info(&format!("hook '{path}' OK total={total}ms"));
 
     let mode = hook_param(&wf, "responseMode")
         .and_then(serde_json::Value::as_str)
         .unwrap_or("onReceived");
-
     match mode {
         "onReceived" => {
             let v = serde_json::to_value(&rep)

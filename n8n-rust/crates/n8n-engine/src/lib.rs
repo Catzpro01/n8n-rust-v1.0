@@ -1,21 +1,15 @@
-//! n8n-engine: executor workflow premium — sinkron, ringan, observable.
+//! n8n-engine: executor workflow sinkron (tanpa runtime async — ringan).
 //!
-//! # Features v1 quality
-//! - Trait `Node::execute_multi` (default: gabung input) — Merge melihat tiap input terpisah.
-//! - `run_with` membawa payload webhook; `run` = `run_with(None)`.
-//! - Planner Kahn deterministik + deteksi cycle dengan pesan detail.
-//! - Linter error + warning deterministik (urutan file).
-//! - Metrics: durasi per node + total, order, output per cabang.
-//! - ExecContext dengan akses output + webhook.
+//! v0.6.0: trait `Node::execute_multi` (default: gabung input lalu
+//! `execute`) — node Merge melihat tiap input terpisah; `run_with`
+//! membawa payload webhook; `run` = `run_with(None)`.
 
 use n8n_core::{Workflow, WorkflowNode};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 use std::sync::Arc;
-use std::time::Instant;
 
-/// Error engine dengan konteks node.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct EngineError {
     message: String,
@@ -25,12 +19,6 @@ impl EngineError {
     pub fn new(message: impl Into<String>) -> Self {
         Self {
             message: message.into(),
-        }
-    }
-
-    pub fn with_node(node: &str, message: impl Into<String>) -> Self {
-        Self {
-            message: format!("node '{node}' failed: {}", message.into()),
         }
     }
 }
@@ -45,10 +33,11 @@ impl std::error::Error for EngineError {}
 
 pub type EngineResult<T> = Result<T, EngineError>;
 
-/// Output node per cabang: indeks = cabang `main[i]`.
+/// Output node per cabang: indeks = cabang `main[i]` di connections.
+/// Node biasa mengembalikan persis 1 cabang.
 pub type BranchOutputs = Vec<Vec<Value>>;
 
-/// Konteks eksekusi: output node lain + payload webhook.
+/// Konteks eksekusi: output node lain + payload webhook (bila ada).
 pub struct ExecContext<'a> {
     pub outputs: &'a HashMap<String, BranchOutputs>,
     /// Payload request webhook (server `/hook`) — None saat run biasa.
@@ -59,16 +48,11 @@ impl ExecContext<'_> {
     pub fn output_of(&self, name: &str) -> Option<&BranchOutputs> {
         self.outputs.get(name)
     }
-
-    pub fn first_item_of(&self, name: &str, branch: usize) -> Option<&Value> {
-        self.outputs
-            .get(name)
-            .and_then(|b| b.get(branch))
-            .and_then(|items| items.first())
-    }
 }
 
-/// Satu edge masuk: dari node + cabang mana items datang.
+/// Satu edge masuk: dari node + cabang mana items ini datang.
+/// Urutan = urutan node pendahulu di file (deterministik) — Merge
+/// memakai ini sebagai input1, input2, ...
 #[derive(Debug, Clone)]
 pub struct MultiInput {
     pub from: String,
@@ -78,16 +62,17 @@ pub struct MultiInput {
 
 /// Kontrak satu tipe node. `Send + Sync` supaya kelak bisa paralel.
 pub trait Node: Send + Sync {
+    /// Nama tipe persis n8n, mis. `"n8n-nodes-base.set"`.
     fn node_type(&self) -> &'static str;
-    /// `items` = gabungan output pendahulu.
+    /// `items` = gabungan output para (pendahulu, cabang) — urutan edge.
     fn execute(
         &self,
         node: &WorkflowNode,
         items: Vec<Value>,
         ctx: &ExecContext,
     ) -> EngineResult<BranchOutputs>;
-
-    /// Varian multi-input (dipakai engine). Default: gabungkan lalu panggil `execute`.
+    /// Varian multi-input (dipakai engine). Default: gabungkan semua
+    /// input lalu panggil `execute` — node biasa tak perlu override.
     fn execute_multi(
         &self,
         node: &WorkflowNode,
@@ -96,11 +81,6 @@ pub trait Node: Send + Sync {
     ) -> EngineResult<BranchOutputs> {
         let items = inputs.into_iter().flat_map(|i| i.items).collect();
         self.execute(node, items, ctx)
-    }
-
-    /// Deskripsi singkat untuk UI / `nodes` command.
-    fn description(&self) -> &'static str {
-        "node"
     }
 }
 
@@ -118,18 +98,11 @@ impl Registry {
         self.nodes.get(node_type)
     }
 
+    /// Daftar tipe terdaftar, terurut — untuk CLI `nodes` dan API.
     pub fn types(&self) -> Vec<String> {
         let mut v: Vec<String> = self.nodes.keys().cloned().collect();
         v.sort();
         v
-    }
-
-    pub fn len(&self) -> usize {
-        self.nodes.len()
-    }
-
-    pub fn is_empty(&self) -> bool {
-        self.nodes.is_empty()
     }
 }
 
@@ -139,11 +112,8 @@ pub struct RunReport {
     pub outputs: HashMap<String, BranchOutputs>,
     /// Urutan eksekusi aktual.
     pub order: Vec<String>,
-    /// Durasi per node (ms) — observabilitas bawaan.
+    /// Durasi per node (milidetik) — observabilitas bawaan tiap run.
     pub durations_ms: HashMap<String, u128>,
-    /// Total durasi (ms) — convenience.
-    #[serde(default)]
-    pub total_ms: u128,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -157,16 +127,15 @@ pub enum Level {
 pub struct Diagnostic {
     pub level: Level,
     pub message: String,
-    #[serde(default)]
-    pub node: Option<String>,
 }
 
 struct Plan {
     order: Vec<String>,
+    /// Nama node → daftar (nama pendahulu, indeks cabang).
     incoming: HashMap<String, Vec<(String, usize)>>,
 }
 
-/// Planner topo Kahn deterministik sesuai urutan node di file.
+/// Urutan topo (Kahn) deterministik sesuai urutan node di file.
 fn plan(workflow: &Workflow) -> EngineResult<Plan> {
     let enabled: Vec<&WorkflowNode> = workflow.nodes.iter().filter(|n| !n.disabled).collect();
     let mut incoming: HashMap<String, Vec<(String, usize)>> = HashMap::new();
@@ -183,7 +152,7 @@ fn plan(workflow: &Workflow) -> EngineResult<Plan> {
         }
     }
     let mut done: Vec<String> = Vec::new();
-    let mut done_set: HashSet<String> = HashSet::new();
+    let mut done_set: std::collections::HashSet<String> = std::collections::HashSet::new();
     loop {
         let mut progressed = false;
         for n in &enabled {
@@ -235,7 +204,7 @@ impl Engine {
         Self::run_with(workflow, registry, None)
     }
 
-    /// Run dengan payload webhook opsional.
+    /// Run dengan payload webhook opsional (dibaca node webhook).
     pub fn run_with(
         workflow: &Workflow,
         registry: &Registry,
@@ -249,13 +218,11 @@ impl Engine {
             .collect();
         let mut done: HashMap<String, BranchOutputs> = HashMap::new();
         let mut durations_ms: HashMap<String, u128> = HashMap::new();
-
         for name in &p.order {
             let node = by_name
                 .get(name.as_str())
                 .copied()
                 .ok_or_else(|| EngineError::new(format!("plan menyebut node hilang '{name}'")))?;
-
             let mut inputs = Vec::new();
             if let Some(ps) = p.incoming.get(name) {
                 for (pr, bi) in ps {
@@ -271,71 +238,57 @@ impl Engine {
                     });
                 }
             }
-
             let node_impl = registry.get(&node.node_type).ok_or_else(|| {
                 EngineError::new(format!(
                     "unknown node type '{}' (node '{name}')",
                     node.node_type
                 ))
             })?;
-
             let ctx = ExecContext {
                 outputs: &done,
                 webhook: webhook.as_ref(),
             };
-
-            let t0 = Instant::now();
+            let t0 = std::time::Instant::now();
             let out = node_impl
                 .execute_multi(node, inputs, &ctx)
                 .map_err(|e| EngineError::new(format!("node '{name}' failed: {e}")))?;
             durations_ms.insert(name.clone(), t0.elapsed().as_millis());
             done.insert(name.clone(), out);
         }
-
-        let total_ms = durations_ms.values().sum();
         Ok(RunReport {
             outputs: done,
             order: p.order,
             durations_ms,
-            total_ms,
         })
     }
 
     /// Linter: error + warning deterministik (urutan file).
     pub fn lint(workflow: &Workflow, registry: &Registry) -> Vec<Diagnostic> {
         let mut out = Vec::new();
-        let err = |message: String, node: Option<String>| Diagnostic {
+        let err = |message: String| Diagnostic {
             level: Level::Error,
             message,
-            node,
         };
-        let warn = |message: String, node: Option<String>| Diagnostic {
+        let warn = |message: String| Diagnostic {
             level: Level::Warning,
             message,
-            node,
         };
-
-        // unknown type
         for n in &workflow.nodes {
             if registry.get(&n.node_type).is_none() {
-                out.push(err(
-                    format!("node '{}': tipe tak dikenal '{}'", n.name, n.node_type),
-                    Some(n.name.clone()),
-                ));
+                out.push(err(format!(
+                    "node '{}': tipe tak dikenal '{}'",
+                    n.name, n.node_type
+                )));
             }
         }
-
-        // dangling
         for (from, to) in workflow.dangling_edges() {
-            out.push(err(
-                format!("edge gantung: '{from}' -> '{to}' (target tak ada)"),
-                Some(from),
-            ));
+            out.push(err(format!(
+                "edge gantung: '{from}' -> '{to}' (target tak ada)"
+            )));
         }
-
-        // ghost connections
         {
-            let names: HashSet<&str> = workflow.nodes.iter().map(|n| n.name.as_str()).collect();
+            let names: std::collections::HashSet<&str> =
+                workflow.nodes.iter().map(|n| n.name.as_str()).collect();
             let mut ghosts: Vec<&str> = workflow
                 .connections
                 .keys()
@@ -344,20 +297,15 @@ impl Engine {
                 .collect();
             ghosts.sort_unstable();
             for g in ghosts {
-                out.push(warn(
-                    format!("connections dari '{g}' yang bukan node — diabaikan"),
-                    None,
-                ));
+                out.push(warn(format!(
+                    "connections dari '{g}' yang bukan node — diabaikan"
+                )));
             }
         }
-
-        // cycle
         if let Err(e) = plan(workflow) {
-            out.push(err(e.to_string(), None));
+            out.push(err(e.to_string()));
         }
-
-        // isolated
-        let mut targets: HashSet<String> = HashSet::new();
+        let mut targets: std::collections::HashSet<String> = std::collections::HashSet::new();
         for n in &workflow.nodes {
             for s in workflow.successors(&n.name) {
                 targets.insert(s);
@@ -367,33 +315,22 @@ impl Engine {
             for n in &workflow.nodes {
                 let has_out = !workflow.successors(&n.name).is_empty();
                 if !has_out && !targets.contains(n.name.as_str()) {
-                    out.push(warn(
-                        format!("node '{}' terisolasi (tanpa edge)", n.name),
-                        Some(n.name.clone()),
-                    ));
+                    out.push(warn(format!("node '{}' terisolasi (tanpa edge)", n.name)));
                 }
             }
         }
-
-        // no predecessor non-trigger
         for n in &workflow.nodes {
             if n.disabled {
                 continue;
             }
-            if !targets.contains(n.name.as_str())
-                && !n.node_type.to_lowercase().contains("trigger")
-                && !n.node_type.to_lowercase().contains("webhook")
+            if !targets.contains(n.name.as_str()) && !n.node_type.to_lowercase().contains("trigger")
             {
-                out.push(warn(
-                    format!(
-                        "node '{}' tak punya pendahulu dan bukan trigger — berjalan dengan 0 item",
-                        n.name
-                    ),
-                    Some(n.name.clone()),
-                ));
+                out.push(warn(format!(
+                    "node '{}' tak punya pendahulu dan bukan trigger — berjalan dengan 0 item",
+                    n.name
+                )));
             }
         }
-
         out
     }
 }
@@ -493,7 +430,6 @@ mod tests {
         assert_eq!(report.order, vec!["A".to_string(), "B".to_string()]);
         assert_eq!(report.outputs["B"][0], vec![Value::String("e".to_string())]);
         assert_eq!(report.durations_ms.len(), 2);
-        assert!(report.total_ms >= 0);
     }
 
     #[test]
