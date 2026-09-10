@@ -119,10 +119,17 @@ fn eval_condition(
         .ok_or_else(|| {
             EngineError::new(format!("conditions: operator.operation hilang {tag}"))
         })?;
+    // Operasi panjang membandingkan angka (len vs rightValue) — kanan
+    // harus number kecuali rightType eksplisit (n8n: input angka).
+    let right_default = if type_ == "array" && operation.starts_with("length") {
+        "number"
+    } else {
+        type_
+    };
     let right_type = operator
         .get("rightType")
         .and_then(Value::as_str)
-        .unwrap_or(type_);
+        .unwrap_or(right_default);
 
     let left_raw = render(cond.get("leftValue").unwrap_or(&Value::Null));
     let left = coerce(&left_raw, type_, opts.strict, &tag)?;

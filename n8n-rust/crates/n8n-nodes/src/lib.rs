@@ -400,6 +400,8 @@ fn set_raw(node: &WorkflowNode, ectx: &ExprContext) -> EngineResult<Value> {
     let text = raw.as_str().ok_or_else(|| {
         EngineError::new("set: mode raw butuh 'jsonOutput' string")
     })?;
+    // Penanda ekspresi `=` di awal dibuang sebelum parse JSON.
+    let text = text.trim_start().strip_prefix('=').unwrap_or(text);
     let parsed: Value = serde_json::from_str(text)
         .map_err(|e| EngineError::new(format!("set: jsonOutput bukan JSON: {e}")))?;
     match parsed {

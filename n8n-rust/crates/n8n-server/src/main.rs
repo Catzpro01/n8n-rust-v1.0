@@ -18,7 +18,7 @@ use axum::{
     extract::{Path, Query, State},
     http::{header, HeaderMap, HeaderName, HeaderValue, Method, StatusCode},
     response::{Html, IntoResponse, Response},
-    routing::{delete, get, patch, post, put},
+    routing::{delete, get, post},
     Json, Router,
 };
 use n8n_core::Workflow;

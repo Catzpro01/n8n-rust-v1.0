@@ -39,6 +39,9 @@ jobs:
                   print('::error::FMTFIX:' + _m)
           except OSError:
               pass
+          import os
+          if os.environ.get('GITHUB_JOB') == 'fmt':
+              raw = '\n'.join(l for l in raw.split('\n') if l.startswith(('Diff in', '@@', '+', '-')))
           CH = 3500
           parts = [raw[i:i+CH] for i in range(0, len(raw), CH)] or ['']
           rx = re.compile(r'error|warning|Diff in|failures:|panicked|test result|FAILED', re.I)
@@ -81,6 +84,9 @@ jobs:
                   print('::error::FMTFIX:' + _m)
           except OSError:
               pass
+          import os
+          if os.environ.get('GITHUB_JOB') == 'fmt':
+              raw = '\n'.join(l for l in raw.split('\n') if l.startswith(('Diff in', '@@', '+', '-')))
           CH = 3500
           parts = [raw[i:i+CH] for i in range(0, len(raw), CH)] or ['']
           rx = re.compile(r'error|warning|Diff in|failures:|panicked|test result|FAILED', re.I)
@@ -103,17 +109,6 @@ jobs:
           components: rustfmt
       - name: cargo fmt
         run: set -o pipefail; cargo fmt --all --check 2>&1 | tee /tmp/out.log
-      - name: Terapkan cargo fmt otomatis
-        if: failure()
-        run: |
-          set -o pipefail
-          {
-            cargo fmt --all
-            git config user.name "arena-ci"
-            git config user.email "arena-ci@local"
-            git add -A
-            if git diff --cached --quiet; then echo "fmt: bersih"; else git commit -m "style: terapkan cargo fmt otomatis"; git push origin HEAD:${{ github.ref_name }}; fi
-          } 2>&1 | tee /tmp/fmtfix.log
       - name: Ekspor error sebagai anotasi
         if: failure()
         run: |
@@ -131,6 +126,9 @@ jobs:
                   print('::error::FMTFIX:' + _m)
           except OSError:
               pass
+          import os
+          if os.environ.get('GITHUB_JOB') == 'fmt':
+              raw = '\n'.join(l for l in raw.split('\n') if l.startswith(('Diff in', '@@', '+', '-')))
           CH = 3500
           parts = [raw[i:i+CH] for i in range(0, len(raw), CH)] or ['']
           rx = re.compile(r'error|warning|Diff in|failures:|panicked|test result|FAILED', re.I)
