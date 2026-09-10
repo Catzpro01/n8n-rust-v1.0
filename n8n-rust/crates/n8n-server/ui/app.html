@@ -4,310 +4,409 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>n8n-rust — Workflow Automation</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-/* DESIGN TOKENS - n8n asli 1:1 - shadcn-ui-engine + penpot + design-md-tokens + taste-skill */
+/* n8n asli 1:1 - DESIGN_TOKENS.md - shadcn + penpot + taste */
 :root{
   --bg:#ffffff;
-  --bg-canvas:#ffffff;
+  --bg-canvas:#fafafa;
   --bg-canvas-dot:#e8e8e8;
   --bg-subtle:#f8f8f8;
   --bg-hover:#f5f5f5;
-  --bg-active:#f0f0f0;
+  --bg-active:#efefef;
   --border:#e8e8e8;
-  --border-strong:#d1d1d1;
-  --text:#2d2d2d;
-  --text-light:#666666;
-  --text-lighter:#999999;
-  --text-lightest:#b0b0b0;
+  --border-strong:#d8d8d8;
+  --border-hover:#c8c8c8;
+  --text:#1a1a1a;
+  --text-secondary:#4a4a4a;
+  --text-light:#6b7280;
+  --text-lighter:#9ca3af;
+  --text-lightest:#d1d5db;
   --primary:#ff6d5a;
   --primary-hover:#ff8f7f;
-  --primary-light:#fff0ef;
-  --primary-ring:0 0 0 3px rgba(255,109,90,0.15);
-  --success:#2e9e5b;
-  --success-light:#e6f5ec;
-  --warning:#f5a623;
-  --error:#ea4b71;
-  --shadow-sm:0 1px 2px rgba(0,0,0,0.05);
-  --shadow:0 2px 6px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.06);
-  --shadow-md:0 4px 12px rgba(0,0,0,0.1), 0 2px 4px rgba(0,0,0,0.06);
-  --shadow-lg:0 8px 24px rgba(0,0,0,0.12), 0 4px 8px rgba(0,0,0,0.08);
+  --primary-light:#fff2f0;
+  --primary-ring:0 0 0 3px rgba(255,109,90,0.12);
+  --success:#10b981;
+  --success-light:#ecfdf5;
+  --success-border:#a7f3d0;
+  --warning:#f59e0b;
+  --warning-light:#fffbeb;
+  --error:#ef4444;
+  --error-light:#fef2f2;
+  --shadow-xs:0 1px 2px rgba(0,0,0,0.04);
+  --shadow-sm:0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow:0 2px 8px rgba(0,0,0,0.08), 0 1px 3px rgba(0,0,0,0.06);
+  --shadow-md:0 4px 16px rgba(0,0,0,0.1), 0 2px 6px rgba(0,0,0,0.06);
+  --shadow-lg:0 8px 32px rgba(0,0,0,0.12), 0 4px 12px rgba(0,0,0,0.08);
   --radius-sm:6px;
   --radius:8px;
+  --radius-md:10px;
   --radius-lg:12px;
-  --font:Inter, -apple-system, BlinkMacSystemFont, sans-serif;
+  --font:Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --mono:JetBrains Mono, ui-monospace, monospace;
   --ease:cubic-bezier(0.4,0,0.2,1);
-  --ease-out:cubic-bezier(0.0,0,0.2,1);
-  --ease-in:cubic-bezier(0.4,0,1,1);
+  --ease-out:cubic-bezier(0,0,0.2,1);
+  --ease-spring:cubic-bezier(0.175,0.885,0.32,1.275);
 }
 *{box-sizing:border-box}
-html,body{height:100%;margin:0;font-family:var(--font);background:var(--bg);color:var(--text);overflow:hidden;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
+html,body{height:100%;margin:0;font-family:var(--font);background:var(--bg);color:var(--text);overflow:hidden;-webkit-font-smoothing:antialiased}
 ::-webkit-scrollbar{width:6px;height:6px}
 ::-webkit-scrollbar-thumb{background:#d8d8d8;border-radius:3px}
-::-webkit-scrollbar-thumb:hover{background:#c0c0c0}
+::-webkit-scrollbar-thumb:hover{background:#b8b8b8}
 
-/* HEADER - n8n asli exact */
+/* HEADER - n8n asli exact structure */
 .n8n-header{
   height:56px;background:#fff;border-bottom:1px solid var(--border);
-  display:flex;align-items:center;padding:0 12px;gap:12px;z-index:100;position:relative;flex-shrink:0;
+  display:flex;align-items:center;padding:0 0 0 12px;gap:0;z-index:100;position:relative;flex-shrink:0;
 }
-.n8n-logo{display:flex;align-items:center;gap:10px;font-weight:700;font-size:16px;letter-spacing:-0.02em;flex-shrink:0}
-.n8n-logo-icon{width:28px;height:28px;background:var(--primary);border-radius:6px;display:grid;place-items:center;color:#fff;font-weight:800;font-size:14px}
-.n8n-header-divider{width:1px;height:20px;background:var(--border);margin:0 4px;flex-shrink:0}
-.n8n-wf-tabs{display:flex;align-items:center;gap:2px;background:var(--bg-subtle);border-radius:8px;padding:3px;flex-shrink:0}
-.n8n-wf-tab{height:28px;padding:0 12px;border-radius:6px;border:0;background:transparent;color:var(--text-light);font:500 13px var(--font);cursor:pointer;transition:.15s var(--ease)}
-.n8n-wf-tab.active{background:#fff;color:var(--text);box-shadow:var(--shadow-sm);font-weight:600}
-.n8n-wf-tab:hover:not(.active){color:var(--text)}
-.n8n-wf-name{display:flex;align-items:center;gap:8px;flex:1;max-width:360px;min-width:0}
+.n8n-header-left{display:flex;align-items:center;gap:12px;flex-shrink:0;padding-right:16px;border-right:1px solid var(--border);height:100%}
+.n8n-logo{display:flex;align-items:center;gap:8px;font-weight:700;font-size:15px;letter-spacing:-0.02em;cursor:pointer}
+.n8n-logo-icon{width:26px;height:26px;background:var(--primary);border-radius:6px;display:grid;place-items:center;color:#fff;font-weight:800;font-size:12px;letter-spacing:0}
+.n8n-wf-path{display:flex;align-items:center;gap:6px;font:400 13px var(--font);color:var(--text-light);margin-left:8px}
+.n8n-wf-path b{color:var(--text);font-weight:600}
+.n8n-header-center{flex:1;display:flex;align-items:center;justify-content:center;gap:24px;min-width:0;padding:0 16px}
+.n8n-wf-tabs{display:flex;align-items:center;gap:0;border-bottom:0;height:100%}
+.n8n-wf-tab{
+  height:56px;padding:0 16px;border:0;border-bottom:2px solid transparent;background:transparent;
+  color:var(--text-light);font:500 13px var(--font);cursor:pointer;transition:.15s var(--ease);
+  display:flex;align-items:center;gap:6px;position:relative;top:0;
+}
+.n8n-wf-tab.active{color:var(--text);border-bottom-color:var(--primary);font-weight:600}
+.n8n-wf-tab:hover:not(.active){color:var(--text);background:var(--bg-subtle)}
+.n8n-wf-name{flex:1;max-width:280px;min-width:0;display:flex;align-items:center;gap:8px}
 .n8n-wf-name input{
-  font:600 14px var(--font);border:1px solid transparent;border-radius:6px;padding:6px 10px;
-  background:transparent;width:100%;outline:0;transition:.15s var(--ease);min-width:0;
+  font:600 14px var(--font);border:1px solid transparent;border-radius:6px;padding:5px 10px;
+  background:transparent;width:100%;outline:0;transition:.15s var(--ease);
 }
 .n8n-wf-name input:hover{background:var(--bg-hover);border-color:var(--border)}
 .n8n-wf-name input:focus{background:#fff;border-color:var(--primary);box-shadow:var(--primary-ring)}
-.n8n-header-center{flex:1;display:flex;justify-content:center;min-width:0}
-.n8n-header-actions{display:flex;align-items:center;gap:6px;margin-left:auto;flex-shrink:0}
+.n8n-header-actions{display:flex;align-items:center;gap:6px;padding:0 12px 0 16px;border-left:1px solid var(--border);height:100%;margin-left:auto;flex-shrink:0}
 .n8n-icon-btn{
   width:36px;height:36px;border-radius:6px;border:1px solid transparent;background:transparent;
-  display:grid;place-items:center;color:var(--text-light);cursor:pointer;transition:.15s var(--ease);flex-shrink:0;
+  display:grid;place-items:center;color:var(--text-light);cursor:pointer;transition:.15s var(--ease);flex-shrink:0;font-size:14px;
 }
 .n8n-icon-btn:hover{background:var(--bg-hover);color:var(--text);border-color:var(--border)}
 .n8n-icon-btn.active{background:var(--bg-active);color:var(--text);border-color:var(--border)}
 .n8n-btn{
-  height:36px;padding:0 14px;border-radius:6px;border:1px solid var(--border);
+  height:32px;padding:0 12px;border-radius:6px;border:1px solid var(--border);
   background:#fff;color:var(--text);font:500 13px var(--font);cursor:pointer;
   display:inline-flex;align-items:center;gap:6px;transition:.15s var(--ease);white-space:nowrap;flex-shrink:0;
 }
-.n8n-btn:hover{background:var(--bg-hover);border-color:var(--border-strong)}
-.n8n-btn:active{transform:scale(0.98)}
-.n8n-btn.primary{background:var(--primary);border-color:var(--primary);color:#fff;font-weight:600}
-.n8n-btn.primary:hover{background:var(--primary-hover);border-color:var(--primary-hover);transform:translateY(-0.5px);box-shadow:0 2px 8px rgba(255,109,90,0.3)}
-.n8n-btn.primary:active{transform:translateY(0) scale(0.98)}
-.n8n-btn.sm{height:28px;padding:0 10px;font-size:12px;border-radius:5px}
+.n8n-btn:hover{background:var(--bg-hover);border-color:var(--border-strong);transform:translateY(-0.5px)}
+.n8n-btn:active{transform:translateY(0) scale(0.98)}
+.n8n-btn.primary{background:var(--primary);border-color:var(--primary);color:#fff;font-weight:600;box-shadow:0 1px 2px rgba(255,109,90,0.2)}
+.n8n-btn.primary:hover{background:var(--primary-hover);border-color:var(--primary-hover);box-shadow:0 4px 12px rgba(255,109,90,0.3);transform:translateY(-1px)}
+.n8n-btn.primary:active{transform:translateY(0) scale(0.98);box-shadow:0 1px 2px rgba(255,109,90,0.2)}
+.n8n-btn.sm{height:28px;padding:0 10px;font-size:12px}
 .n8n-btn.ghost{border-color:transparent;background:transparent;color:var(--text-light)}
 .n8n-btn.ghost:hover{background:var(--bg-hover);color:var(--text)}
 
-/* LAYOUT - flexible with collapsible */
-.n8n-layout{display:flex;height:calc(100% - 56px - 28px);position:relative;overflow:hidden}
+/* LAYOUT - n8n asli with collapsible */
+.n8n-layout{display:flex;height:calc(100% - 56px - 32px);position:relative;overflow:hidden;background:var(--bg-canvas)}
 .n8n-sidebar{
   width:320px;background:#fff;border-right:1px solid var(--border);
-  display:flex;flex-direction:column;flex-shrink:0;z-index:10;
-  transition:width 0.25s var(--ease), transform 0.25s var(--ease), opacity 0.2s var(--ease);
-  overflow:hidden;
+  display:flex;flex-direction:column;flex-shrink:0;z-index:20;
+  transition:width 0.28s var(--ease), transform 0.28s var(--ease), opacity 0.22s var(--ease);
+  overflow:hidden;position:relative;
 }
-.n8n-sidebar.right{width:400px;border-right:0;border-left:1px solid var(--border)}
-.n8n-sidebar.collapsed{width:0!important;border-width:0;opacity:0;pointer-events:none;transform:translateX(-100%)}
-.n8n-sidebar.right.collapsed{transform:translateX(100%)}
-.n8n-sidebar-inner{width:320px;flex-shrink:0;display:flex;flex-direction:column;height:100%;overflow:hidden}
-.n8n-sidebar.right .n8n-sidebar-inner{width:400px}
-.n8n-sidebar-header{height:48px;padding:0 12px 0 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);font:600 13px var(--font);color:var(--text);flex-shrink:0;background:#fff}
-.n8n-sidebar-header .title{display:flex;align-items:center;gap:8px}
-.n8n-sidebar-header .actions{display:flex;gap:4px}
-.n8n-search{padding:12px 12px 8px;flex-shrink:0}
+.n8n-sidebar.right{width:420px;border-right:0;border-left:1px solid var(--border)}
+.n8n-sidebar.collapsed{width:0!important;border-width:0;opacity:0;pointer-events:none}
+.n8n-sidebar.collapsed.left{transform:translateX(-100%)}
+.n8n-sidebar.collapsed.right{transform:translateX(100%)}
+.n8n-sidebar-inner{width:320px;flex-shrink:0;display:flex;flex-direction:column;height:100%;overflow:hidden;background:#fff}
+.n8n-sidebar.right .n8n-sidebar-inner{width:420px}
+.n8n-sidebar-header{height:48px;padding:0 12px 0 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);font:600 13px var(--font);color:var(--text);flex-shrink:0;background:#fff;gap:8px}
+.n8n-sidebar-header .title{display:flex;align-items:center;gap:8px;font-weight:600}
+.n8n-sidebar-header .actions{display:flex;gap:4px;align-items:center}
+.n8n-search{padding:12px 12px 10px;flex-shrink:0;background:#fff;border-bottom:1px solid var(--border)}
 .n8n-search-box{position:relative}
 .n8n-search-box input{
-  width:100%;height:36px;padding:0 12px 0 36px;border:1px solid var(--border);border-radius:6px;
+  width:100%;height:36px;padding:0 12px 0 36px;border:1px solid var(--border);border-radius:8px;
   background:var(--bg-subtle);font:400 13px var(--font);outline:0;transition:.15s var(--ease);
 }
 .n8n-search-box input:focus{border-color:var(--primary);background:#fff;box-shadow:var(--primary-ring)}
 .n8n-search-box input::placeholder{color:var(--text-lighter)}
 .n8n-search-box svg{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--text-lighter);pointer-events:none}
-.n8n-node-list{flex:1;overflow:auto;padding:4px 8px 16px}
-.n8n-category{margin:20px 0 8px;padding:0 8px;font:600 11px var(--font);letter-spacing:.06em;text-transform:uppercase;color:var(--text-lighter);display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none}
+.n8n-node-list{flex:1;overflow:auto;padding:8px 8px 20px;background:#fff}
+.n8n-category{margin:20px 0 8px;padding:0 8px;font:600 11px var(--font);letter-spacing:.06em;text-transform:uppercase;color:var(--text-lighter);display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;transition:.15s}
 .n8n-category:first-child{margin-top:8px}
 .n8n-category:hover{color:var(--text-light)}
-.n8n-category .count{font:400 11px var(--font);background:var(--bg-subtle);padding:2px 6px;border-radius:10px;color:var(--text-lighter)}
+.n8n-category .left{display:flex;align-items:center;gap:6px}
+.n8n-category .count{font:500 11px var(--font);background:var(--bg-subtle);padding:2px 7px;border-radius:10px;color:var(--text-lighter);border:1px solid var(--border)}
+.n8n-category.collapsed{margin-bottom:0}
 .n8n-node-item{
-  display:flex;align-items:center;gap:12px;padding:10px 10px;border-radius:8px;border:1px solid transparent;
-  cursor:grab;transition:.15s var(--ease);margin-bottom:2px;background:#fff;position:relative;
+  display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:8px;border:1px solid transparent;
+  cursor:grab;transition:all .18s var(--ease);margin-bottom:3px;background:#fff;position:relative;overflow:hidden;
 }
-.n8n-node-item:hover{background:#fafafa;border-color:var(--border);box-shadow:var(--shadow)}
-.n8n-node-item:active{cursor:grabbing;transform:scale(0.98)}
-.n8n-node-item .drag-handle{position:absolute;left:4px;top:50%;transform:translateY(-50%);color:var(--text-lightest);opacity:0;transition:.15s}
-.n8n-node-item:hover .drag-handle{opacity:1}
-.n8n-node-icon{width:36px;height:36px;border-radius:6px;display:grid;place-items:center;color:#fff;font-size:15px;flex-shrink:0;font-weight:600;box-shadow:inset 0 1px 0 rgba(255,255,255,0.2)}
+.n8n-node-item::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--node-color, transparent);opacity:0;transition:.15s}
+.n8n-node-item:hover{background:#fafafa;border-color:var(--border);box-shadow:var(--shadow-sm);transform:translateX(2px)}
+.n8n-node-item:hover::before{opacity:1}
+.n8n-node-item:active{cursor:grabbing;transform:scale(0.97) translateX(2px)}
+.n8n-node-item.dragging{opacity:0.5;transform:rotate(2deg) scale(0.95)}
+.n8n-node-icon{
+  width:40px;height:40px;border-radius:8px;display:grid;place-items:center;color:#fff;font-size:16px;flex-shrink:0;
+  font-weight:600;box-shadow:inset 0 1px 0 rgba(255,255,255,0.25), 0 1px 3px rgba(0,0,0,0.1);
+  position:relative;overflow:hidden;
+}
+.n8n-node-icon::after{content:'';position:absolute;inset:0;background:linear-gradient(135deg, rgba(255,255,255,0.2) 0%, transparent 50%);pointer-events:none}
 .n8n-node-info{flex:1;min-width:0}
-.n8n-node-info b{display:block;font:600 13px var(--font);line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text)}
-.n8n-node-info span{display:block;font:400 11px var(--font);color:var(--text-light);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3}
+.n8n-node-info b{display:block;font:600 13px var(--font);line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text);letter-spacing:-0.01em}
+.n8n-node-info span{display:block;font:400 11.5px var(--font);color:var(--text-light);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3}
+.n8n-node-item .add-btn{
+  width:24px;height:24px;border-radius:6px;background:var(--bg-subtle);border:1px solid var(--border);
+  display:grid;place-items:center;color:var(--text-light);font-size:12px;opacity:0;transition:.15s;flex-shrink:0;
+}
+.n8n-node-item:hover .add-btn{opacity:1}
+.n8n-node-item .add-btn:hover{background:var(--primary);border-color:var(--primary);color:#fff;transform:scale(1.1)}
 
 /* CANVAS - n8n asli exact */
-.n8n-canvas{flex:1;position:relative;overflow:hidden;background:var(--bg-canvas);cursor:grab;min-width:0}
+.n8n-canvas{flex:1;position:relative;overflow:hidden;background:var(--bg-canvas);cursor:grab;min-width:0;isolation:isolate}
 .n8n-canvas:active{cursor:grabbing}
 .n8n-canvas.panning{cursor:grabbing!important}
 .n8n-canvas.connecting{cursor:crosshair!important}
-.n8n-canvas-bg{position:absolute;inset:0;background-image:radial-gradient(circle, var(--bg-canvas-dot) 1.2px, transparent 1.2px);background-size:22px 22px;background-position:0 0;pointer-events:none}
-#n8n-viewport{position:absolute;inset:0;transform-origin:0 0;will-change:transform}
-#n8n-edges{position:absolute;inset:0;width:100%;height:100%;overflow:visible;pointer-events:none}
-.n8n-nodes{position:absolute;inset:0}
+.n8n-canvas-bg{position:absolute;inset:0;background-image:radial-gradient(circle, var(--bg-canvas-dot) 1.2px, transparent 1.2px);background-size:22px 22px;background-position:-1px -1px;pointer-events:none;z-index:0}
+#n8n-viewport{position:absolute;inset:0;transform-origin:0 0;will-change:transform;z-index:1}
+#n8n-edges{position:absolute;inset:0;width:100%;height:100%;overflow:visible;pointer-events:none;z-index:1}
+.n8n-nodes{position:absolute;inset:0;z-index:2}
 
-/* NODE - n8n asli exact 240px */
+/* NODE - n8n asli attractive - lebih menarik */
 .n8n-node{
-  position:absolute;width:240px;background:#fff;border:1px solid var(--border);border-radius:8px;
-  box-shadow:var(--shadow);transition:box-shadow .15s var(--ease), border-color .15s var(--ease), transform .15s var(--ease);user-select:none;cursor:grab;
+  position:absolute;width:260px;background:#fff;border:1px solid var(--border);border-radius:10px;
+  box-shadow:var(--shadow);transition:all .2s var(--ease);user-select:none;cursor:grab;overflow:hidden;
 }
-.n8n-node:hover{box-shadow:var(--shadow-md);border-color:var(--border-strong);transform:translateY(-1px)}
-.n8n-node.selected{border-color:var(--primary);box-shadow:0 0 0 2px var(--primary), var(--shadow-md)}
-.n8n-node.executing{border-color:var(--primary);animation:n8n-pulse 1.2s infinite}
-.n8n-node.success{border-color:var(--success)}
-.n8n-node.error{border-color:var(--error)}
-@keyframes n8n-pulse{0%{box-shadow:0 0 0 0 rgba(255,109,90,0.4), var(--shadow)}70%{box-shadow:0 0 0 10px rgba(255,109,90,0), var(--shadow)}100%{box-shadow:0 0 0 0 rgba(255,109,90,0), var(--shadow)}}
-.n8n-node-header{display:flex;align-items:center;gap:10px;padding:12px 12px 10px;border-bottom:1px solid #f5f5f5;cursor:grab}
+.n8n-node::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:3px;
+  background:var(--node-color, var(--border));transition:.2s;z-index:3;
+}
+.n8n-node:hover{box-shadow:var(--shadow-md);border-color:var(--border-hover);transform:translateY(-2px)}
+.n8n-node:hover::before{height:4px}
+.n8n-node.selected{border-color:var(--primary);box-shadow:0 0 0 2px var(--primary), var(--shadow-md);transform:translateY(-1px)}
+.n8n-node.selected::before{background:var(--primary);height:4px}
+.n8n-node.executing{border-color:var(--primary);animation:n8n-pulse 1.2s infinite;transform:translateY(-1px)}
+.n8n-node.success{border-color:var(--success-border)}
+.n8n-node.success::before{background:var(--success)}
+.n8n-node.error{border-color:#fecaca}
+.n8n-node.error::before{background:var(--error)}
+.n8n-node.disabled{opacity:0.6;filter:grayscale(0.2)}
+.n8n-node.disabled::before{background:var(--text-lightest)}
+@keyframes n8n-pulse{0%{box-shadow:0 0 0 0 rgba(255,109,90,0.4), var(--shadow)}60%{box-shadow:0 0 0 10px rgba(255,109,90,0), var(--shadow)}100%{box-shadow:0 0 0 0 rgba(255,109,90,0), var(--shadow)}}
+.n8n-node-header{display:flex;align-items:center;gap:10px;padding:12px 12px 11px;cursor:grab;position:relative;background:#fff}
 .n8n-node-header:active{cursor:grabbing}
-.n8n-node-header .n8n-node-icon{width:32px;height:32px;border-radius:6px;font-size:14px;flex-shrink:0}
+.n8n-node-header .n8n-node-icon{width:36px;height:36px;border-radius:8px;font-size:15px;flex-shrink:0;box-shadow:0 1px 3px rgba(0,0,0,0.12), inset 0 1px 0 rgba(255,255,255,0.2)}
 .n8n-node-title{flex:1;min-width:0}
-.n8n-node-title .name{font:600 13px var(--font);line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.n8n-node-title .type{font:400 11px var(--font);color:var(--text-light);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.n8n-node-status{width:8px;height:8px;border-radius:50%;background:var(--border);flex-shrink:0;transition:.15s}
-.n8n-node-status.running{background:var(--primary);animation:n8n-blink 1s infinite}
-.n8n-node-status.success{background:var(--success)}
-.n8n-node-status.error{background:var(--error)}
-@keyframes n8n-blink{0%,100%{opacity:1}50%{opacity:.4}}
-.n8n-node-body{padding:10px 12px;font:400 12px var(--font);color:var(--text-light);min-height:36px;display:flex;align-items:center;line-height:1.4}
-.n8n-node-footer{padding:6px 10px 6px 12px;border-top:1px solid #f8f8f8;display:flex;align-items:center;justify-content:space-between;background:#fcfcfc;border-radius:0 0 8px 8px;min-height:28px}
-.n8n-node-footer .time{font:500 11px var(--font);color:var(--success);display:flex;align-items:center;gap:4px}
-.n8n-node-footer .actions{display:flex;gap:3px;align-items:center}
-.n8n-node-footer .dot{width:3px;height:3px;border-radius:50%;background:var(--text-lightest)}
-.n8n-exec-order{position:absolute;top:-8px;right:-8px;width:20px;height:20px;border-radius:50%;background:var(--text);color:#fff;display:grid;place-items:center;font:700 11px var(--font);box-shadow:0 2px 6px rgba(0,0,0,0.2);z-index:2}
-
-/* HANDLES - n8n exact */
-.n8n-handles{position:absolute;top:0;left:0;right:0;bottom:0;pointer-events:none}
-.n8n-handle{
-  position:absolute;width:14px;height:14px;border-radius:50%;background:#fff;border:2px solid var(--border-strong);
-  pointer-events:auto;cursor:crosshair;transition:all .15s var(--ease);top:50%;transform:translateY(-50%);z-index:3;
-  display:grid;place-items:center;
+.n8n-node-title .name{font:600 13.5px var(--font);line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:-0.01em}
+.n8n-node-title .type{font:400 11px var(--font);color:var(--text-light);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;align-items:center;gap:4px}
+.n8n-node-title .type .dot{width:3px;height:3px;border-radius:50%;background:var(--text-lightest);flex-shrink:0}
+.n8n-node-hover-actions{
+  position:absolute;right:8px;top:8px;display:flex;gap:4px;opacity:0;transform:translateY(-4px);
+  transition:all .18s var(--ease);pointer-events:none;
 }
-.n8n-handle::after{content:'';width:4px;height:4px;border-radius:50%;background:var(--border-strong);transition:.15s}
-.n8n-handle:hover{border-color:var(--primary);background:var(--primary);transform:translateY(-50%) scale(1.25);box-shadow:0 2px 8px rgba(255,109,90,0.3)}
-.n8n-handle:hover::after{background:#fff}
-.n8n-handle.input{left:-7px}
-.n8n-handle.output{right:-7px;background:var(--text);border-color:var(--text)}
-.n8n-handle.output::after{background:#fff}
-.n8n-handle.output:hover{background:var(--primary);border-color:var(--primary)}
-.n8n-handle.connected{border-color:var(--primary);background:var(--primary)}
+.n8n-node:hover .n8n-node-hover-actions{opacity:1;transform:translateY(0);pointer-events:auto}
+.n8n-node.selected .n8n-node-hover-actions{opacity:1;transform:translateY(0);pointer-events:auto}
+.n8n-node-action-btn{
+  width:24px;height:24px;border-radius:6px;border:1px solid var(--border);background:#fff;
+  display:grid;place-items:center;color:var(--text-light);font-size:12px;cursor:pointer;
+  transition:.15s var(--ease);box-shadow:var(--shadow-xs);
+}
+.n8n-node-action-btn:hover{background:var(--bg-hover);color:var(--text);border-color:var(--border-strong);transform:translateY(-1px);box-shadow:var(--shadow-sm)}
+.n8n-node-action-btn:active{transform:scale(0.95)}
+.n8n-node-status{width:8px;height:8px;border-radius:50%;background:var(--border);flex-shrink:0;transition:.2s;box-shadow:inset 0 1px 1px rgba(0,0,0,0.1)}
+.n8n-node-status.running{background:var(--primary);animation:n8n-blink 1s infinite;box-shadow:0 0 0 3px var(--primary-light)}
+.n8n-node-status.success{background:var(--success);box-shadow:0 0 0 3px var(--success-light)}
+.n8n-node-status.error{background:var(--error);box-shadow:0 0 0 3px var(--error-light)}
+@keyframes n8n-blink{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.7;transform:scale(0.9)}}
+.n8n-node-body{padding:10px 12px 12px;font:400 12px var(--font);color:var(--text-light);min-height:38px;line-height:1.5;background:#fff;position:relative}
+.n8n-node-body .desc{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.n8n-node-body .params{margin-top:6px;display:flex;gap:4px;flex-wrap:wrap}
+.n8n-node-body .param-pill{font:500 10px var(--mono);padding:2px 6px;border-radius:10px;background:var(--bg-subtle);border:1px solid var(--border);color:var(--text-light);max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.n8n-node-footer{padding:7px 12px;border-top:1px solid #f5f5f5;display:flex;align-items:center;justify-content:space-between;background:#fcfcfc;min-height:32px;gap:8px}
+.n8n-node-footer .left{display:flex;align-items:center;gap:8px;min-width:0}
+.n8n-node-footer .time{font:600 11px var(--mono);color:var(--success);display:flex;align-items:center;gap:4px;white-space:nowrap}
+.n8n-node-footer .time.error{color:var(--error)}
+.n8n-node-footer .right{display:flex;align-items:center;gap:6px;flex-shrink:0}
+.n8n-node-footer .badge{font:600 10px var(--font);padding:2px 6px;border-radius:10px;background:var(--bg-subtle);border:1px solid var(--border);color:var(--text-light);letter-spacing:0.02em}
+.n8n-node-footer .badge.success{background:var(--success-light);color:var(--success);border-color:var(--success-border)}
+.n8n-node-footer .badge.error{background:var(--error-light);color:var(--error);border-color:#fecaca}
+.n8n-exec-order{position:absolute;top:-10px;right:-10px;width:22px;height:22px;border-radius:50%;background:var(--text);color:#fff;display:grid;place-items:center;font:700 11px var(--font);box-shadow:0 3px 8px rgba(0,0,0,0.2), 0 1px 3px rgba(0,0,0,0.15);z-index:5;border:2px solid #fff;transition:.2s var(--ease-spring)}
+.n8n-node:hover .n8n-exec-order{transform:scale(1.1)}
+
+/* HANDLES - n8n exact attractive */
+.n8n-handles{position:absolute;top:0;left:0;right:0;bottom:0;pointer-events:none;z-index:4}
+.n8n-handle{
+  position:absolute;width:16px;height:16px;border-radius:50%;background:#fff;border:2px solid var(--border-strong);
+  pointer-events:auto;cursor:crosshair;transition:all .2s var(--ease);top:50%;transform:translateY(-50%);z-index:5;
+  display:grid;place-items:center;box-shadow:var(--shadow-xs);
+}
+.n8n-handle::after{content:'';width:6px;height:6px;border-radius:50%;background:var(--border-strong);transition:.15s var(--ease)}
+.n8n-handle:hover{border-color:var(--primary);background:var(--primary);transform:translateY(-50%) scale(1.3);box-shadow:0 3px 12px rgba(255,109,90,0.4);z-index:10}
+.n8n-handle:hover::after{background:#fff;transform:scale(1.2)}
+.n8n-handle.input{left:-8px}
+.n8n-handle.output{right:-8px;background:var(--text);border-color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,0.2)}
+.n8n-handle.output::after{background:#fff;width:5px;height:5px}
+.n8n-handle.output:hover{background:var(--primary);border-color:var(--primary);box-shadow:0 3px 12px rgba(255,109,90,0.4)}
+.n8n-handle.connected{border-color:var(--primary);background:var(--primary);box-shadow:0 2px 8px rgba(255,109,90,0.3)}
 .n8n-handle.connected::after{background:#fff}
 .n8n-handle.output.connected{background:var(--primary);border-color:var(--primary)}
-.n8n-handle-label{position:absolute;top:50%;transform:translateY(-50%);font:500 11px var(--font);color:var(--text);background:#fff;border:1px solid var(--border);padding:3px 8px;border-radius:12px;white-space:nowrap;pointer-events:none;opacity:0;transition:all .15s var(--ease);box-shadow:var(--shadow-sm);z-index:10}
-.n8n-handle.input .n8n-handle-label{left:20px}
-.n8n-handle.output .n8n-handle-label{right:20px}
+.n8n-handle-label{
+  position:absolute;top:50%;transform:translateY(-50%);font:600 11px var(--font);color:var(--text);
+  background:#fff;border:1px solid var(--border);padding:4px 10px;border-radius:20px;white-space:nowrap;
+  pointer-events:none;opacity:0;transition:all .2s var(--ease);box-shadow:var(--shadow-md);z-index:20;
+  display:flex;align-items:center;gap:6px;
+}
+.n8n-handle-label .dot{width:6px;height:6px;border-radius:50%;background:var(--primary);flex-shrink:0}
+.n8n-handle.input .n8n-handle-label{left:24px;transform:translateY(-50%) translateX(-8px)}
+.n8n-handle.output .n8n-handle-label{right:24px;transform:translateY(-50%) translateX(8px)}
 .n8n-handle:hover .n8n-handle-label{opacity:1;transform:translateY(-50%) translateX(0)}
-.n8n-handle.input .n8n-handle-label{transform:translateY(-50%) translateX(-4px)}
-.n8n-handle.output .n8n-handle-label{transform:translateY(-50%) translateX(4px)}
 
 /* EDGES - n8n exact */
-.n8n-edge{fill:none;stroke:#c8c8c8;stroke-width:2;transition:all .15s var(--ease);pointer-events:auto;cursor:pointer}
-.n8n-edge:hover{stroke:#999;stroke-width:2.5}
-.n8n-edge.selected{stroke:var(--primary)!important;stroke-width:3!important}
-.n8n-edge.executing{stroke:var(--primary);stroke-width:2.5;stroke-dasharray:8 4;animation:n8n-dash 0.5s linear infinite}
-.n8n-edge.true{stroke:#a0a0a0}
-.n8n-edge.false{stroke:#f5a623;stroke-dasharray:6 3}
-.n8n-edge.temp{stroke:var(--primary);stroke-width:2;stroke-dasharray:6 4;pointer-events:none;opacity:0.8}
-@keyframes n8n-dash{to{stroke-dashoffset:-12}}
+.n8n-edge{fill:none;stroke:#c2c2c2;stroke-width:2.2;transition:all .2s var(--ease);pointer-events:auto;cursor:pointer}
+.n8n-edge:hover{stroke:#8a8a8a;stroke-width:3}
+.n8n-edge.selected{stroke:var(--primary)!important;stroke-width:3!important;filter:drop-shadow(0 2px 6px rgba(255,109,90,0.3))}
+.n8n-edge.executing{stroke:var(--primary);stroke-width:3;stroke-dasharray:10 6;animation:n8n-dash 0.6s linear infinite}
+.n8n-edge.true{stroke:#a8a8a8}
+.n8n-edge.false{stroke:#f59e0b;stroke-dasharray:8 4}
+.n8n-edge.temp{stroke:var(--primary);stroke-width:2.5;stroke-dasharray:8 6;pointer-events:none;opacity:0.9;filter:drop-shadow(0 2px 8px rgba(255,109,90,0.3))}
+@keyframes n8n-dash{to{stroke-dashoffset:-16}}
 
-/* INSPECTOR - n8n asli tabs */
-.n8n-inspector{flex:1;overflow:auto;display:flex;flex-direction:column}
-.n8n-inspector-tabs{height:48px;display:flex;align-items:center;gap:24px;padding:0 16px;border-bottom:1px solid var(--border);flex-shrink:0;background:#fff;overflow-x:auto}
+/* INSPECTOR - n8n asli tabs exact */
+.n8n-inspector{flex:1;overflow:hidden;display:flex;flex-direction:column;background:#fff}
+.n8n-inspector-tabs{height:48px;display:flex;align-items:center;gap:0;padding:0 4px 0 16px;border-bottom:1px solid var(--border);flex-shrink:0;background:#fff;overflow-x:auto;scrollbar-width:none}
+.n8n-inspector-tabs::-webkit-scrollbar{display:none}
 .n8n-inspector-tab{
-  height:100%;padding:0 2px;border:0;border-bottom:2px solid transparent;background:transparent;
+  height:48px;padding:0 14px;border:0;border-bottom:2px solid transparent;background:transparent;
   color:var(--text-light);font:500 13px var(--font);cursor:pointer;transition:.15s var(--ease);white-space:nowrap;
-  display:flex;align-items:center;gap:6px;position:relative;top:1px;
+  display:flex;align-items:center;gap:6px;position:relative;top:1px;flex-shrink:0;
 }
 .n8n-inspector-tab.active{color:var(--text);border-bottom-color:var(--primary);font-weight:600}
-.n8n-inspector-tab:hover:not(.active){color:var(--text)}
-.n8n-inspector-content{flex:1;overflow:auto}
-.n8n-prop-group{padding:16px;border-bottom:1px solid var(--border)}
+.n8n-inspector-tab:hover:not(.active){color:var(--text-secondary);background:var(--bg-subtle)}
+.n8n-inspector-tab .badge{font:600 10px var(--font);background:var(--bg-subtle);border:1px solid var(--border);padding:1px 5px;border-radius:10px;color:var(--text-light);margin-left:2px}
+.n8n-inspector-tab.active .badge{background:var(--primary-light);border-color:var(--primary);color:var(--primary)}
+.n8n-inspector-content{flex:1;overflow:auto;background:#fff}
+.n8n-prop-group{padding:20px 16px;border-bottom:1px solid var(--border);background:#fff}
 .n8n-prop-group:last-child{border-bottom:0}
-.n8n-prop-group h3{margin:0 0 12px;font:600 11px var(--font);letter-spacing:.06em;text-transform:uppercase;color:var(--text-lighter);display:flex;align-items:center;gap:6px}
-.n8n-kv{display:grid;grid-template-columns:100px 1fr;gap:10px 12px}
-.n8n-kv dt{color:var(--text-light);font:400 12px var(--font);padding-top:2px}
-.n8n-kv dd{margin:0;font:500 12px var(--font);word-break:break-all}
-.n8n-code{background:var(--bg-subtle);border:1px solid var(--border);border-radius:6px;padding:12px;font:400 12px/1.5 ui-monospace, monospace;overflow:auto;white-space:pre-wrap;word-break:break-all}
-.n8n-textarea{width:100%;min-height:120px;background:#fff;border:1px solid var(--border);border-radius:6px;padding:10px 12px;color:var(--text);font:400 12px/1.5 ui-monospace, monospace;outline:0;resize:vertical;transition:.15s var(--ease)}
+.n8n-prop-group h3{margin:0 0 14px;font:600 11px var(--font);letter-spacing:.06em;text-transform:uppercase;color:var(--text-lighter);display:flex;align-items:center;gap:8px}
+.n8n-prop-group h3 .line{flex:1;height:1px;background:var(--border);margin-left:8px}
+.n8n-kv{display:grid;grid-template-columns:110px 1fr;gap:12px 12px}
+.n8n-kv dt{color:var(--text-light);font:400 12px var(--font);padding-top:3px}
+.n8n-kv dd{margin:0;font:500 12px var(--font);word-break:break-all;line-height:1.5}
+.n8n-code{background:var(--bg-subtle);border:1px solid var(--border);border-radius:8px;padding:14px;font:400 12px/1.6 var(--mono);overflow:auto;white-space:pre-wrap;word-break:break-all}
+.n8n-textarea{width:100%;min-height:120px;background:#fff;border:1px solid var(--border);border-radius:8px;padding:12px;color:var(--text);font:400 12px/1.6 var(--mono);outline:0;resize:vertical;transition:.15s var(--ease);line-height:1.6}
 .n8n-textarea:focus{border-color:var(--primary);box-shadow:var(--primary-ring)}
-.n8n-field{margin-bottom:16px}
+.n8n-field{margin-bottom:18px}
 .n8n-field:last-child{margin-bottom:0}
-.n8n-field label{display:block;font:500 12px var(--font);color:var(--text);margin-bottom:6px}
-.n8n-field input,.n8n-field select{
-  width:100%;height:36px;padding:0 12px;border:1px solid var(--border);border-radius:6px;
-  background:#fff;font:400 13px var(--font);outline:0;transition:.15s var(--ease);
+.n8n-field label{display:block;font:500 12px var(--font);color:var(--text);margin-bottom:7px;letter-spacing:-0.01em}
+.n8n-field .hint{font:400 11px var(--font);color:var(--text-lighter);margin-top:6px;line-height:1.4}
+.n8n-field input,.n8n-field select,.n8n-field textarea{
+  width:100%;height:38px;padding:0 12px;border:1px solid var(--border);border-radius:8px;
+  background:#fff;font:400 13px var(--font);outline:0;transition:.15s var(--ease);color:var(--text);
 }
-.n8n-field input:focus,.n8n-field select:focus{border-color:var(--primary);box-shadow:var(--primary-ring)}
-.n8n-diag{padding:10px 12px;border-radius:6px;margin:8px 0;font:400 12px var(--font);border-left:3px solid;display:flex;gap:8px;align-items:flex-start;line-height:1.4}
-.n8n-diag.error{background:#fff0f0;border-color:var(--error);color:#8a1a2e}
-.n8n-diag.warning{background:#fff8e6;border-color:var(--warning);color:#7a5a00}
-.n8n-diag.ok{background:var(--success-light);border-color:var(--success);color:#0d4a2a}
+.n8n-field textarea{height:auto;min-height:80px;padding:10px 12px;resize:vertical;line-height:1.5}
+.n8n-field input:focus,.n8n-field select:focus,.n8n-field textarea:focus{border-color:var(--primary);box-shadow:var(--primary-ring)}
+.n8n-field input::placeholder,.n8n-field textarea::placeholder{color:var(--text-lighter)}
+.n8n-diag{padding:12px 14px;border-radius:8px;margin:10px 0;font:400 12px var(--font);border-left:3px solid;display:flex;gap:10px;align-items:flex-start;line-height:1.5}
+.n8n-diag.error{background:var(--error-light);border-color:var(--error);color:#991b1b}
+.n8n-diag.warning{background:var(--warning-light);border-color:var(--warning);color:#92400e}
+.n8n-diag.ok{background:var(--success-light);border-color:var(--success);color:#065f46}
 
 /* CANVAS CONTROLS - n8n exact */
-.n8n-controls{position:absolute;left:12px;bottom:12px;display:flex;flex-direction:column;gap:2px;z-index:20;background:#fff;border:1px solid var(--border);border-radius:8px;padding:4px;box-shadow:var(--shadow)}
-.n8n-controls .n8n-btn{width:32px;height:32px;padding:0;display:grid;place-items:center;border-radius:6px;border:0;background:transparent;color:var(--text-light);font-size:14px}
+.n8n-controls{position:absolute;left:12px;bottom:12px;display:flex;flex-direction:column;gap:1px;z-index:20;background:#fff;border:1px solid var(--border);border-radius:10px;padding:4px;box-shadow:var(--shadow);overflow:hidden}
+.n8n-controls .n8n-btn{width:32px;height:32px;padding:0;display:grid;place-items:center;border-radius:6px;border:0;background:transparent;color:var(--text-light);font-size:14px;font-weight:500}
 .n8n-controls .n8n-btn:hover{background:var(--bg-hover);color:var(--text)}
-.n8n-controls .sep{height:1px;background:var(--border);margin:2px 4px}
-.n8n-minimap{position:absolute;right:12px;bottom:12px;width:200px;height:130px;background:#fff;border:1px solid var(--border);border-radius:8px;overflow:hidden;box-shadow:var(--shadow);z-index:20;transition:all .2s var(--ease)}
-.n8n-minimap.collapsed{width:32px;height:32px;border-radius:6px}
-.n8n-minimap-header{height:28px;padding:0 8px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);font:600 11px var(--font);color:var(--text-lighter);background:#fff}
-.n8n-minimap canvas{width:100%;height:calc(100% - 28px);display:block}
-.n8n-minimap.collapsed .n8n-minimap-header{border-bottom:0}
+.n8n-controls .n8n-btn:active{background:var(--bg-active);transform:scale(0.96)}
+.n8n-controls .sep{height:1px;background:var(--border);margin:3px 6px}
+.n8n-minimap{position:absolute;right:12px;bottom:12px;width:220px;height:140px;background:#fff;border:1px solid var(--border);border-radius:10px;overflow:hidden;box-shadow:var(--shadow);z-index:20;transition:all .25s var(--ease);display:flex;flex-direction:column}
+.n8n-minimap.collapsed{width:36px;height:36px;border-radius:8px}
+.n8n-minimap-header{height:32px;padding:0 10px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);font:600 11px var(--font);color:var(--text-lighter);background:#fff;flex-shrink:0;letter-spacing:.04em;text-transform:uppercase}
+.n8n-minimap canvas{flex:1;width:100%;display:block;background:#fff}
+.n8n-minimap.collapsed .n8n-minimap-header{border-bottom:0;justify-content:center;padding:0}
 .n8n-minimap.collapsed canvas{display:none}
+.n8n-minimap.collapsed .label{display:none}
 
-/* FLOATING TOGGLES - untuk full canvas */
+/* FLOATING TOGGLES - full canvas */
 .n8n-float-toggle{
   position:absolute;top:50%;transform:translateY(-50%);z-index:15;
-  width:24px;height:48px;background:#fff;border:1px solid var(--border);box-shadow:var(--shadow);
-  display:grid;place-items:center;cursor:pointer;transition:.2s var(--ease);color:var(--text-light);
+  width:28px;height:56px;background:#fff;border:1px solid var(--border);box-shadow:var(--shadow);
+  display:grid;place-items:center;cursor:pointer;transition:all .25s var(--ease);color:var(--text-light);font-size:14px;font-weight:500;
 }
-.n8n-float-toggle:hover{background:var(--bg-hover);color:var(--text);border-color:var(--border-strong)}
-.n8n-float-toggle.left{left:0;border-left:0;border-radius:0 6px 6px 0}
-.n8n-float-toggle.right{right:0;border-right:0;border-radius:6px 0 0 6px}
-.n8n-float-toggle.hidden{opacity:0;pointer-events:none;transform:translateY(-50%) translateX(-100%)}
+.n8n-float-toggle:hover{background:var(--bg-hover);color:var(--text);border-color:var(--border-strong);transform:translateY(-50%) scale(1.05);box-shadow:var(--shadow-md)}
+.n8n-float-toggle:active{transform:translateY(-50%) scale(0.95)}
+.n8n-float-toggle.left{left:0;border-left:0;border-radius:0 8px 8px 0}
+.n8n-float-toggle.right{right:0;border-right:0;border-radius:8px 0 0 8px}
+.n8n-float-toggle.hidden{opacity:0;pointer-events:none}
+.n8n-float-toggle.left.hidden{transform:translateY(-50%) translateX(-100%)}
 .n8n-float-toggle.right.hidden{transform:translateY(-50%) translateX(100%)}
 
-.n8n-statusbar{height:28px;display:flex;align-items:center;gap:16px;padding:0 12px;background:#fff;border-top:1px solid var(--border);font:400 12px var(--font);color:var(--text-light);flex-shrink:0;z-index:10}
-.n8n-statusbar b{color:var(--text);font-weight:500}
-.n8n-statusbar .sep{width:1px;height:14px;background:var(--border)}
+.n8n-statusbar{height:32px;display:flex;align-items:center;gap:0;padding:0 0 0 12px;background:#fff;border-top:1px solid var(--border);font:400 12px var(--font);color:var(--text-light);flex-shrink:0;z-index:10;overflow:hidden}
+.n8n-statusbar-left{display:flex;align-items:center;gap:12px;flex:1;min-width:0;overflow:hidden}
+.n8n-statusbar-right{display:flex;align-items:center;gap:0;padding-left:12px;border-left:1px solid var(--border);height:100%;flex-shrink:0;background:#fff}
+.n8n-statusbar-item{padding:0 12px;height:100%;display:flex;align-items:center;gap:6px;border-right:1px solid var(--border);white-space:nowrap;transition:.15s}
+.n8n-statusbar-item:last-child{border-right:0}
+.n8n-statusbar-item:hover{background:var(--bg-subtle);color:var(--text)}
+.n8n-statusbar b{color:var(--text);font-weight:600}
+.n8n-statusbar .dot{width:6px;height:6px;border-radius:50%;background:var(--success);box-shadow:0 0 0 3px var(--success-light);animation:n8n-blink 2s infinite}
 
 /* TOAST - n8n */
-.n8n-toasts{position:fixed;right:12px;bottom:40px;display:flex;flex-direction:column;gap:8px;z-index:1000;pointer-events:none}
-.n8n-toast{pointer-events:auto;background:#fff;border:1px solid var(--border);border-radius:8px;padding:12px 14px;box-shadow:var(--shadow-lg);display:flex;gap:10px;align-items:flex-start;min-width:320px;max-width:420px;animation:n8n-slide .25s var(--ease-out)}
-@keyframes n8n-slide{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.n8n-toasts{position:fixed;right:12px;bottom:44px;display:flex;flex-direction:column;gap:8px;z-index:1000;pointer-events:none}
+.n8n-toast{pointer-events:auto;background:#fff;border:1px solid var(--border);border-radius:10px;padding:12px 14px;box-shadow:var(--shadow-lg);display:flex;gap:12px;align-items:flex-start;min-width:340px;max-width:440px;animation:n8n-slide .3s var(--ease-out);overflow:hidden;position:relative}
+.n8n-toast::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--toast-color, var(--border))}
+.n8n-toast.ok{--toast-color:var(--success)} .n8n-toast.err{--toast-color:var(--error)} .n8n-toast.info{--toast-color:var(--primary)}
+@keyframes n8n-slide{from{opacity:0;transform:translateY(12px) scale(0.98)}to{opacity:1;transform:translateY(0) scale(1)}}
 
 /* CMDK - n8n */
-.n8n-cmdk{position:fixed;inset:0;background:rgba(0,0,0,0.25);backdrop-filter:blur(2px);display:none;place-items:center;z-index:1000;padding:20px}
+.n8n-cmdk{position:fixed;inset:0;background:rgba(0,0,0,0.2);backdrop-filter:blur(4px);display:none;place-items:center;z-index:1000;padding:20px}
 .n8n-cmdk.open{display:grid}
-.n8n-cmdk-box{width:100%;max-width:560px;background:#fff;border:1px solid var(--border);border-radius:12px;box-shadow:var(--shadow-lg);overflow:hidden;animation:n8n-pop .2s var(--ease-out)}
-@keyframes n8n-pop{from{opacity:0;transform:translateY(8px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
-.n8n-cmdk-input{width:100%;height:52px;padding:0 16px 0 44px;border:0;border-bottom:1px solid var(--border);background:transparent;color:var(--text);font:400 15px var(--font);outline:0}
-.n8n-cmdk-list{max-height:360px;overflow:auto;padding:8px}
-.n8n-cmdk-item{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:6px;cursor:pointer;transition:.1s var(--ease)}
-.n8n-cmdk-item:hover,.n8n-cmdk-item.active{background:var(--bg-subtle)}
+.n8n-cmdk-box{width:100%;max-width:600px;background:#fff;border:1px solid var(--border);border-radius:16px;box-shadow:0 24px 64px rgba(0,0,0,0.16), 0 8px 24px rgba(0,0,0,0.12);overflow:hidden;animation:n8n-pop .25s var(--ease-out)}
+@keyframes n8n-pop{from{opacity:0;transform:translateY(12px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}
+.n8n-cmdk-input{width:100%;height:56px;padding:0 16px 0 48px;border:0;border-bottom:1px solid var(--border);background:transparent;color:var(--text);font:400 15px var(--font);outline:0}
+.n8n-cmdk-input::placeholder{color:var(--text-lighter)}
+.n8n-cmdk-list{max-height:400px;overflow:auto;padding:8px}
+.n8n-cmdk-item{display:flex;align-items:center;gap:14px;padding:12px 12px;border-radius:8px;cursor:pointer;transition:.12s var(--ease);border:1px solid transparent}
+.n8n-cmdk-item:hover,.n8n-cmdk-item.active{background:var(--bg-subtle);border-color:var(--border)}
+.n8n-cmdk-item .icon{width:40px;height:40px;border-radius:8px;display:grid;place-items:center;color:#fff;font-size:16px;flex-shrink:0;font-weight:600}
+
+/* ADD NODE BUTTON - n8n asli center */
+.n8n-add-first{
+  position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:10;
+  background:#fff;border:1px dashed var(--border-strong);border-radius:12px;padding:24px 32px;
+  display:flex;flex-direction:column;align-items:center;gap:12px;cursor:pointer;
+  transition:.2s var(--ease);box-shadow:var(--shadow-sm);
+}
+.n8n-add-first:hover{border-color:var(--primary);background:var(--primary-light);box-shadow:var(--shadow);transform:translate(-50%,-50%) translateY(-2px)}
+.n8n-add-first .icon{width:48px;height:48px;border-radius:12px;background:var(--primary);display:grid;place-items:center;color:#fff;font-size:24px;box-shadow:0 4px 12px rgba(255,109,90,0.3)}
+.n8n-add-first b{font:600 14px var(--font)} .n8n-add-first span{font:400 12px var(--font);color:var(--text-light)}
 
 /* EMPTY */
 .n8n-empty{padding:32px 20px;text-align:center;color:var(--text-lighter)}
 .n8n-empty b{display:block;color:var(--text);font:600 13px var(--font);margin-bottom:6px}
 
-/* FLEXIBLE - responsive */
-@media (max-width: 1024px){
-  .n8n-sidebar{width:280px}
-  .n8n-sidebar.right{width:340px}
-  .n8n-sidebar-inner{width:280px}
-  .n8n-sidebar.right .n8n-sidebar-inner{width:340px}
+/* RESPONSIVE */
+@media (max-width: 1100px){
+  .n8n-sidebar{width:280px} .n8n-sidebar.right{width:360px}
+  .n8n-sidebar-inner{width:280px} .n8n-sidebar.right .n8n-sidebar-inner{width:360px}
+  .n8n-header-center{display:none}
 }
 </style>
 </head>
 <body>
 <header class="n8n-header">
-  <button class="n8n-icon-btn" id="bToggleLeft" title="Toggle nodes panel">☰</button>
-  <div class="n8n-logo"><div class="n8n-logo-icon">n8n</div> n8n-rust</div>
-  <div class="n8n-header-divider"></div>
-  <div class="n8n-wf-tabs">
-    <button class="n8n-wf-tab active">Editor</button>
-    <button class="n8n-wf-tab">Executions</button>
+  <div class="n8n-header-left">
+    <button class="n8n-icon-btn" id="bToggleLeft" title="Toggle nodes (⌘B)">☰</button>
+    <div class="n8n-logo"><div class="n8n-logo-icon">n8n</div> n8n-rust</div>
+    <div class="n8n-wf-path"><span>›</span><b id="wfPathName">My workflow</b></div>
+  </div>
+  <div class="n8n-header-center">
+    <div class="n8n-wf-tabs">
+      <button class="n8n-wf-tab active" data-wftab="editor">Editor</button>
+      <button class="n8n-wf-tab" data-wftab="executions">Executions <span style="background:var(--bg-subtle);border:1px solid var(--border);padding:1px 6px;border-radius:10px;font:600 10px var(--font);margin-left:4px" id="execCount">0</span></button>
+      <button class="n8n-wf-tab" data-wftab="evals">Evaluations</button>
+    </div>
   </div>
   <div class="n8n-wf-name"><input id="wfName" value="My workflow"></div>
-  <div class="n8n-header-center"></div>
   <div class="n8n-header-actions">
-    <button class="n8n-btn ghost sm" id="bUndo" title="Undo (⌘Z)">↩</button>
-    <button class="n8n-btn ghost sm" id="bRedo" title="Redo (⇧⌘Z)">↪</button>
-    <div class="n8n-header-divider"></div>
-    <button class="n8n-icon-btn" id="bToggleRight" title="Toggle inspector">◧</button>
+    <button class="n8n-btn ghost sm" id="bUndo" title="Undo (⌘Z)">↩ Undo</button>
+    <button class="n8n-btn ghost sm" id="bRedo" title="Redo (⇧⌘Z)">↪ Redo</button>
+    <div style="width:1px;height:20px;background:var(--border);margin:0 4px"></div>
+    <button class="n8n-icon-btn" id="bToggleRight" title="Toggle inspector (⌘I)">◧</button>
     <button class="n8n-btn sm" id="bImport">Import</button>
     <button class="n8n-btn sm" id="bExport">Export</button>
     <button class="n8n-btn sm" id="bValidate">Validate</button>
@@ -316,13 +415,11 @@ html,body{height:100%;margin:0;font-family:var(--font);background:var(--bg);colo
 </header>
 
 <div class="n8n-layout" id="layout">
-  <aside class="n8n-sidebar" id="left">
+  <aside class="n8n-sidebar left" id="left">
     <div class="n8n-sidebar-inner">
       <div class="n8n-sidebar-header">
-        <div class="title">☰ Nodes</div>
-        <div class="actions">
-          <button class="n8n-icon-btn" style="width:28px;height:28px" id="bCloseLeft" title="Close panel">✕</button>
-        </div>
+        <div class="title">☰ What triggers this workflow?</div>
+        <div class="actions"><button class="n8n-icon-btn" style="width:28px;height:28px" id="bCloseLeft">✕</button></div>
       </div>
       <div class="n8n-search"><div class="n8n-search-box"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="6"/><path d="m21 21-4.3-4.3"/></svg><input id="nodeSearch" placeholder="Search nodes..."></div></div>
       <div class="n8n-node-list" id="nodeList"></div>
@@ -335,29 +432,34 @@ html,body{height:100%;margin:0;font-family:var(--font);background:var(--bg);colo
       <svg id="n8n-edges"></svg>
       <div class="n8n-nodes" id="nodesLayer"></div>
     </div>
+    <div class="n8n-add-first" id="addFirst" style="display:none">
+      <div class="icon">+</div><b>Add first step...</b><span>Trigger workflow via Manual, Schedule, Webhook, etc</span>
+    </div>
     <div class="n8n-controls">
       <button class="n8n-btn" id="bZoomIn" title="Zoom in">+</button>
       <button class="n8n-btn" id="bZoomOut" title="Zoom out">−</button>
       <div class="sep"></div>
       <button class="n8n-btn" id="bFit" title="Fit view">⛶</button>
-      <button class="n8n-btn" id="bReset" title="Reset view">◎</button>
+      <button class="n8n-btn" id="bReset" title="Reset">◎</button>
+      <div class="sep"></div>
+      <button class="n8n-btn" id="bAddNode" title="Add node">+</button>
     </div>
     <div class="n8n-minimap" id="minimap">
-      <div class="n8n-minimap-header"><span>Overview</span><button class="n8n-icon-btn" style="width:20px;height:20px" id="bMiniToggle">−</button></div>
-      <canvas id="mini" width="200" height="102"></canvas>
+      <div class="n8n-minimap-header"><span class="label">Canvas Overview</span><div style="display:flex;gap:4px"><button class="n8n-icon-btn" style="width:20px;height:20px" id="bMiniToggle">−</button></div></div>
+      <canvas id="mini" width="220" height="108"></canvas>
     </div>
-    <button class="n8n-float-toggle left hidden" id="floatLeft" title="Open nodes panel">›</button>
-    <button class="n8n-float-toggle right hidden" id="floatRight" title="Open inspector">‹</button>
+    <button class="n8n-float-toggle left hidden" id="floatLeft" title="Open nodes (⌘B)">›</button>
+    <button class="n8n-float-toggle right hidden" id="floatRight" title="Open inspector (⌘I)">‹</button>
   </div>
 
   <aside class="n8n-sidebar right" id="right">
     <div class="n8n-sidebar-inner">
-      <div class="n8n-sidebar-header"><span id="panelTitle">Workflow</span><button class="n8n-icon-btn" style="width:28px;height:28px" id="bCloseRight" title="Close panel">✕</button></div>
+      <div class="n8n-sidebar-header"><span id="panelTitle">Workflow</span><div class="actions"><button class="n8n-icon-btn" style="width:28px;height:28px" id="bCloseRight">✕</button></div></div>
       <div class="n8n-inspector" id="inspector">
         <div class="n8n-inspector-tabs" id="inspectorTabs" style="display:none">
           <button class="n8n-inspector-tab active" data-tab="params">Parameters</button>
           <button class="n8n-inspector-tab" data-tab="settings">Settings</button>
-          <button class="n8n-inspector-tab" data-tab="docs">Docs</button>
+          <button class="n8n-inspector-tab" data-tab="docs">Docs <span class="badge">Beta</span></button>
         </div>
         <div class="n8n-inspector-content" id="panel"></div>
       </div>
@@ -366,65 +468,70 @@ html,body{height:100%;margin:0;font-family:var(--font);background:var(--bg);colo
 </div>
 
 <div class="n8n-statusbar" id="statusbar">
-  <span id="statusText">Ready — drag from black dot to connect, scroll to zoom, Space+drag to pan</span>
-  <span style="margin-left:auto;display:flex;align-items:center;gap:12px">
-    <span>Nodes: <b id="statNodes">0</b></span><span class="sep"></span><span>Connections: <b id="statEdges">0</b></span><span class="sep"></span><span>Zoom: <b id="statZoom">100%</b></span><span class="sep"></span><button class="n8n-btn ghost sm" id="bFullCanvas" style="height:20px">⛶ Full canvas</button>
-  </span>
+  <div class="n8n-statusbar-left">
+    <span class="dot"></span><span id="statusText">Ready — drag black handle to connect, scroll to zoom, Space+drag to pan, ⌘B/⌘I toggle panels</span>
+  </div>
+  <div class="n8n-statusbar-right">
+    <div class="n8n-statusbar-item"><span>Nodes: <b id="statNodes">0</b></span></div>
+    <div class="n8n-statusbar-item"><span>Connections: <b id="statEdges">0</b></span></div>
+    <div class="n8n-statusbar-item"><span>Zoom: <b id="statZoom">100%</b></span></div>
+    <div class="n8n-statusbar-item" style="cursor:pointer" id="bFullCanvas"><span>⛶ Full canvas</span></div>
+  </div>
 </div>
 
-<div class="n8n-cmdk" id="cmdk"><div class="n8n-cmdk-box"><input class="n8n-cmdk-input" id="cmdkInput" placeholder="Search nodes or actions..."><div class="n8n-cmdk-list" id="cmdkList"></div></div></div>
+<div class="n8n-cmdk" id="cmdk"><div class="n8n-cmdk-box"><input class="n8n-cmdk-input" id="cmdkInput" placeholder="Search nodes, actions, workflows..."><div class="n8n-cmdk-list" id="cmdkList"></div></div></div>
 <div class="n8n-toasts" id="toasts"></div>
 <input type="file" id="file" accept="application/json" hidden>
 
 <script>
 "use strict";
-// n8n asli node definitions - 1:1
+// n8n asli 1:1 - node definitions with attractive colors - lebih menarik
 const N8N_NODES=[
-  {type:"n8n-nodes-base.manualTrigger",label:"Manual Trigger",cat:"Trigger",icon:"▶",color:"#2e9e5b",desc:"Runs the flow on clicking a button. Good for testing."},
-  {type:"n8n-nodes-base.scheduleTrigger",label:"Schedule Trigger",cat:"Trigger",icon:"◷",color:"#ca8a04",desc:"Triggers the flow on a schedule."},
-  {type:"n8n-nodes-base.webhook",label:"Webhook",cat:"Trigger",icon:"🔗",color:"#ec4899",desc:"Starts the flow via webhook."},
-  {type:"n8n-nodes-base.set",label:"Set",cat:"Core",icon:"✎",color:"#3b82f6",desc:"Set data values."},
-  {type:"n8n-nodes-base.if",label:"IF",cat:"Logic",icon:"◈",color:"#d97706",desc:"Route items to different branches."},
-  {type:"n8n-nodes-base.filter",label:"Filter",cat:"Logic",icon:"☰",color:"#8b5cf6",desc:"Remove items matching a condition."},
-  {type:"n8n-nodes-base.switch",label:"Switch",cat:"Logic",icon:"↗",color:"#b45309",desc:"Route items to different branches based on rules."},
-  {type:"n8n-nodes-base.merge",label:"Merge",cat:"Logic",icon:"⧉",color:"#0e7490",desc:"Merges data of multiple inputs."},
-  {type:"n8n-nodes-base.sort",label:"Sort",cat:"Transform",icon:"⇅",color:"#0d9488",desc:"Sort data."},
-  {type:"n8n-nodes-base.limit",label:"Limit",cat:"Transform",icon:"#",color:"#64748b",desc:"Limit number of items."},
-  {type:"n8n-nodes-base.httpRequest",label:"HTTP Request",cat:"Core",icon:"🌐",color:"#0284c7",desc:"Makes an HTTP request."},
-  {type:"n8n-nodes-base.code",label:"Code",cat:"Core",icon:"</>",color:"#7c3aed",desc:"Run custom JavaScript code."},
-  {type:"n8n-nodes-base.function",label:"Function",cat:"Core",icon:"ƒ",color:"#a855f7",desc:"Run custom function."},
-  {type:"n8n-nodes-base.dateTime",label:"Date & Time",cat:"Transform",icon:"📅",color:"#4d7c0f",desc:"Manipulate date and time."},
-  {type:"n8n-nodes-base.noOp",label:"No Operation",cat:"Core",icon:"○",color:"#9aa0ae",desc:"No operation, do nothing."},
-  {type:"n8n-nodes-base.wait",label:"Wait",cat:"Logic",icon:"⏳",color:"#6d28d9",desc:"Wait before continuing."},
-  {type:"n8n-nodes-base.respondToWebhook",label:"Respond to Webhook",cat:"Logic",icon:"↩",color:"#be185d",desc:"Respond to webhook caller."},
-  {type:"n8n-nodes-base.stopAndError",label:"Stop And Error",cat:"Logic",icon:"✕",color:"#b91c1c",desc:"Stop workflow with error."},
-  {type:"n8n-nodes-base.executeCommand",label:"Execute Command",cat:"Core",icon:">_",color:"#166534",desc:"Execute a shell command."},
+  {type:"n8n-nodes-base.manualTrigger",label:"Manual Trigger",cat:"Trigger",icon:"▶",color:"#2ecc71",bg:"#e8f8f0",desc:"Runs on button click. Perfect for testing.",popular:true},
+  {type:"n8n-nodes-base.scheduleTrigger",label:"Schedule Trigger",cat:"Trigger",icon:"🕒",color:"#f39c12",bg:"#fef5e7",desc:"Runs on schedule. Every minute, hour, day.",popular:true},
+  {type:"n8n-nodes-base.webhook",label:"Webhook",cat:"Trigger",icon:"🔗",color:"#e84393",bg:"#fde8f0",desc:"Starts via HTTP webhook. GET, POST, etc.",popular:true},
+  {type:"n8n-nodes-base.set",label:"Set",cat:"Core",icon:"✎",color:"#3498db",bg:"#eaf2f8",desc:"Set key-value data. Most used node.",popular:true},
+  {type:"n8n-nodes-base.if",label:"IF",cat:"Logic",icon:"◈",color:"#e67e22",bg:"#fdf2e9",desc:"Branch workflow based on conditions.",popular:true},
+  {type:"n8n-nodes-base.filter",label:"Filter",cat:"Logic",icon:"☰",color:"#9b59b6",bg:"#f4ecf7",desc:"Remove items that don't match."},
+  {type:"n8n-nodes-base.switch",label:"Switch",cat:"Logic",icon:"↗",color:"#d35400",bg:"#fbeee6",desc:"Route to multiple branches by rules."},
+  {type:"n8n-nodes-base.merge",label:"Merge",cat:"Logic",icon:"⧉",color:"#16a085",bg:"#e8f8f5",desc:"Combine data from multiple branches."},
+  {type:"n8n-nodes-base.sort",label:"Sort",cat:"Transform",icon:"⇅",color:"#1abc9c",bg:"#e8f8f5",desc:"Sort items by field."},
+  {type:"n8n-nodes-base.limit",label:"Limit",cat:"Transform",icon:"#",color:"#7f8c8d",bg:"#f2f3f4",desc:"Keep only first/last N items."},
+  {type:"n8n-nodes-base.httpRequest",label:"HTTP Request",cat:"Core",icon:"🌐",color:"#2980b9",bg:"#eaf2f8",desc:"Call any API via HTTP.",popular:true},
+  {type:"n8n-nodes-base.code",label:"Code",cat:"Core",icon:"</>",color:"#8e44ad",bg:"#f4ecf7",desc:"Run JavaScript code (rhai).",popular:true},
+  {type:"n8n-nodes-base.function",label:"Function",cat:"Core",icon:"ƒ",color:"#9b59b6",bg:"#f4ecf7",desc:"Legacy Code node alias."},
+  {type:"n8n-nodes-base.dateTime",label:"Date & Time",cat:"Transform",icon:"📅",color:"#27ae60",bg:"#eafaf1",desc:"Current date, add, subtract, format."},
+  {type:"n8n-nodes-base.noOp",label:"No Operation",cat:"Core",icon:"○",color:"#95a5a6",bg:"#f2f3f4",desc:"Do nothing, passthrough."},
+  {type:"n8n-nodes-base.wait",label:"Wait",cat:"Logic",icon:"⏳",color:"#6c5ce7",bg:"#f0eefc",desc:"Wait X seconds/minutes/hours."},
+  {type:"n8n-nodes-base.respondToWebhook",label:"Respond to Webhook",cat:"Logic",icon:"↩",color:"#e84393",bg:"#fde8f0",desc:"Respond to webhook caller with data."},
+  {type:"n8n-nodes-base.stopAndError",label:"Stop And Error",cat:"Logic",icon:"✕",color:"#c0392b",bg:"#fdedec",desc:"Stop workflow with error message."},
+  {type:"n8n-nodes-base.executeCommand",label:"Execute Command",cat:"Core",icon:">_",color:"#2c3e50",bg:"#eaf2f8",desc:"Run shell command via sh -c."},
 ];
 const NODE_MAP=Object.fromEntries(N8N_NODES.map(n=>[n.type,n]));
 const DEFAULTS={
-  "n8n-nodes-base.set":{"mode":"manual","include":"all","assignments":{"assignments":[]}},
-  "n8n-nodes-base.if":{"conditions":{"combinator":"and","conditions":[],"options":{}}},
+  "n8n-nodes-base.set":{"mode":"manual","include":"all","assignments":{"assignments":[{"name":"myField","value":"myValue"}]}},
+  "n8n-nodes-base.if":{"conditions":{"combinator":"and","conditions":[{"leftValue":"={{ $json.myField }}","operator":{"type":"string","operation":"equals"},"rightValue":"myValue"}],"options":{}}},
   "n8n-nodes-base.filter":{"conditions":{"combinator":"and","conditions":[],"options":{}}},
-  "n8n-nodes-base.sort":{"type":"simple","sortFieldsUi":{"sortField":[{"fieldName":"","order":"ascending"}]}},
+  "n8n-nodes-base.sort":{"type":"simple","sortFieldsUi":{"sortField":[{"fieldName":"myField","order":"ascending"}]}},
   "n8n-nodes-base.limit":{"maxItems":10,"keep":"firstItems"},
-  "n8n-nodes-base.httpRequest":{"url":"","method":"GET"},
-  "n8n-nodes-base.code":{"mode":"runOnceForAllItems","code":"// $input = input items\nreturn $input;"},
+  "n8n-nodes-base.httpRequest":{"url":"https://api.example.com/data","method":"GET"},
+  "n8n-nodes-base.code":{"mode":"runOnceForAllItems","code":"// $input contains items\nfor (let item of $input) {\n  item.json.myNewField = 'hello';\n}\nreturn $input;"},
   "n8n-nodes-base.function":{"mode":"runOnceForAllItems","code":"return items;"},
-  "n8n-nodes-base.scheduleTrigger":{"rule":{"interval":[{"field":"hours"}]}},
-  "n8n-nodes-base.webhook":{"path":"my-webhook","httpMethod":"GET","responseMode":"onReceived"},
-  "n8n-nodes-base.switch":{"rules":{"values":[]},"fallbackOutput":"extra"},
+  "n8n-nodes-base.scheduleTrigger":{"rule":{"interval":[{"field":"hours","minutesInterval":1}]}},
+  "n8n-nodes-base.webhook":{"path":"my-webhook","httpMethod":"GET","responseMode":"onReceived","responseData":"firstEntryJson"},
+  "n8n-nodes-base.switch":{"rules":{"values":[{"conditions":{"combinator":"and","conditions":[],"options":{}}}]},"fallbackOutput":"extra"},
   "n8n-nodes-base.merge":{"mode":"append"},
-  "n8n-nodes-base.dateTime":{"operation":"getCurrentDate"},
+  "n8n-nodes-base.dateTime":{"operation":"getCurrentDate","includeTime":true},
   "n8n-nodes-base.respondToWebhook":{"respondWith":"json","responseBody":"={{ $json }}","responseCode":200},
   "n8n-nodes-base.wait":{"amount":1,"unit":"seconds"},
-  "n8n-nodes-base.stopAndError":{"message":"Error message"},
-  "n8n-nodes-base.executeCommand":{"command":"echo hello"},
+  "n8n-nodes-base.stopAndError":{"message":"Workflow stopped with error"},
+  "n8n-nodes-base.executeCommand":{"command":"echo 'hello from n8n-rust'"},
 };
 const EXAMPLE={
   name:"My workflow",
   nodes:[
     {parameters:{},id:"1",name:"Manual Trigger",type:"n8n-nodes-base.manualTrigger",typeVersion:1,position:[460,300]},
-    {parameters:{"assignments":{"assignments":[{"name":"myField","value":"myValue"}]}},id:"2",name:"Set",type:"n8n-nodes-base.set",typeVersion:3.4,position:[740,300]},
+    {parameters:{"assignments":{"assignments":[{"name":"greeting","value":"Hello n8n! 🚀"},{"name":"count","value":42}]}},id:"2",name:"Set",type:"n8n-nodes-base.set",typeVersion:3.4,position:[740,300]},
     {parameters:{},id:"3",name:"No Operation",type:"n8n-nodes-base.noOp",typeVersion:1,position:[1020,300]}
   ],
   connections:{
@@ -434,7 +541,7 @@ const EXAMPLE={
   active:false,settings:{executionOrder:"v1"}
 };
 
-// STATE with collapsible
+// STATE
 let state={
   wf: structuredClone(EXAMPLE),
   selected:null,
@@ -447,6 +554,7 @@ let state={
   leftCollapsed:false,rightCollapsed:false,
   inspectorTab:"params",
   minimapCollapsed:false,
+  collapsedCats:new Set(),
 };
 
 const $=s=>document.querySelector(s);
@@ -456,9 +564,9 @@ const leftSidebar=$("#left"), rightSidebar=$("#right");
 const floatLeft=$("#floatLeft"), floatRight=$("#floatRight");
 
 function toast(msg,type="ok"){
-  const c=$("#toasts");const el=document.createElement("div");el.className="n8n-toast";
-  el.innerHTML=`<div style="font-size:14px;flex-shrink:0">${type==="ok"?"✓":type==="err"?"✕":"ℹ"}</div><div style="flex:1"><div style="font:500 13px var(--font);line-height:1.4">${msg}</div></div>`;
-  c.appendChild(el);setTimeout(()=>{el.style.opacity="0";el.style.transform="translateY(8px)";setTimeout(()=>el.remove(),250)},3000);
+  const c=$("#toasts");const el=document.createElement("div");el.className="n8n-toast "+type;
+  el.innerHTML=`<div style="font-size:16px;flex-shrink:0">${type==="ok"?"✓":type==="err"?"✕":"ℹ"}</div><div style="flex:1"><div style="font:600 13px var(--font);line-height:1.4">${msg}</div></div>`;
+  c.appendChild(el);setTimeout(()=>{el.style.opacity="0";el.style.transform="translateY(12px) scale(0.98)";setTimeout(()=>el.remove(),300)},3200);
 }
 function setStatus(msg){statusText.textContent=msg}
 function saveHistory(){
@@ -479,28 +587,32 @@ function allEdges(){
 }
 function esc(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]))}
 
-// COLLAPSIBLE SIDEBARS - key fix for full canvas
+// COLLAPSIBLE - full canvas
 function setLeftCollapsed(v){
   state.leftCollapsed=v;
   leftSidebar.classList.toggle("collapsed",v);
+  leftSidebar.classList.toggle("left",true);
   floatLeft.classList.toggle("hidden",!v);
   localStorage.setItem("n8n-left-collapsed",v?"1":"0");
-  setTimeout(()=>{applyViewport();drawMinimap()},10);
+  $("#bToggleLeft").classList.toggle("active",!v);
+  setTimeout(()=>{applyViewport();drawMinimap()},50);
 }
 function setRightCollapsed(v){
   state.rightCollapsed=v;
   rightSidebar.classList.toggle("collapsed",v);
+  rightSidebar.classList.toggle("right",true);
   floatRight.classList.toggle("hidden",!v);
   localStorage.setItem("n8n-right-collapsed",v?"1":"0");
-  setTimeout(()=>{applyViewport();drawMinimap()},10);
+  $("#bToggleRight").classList.toggle("active",!v);
+  setTimeout(()=>{applyViewport();drawMinimap()},50);
 }
 function toggleLeft(){setLeftCollapsed(!state.leftCollapsed)}
 function toggleRight(){setRightCollapsed(!state.rightCollapsed)}
 function fullCanvas(){
   if(!state.leftCollapsed||!state.rightCollapsed){
-    setLeftCollapsed(true);setRightCollapsed(true);toast("Full canvas mode — click › and ‹ to restore panels");
+    setLeftCollapsed(true);setRightCollapsed(true);toast("Full canvas — click › and ‹ to restore","info");
   }else{
-    setLeftCollapsed(false);setRightCollapsed(false);toast("Panels restored");
+    setLeftCollapsed(false);setRightCollapsed(false);toast("Panels restored","ok");
   }
 }
 
@@ -509,6 +621,8 @@ function applyViewport(){
   viewport.style.transform=`translate(${state.viewport.x}px, ${state.viewport.y}px) scale(${state.viewport.zoom})`;
   $("#statZoom").textContent=Math.round(state.viewport.zoom*100)+"%";
   drawMinimap();
+  const addFirst=$("#addFirst");
+  if(state.wf.nodes.length===0) addFirst.style.display="flex"; else addFirst.style.display="none";
 }
 function screenToWorld(sx,sy){
   const rect=canvas.getBoundingClientRect();
@@ -517,47 +631,74 @@ function screenToWorld(sx,sy){
 function fitView(){
   if(!state.wf.nodes.length) return;
   let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
-  for(const n of state.wf.nodes){minX=Math.min(minX,n.position[0]);minY=Math.min(minY,n.position[1]);maxX=Math.max(maxX,n.position[0]+240);maxY=Math.max(maxY,n.position[1]+80)}
-  const pad=120;const vw=canvas.clientWidth,vh=canvas.clientHeight;
+  for(const n of state.wf.nodes){minX=Math.min(minX,n.position[0]);minY=Math.min(minY,n.position[1]);maxX=Math.max(maxX,n.position[0]+260);maxY=Math.max(maxY,n.position[1]+80)}
+  const pad=140;const vw=canvas.clientWidth,vh=canvas.clientHeight;
   const bw=maxX-minX,bh=maxY-minY;
   const zoom=Math.min(1,Math.min((vw-pad*2)/bw,(vh-pad*2)/bh));
-  state.viewport.zoom=Math.max(0.15,Math.min(1.5,zoom));
+  state.viewport.zoom=Math.max(0.15,Math.min(1.4,zoom));
   state.viewport.x=(vw-bw*state.viewport.zoom)/2-minX*state.viewport.zoom;
   state.viewport.y=(vh-bh*state.viewport.zoom)/2-minY*state.viewport.zoom;
   applyViewport();
 }
 
-// RENDER
+// RENDER - attractive nodes like n8n asli
 function renderAll(){renderNodes();renderEdges();renderPanel();updateStats()}
-function updateStats(){$("#statNodes").textContent=state.wf.nodes.length;$("#statEdges").textContent=allEdges().length;$("#wfName").value=state.wf.name||""}
+function updateStats(){$("#statNodes").textContent=state.wf.nodes.length;$("#statEdges").textContent=allEdges().length;$("#wfName").value=state.wf.name||"";$("#wfPathName").textContent=state.wf.name||"My workflow";$("#execCount").textContent=state.report?state.report.order.length:0}
 function renderNodes(){
   nodesLayer.innerHTML="";
   const orderIdx={};if(state.report) state.report.order.forEach((n,i)=>orderIdx[n]=i+1);
   for(const n of state.wf.nodes){
-    const def=NODE_MAP[n.type]||{icon:"?",color:"#999",label:n.type};
+    const def=NODE_MAP[n.type]||{icon:"?",color:"#999",bg:"#eee",label:n.type,desc:""};
     const el=document.createElement("div");
-    el.className="n8n-node"+(state.selected===n.name?" selected":"");
+    el.className="n8n-node"+(state.selected===n.name?" selected":"")+(n.disabled?" disabled":"");
     if(state.report&&state.report.order.includes(n.name)) el.classList.add("success");
     el.style.left=n.position[0]+"px";el.style.top=n.position[1]+"px";el.dataset.name=n.name;
+    el.style.setProperty("--node-color",def.color);
     const dur=state.report&&state.report.durations_ms&&state.report.durations_ms[n.name];
     const hasIn=allEdges().some(e=>e.to===n.name);
     const hasOut=branches(n.name).flat().length>0;
+    const assigns=n.parameters?.assignments?.assignments||[];
+    const pills=assigns.slice(0,3).map(a=>`<span class="param-pill">${esc(a.name||"field")}</span>`).join("") + (assigns.length>3?`<span class="param-pill">+${assigns.length-3}</span>`:"");
+    const isTrigger=def.cat==="Trigger";
     el.innerHTML=`
       <div class="n8n-node-header">
         <div class="n8n-node-icon" style="background:${def.color}">${def.icon}</div>
-        <div class="n8n-node-title"><div class="name">${esc(n.name)}</div><div class="type">${esc(def.label)}</div></div>
-        <div class="n8n-node-status ${dur!==undefined?"success":""}"></div>
+        <div class="n8n-node-title">
+          <div class="name">${esc(n.name)} ${isTrigger?`<span style="font:600 9px var(--font);background:${def.bg};color:${def.color};padding:1px 5px;border-radius:8px;border:1px solid ${def.color}20;margin-left:4px;vertical-align:middle">TRIGGER</span>`:""}</div>
+          <div class="type"><span>${esc(def.label)}</span><span class="dot"></span><span>${esc(def.cat)}</span></div>
+        </div>
+        <div class="n8n-node-status ${dur!==undefined?"success":isTrigger?"success":""}"></div>
+        <div class="n8n-node-hover-actions">
+          <button class="n8n-node-action-btn" title="Execute node" data-action="exec">▶</button>
+          <button class="n8n-node-action-btn" title="Disable" data-action="disable">${n.disabled?"●":"◐"}</button>
+          <button class="n8n-node-action-btn" title="Delete" data-action="delete">✕</button>
+        </div>
       </div>
-      <div class="n8n-node-body">${esc(def.desc||"")}</div>
-      <div class="n8n-node-footer"><div class="time">${dur!==undefined?`✓ ${dur}ms`:""}</div><div class="actions"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div></div>
+      <div class="n8n-node-body">
+        <div style="flex:1;min-width:0">
+          <div class="desc">${esc(def.desc)}</div>
+          ${pills?`<div class="params">${pills}</div>`:""}
+        </div>
+      </div>
+      <div class="n8n-node-footer">
+        <div class="left">
+          ${dur!==undefined?`<span class="time">✓ ${dur}ms</span>`:`<span class="badge" style="background:${def.bg};color:${def.color};border-color:${def.color}20">${esc(def.cat)}</span>`}
+          ${n.type.includes("webhook")?`<span class="badge">GET</span>`:""}
+        </div>
+        <div class="right">
+          ${orderIdx[n.name]?`<span class="badge success">#${orderIdx[n.name]}</span>`:""}
+          <span style="font:400 10px var(--mono);color:var(--text-lightest)">${n.position[0].toFixed(0)},${n.position[1].toFixed(0)}</span>
+        </div>
+      </div>
       <div class="n8n-handles">
-        <div class="n8n-handle input ${hasIn?"connected":""}" data-handle="input" data-node="${esc(n.name)}"><span class="n8n-handle-label">Input</span></div>
-        <div class="n8n-handle output ${hasOut?"connected":""}" data-handle="output" data-node="${esc(n.name)}" data-branch="0"><span class="n8n-handle-label">Output</span></div>
+        <div class="n8n-handle input ${hasIn?"connected":""}" data-handle="input" data-node="${esc(n.name)}"><span class="n8n-handle-label"><span class="dot"></span> Input</span></div>
+        <div class="n8n-handle output ${hasOut?"connected":""}" data-handle="output" data-node="${esc(n.name)}" data-branch="0"><span class="n8n-handle-label">Output <span class="dot"></span></span></div>
       </div>
       ${orderIdx[n.name]?`<div class="n8n-exec-order">${orderIdx[n.name]}</div>`:""}
     `;
     const header=el.querySelector(".n8n-node-header");
     header.addEventListener("pointerdown",e=>{
+      if(e.target.closest(".n8n-node-action-btn")) return;
       e.preventDefault();e.stopPropagation();
       header.setPointerCapture(e.pointerId);
       const start=screenToWorld(e.clientX,e.clientY);
@@ -566,8 +707,22 @@ function renderNodes(){
     });
     el.addEventListener("click",e=>{
       if(state.drag&&state.drag.moved) return;
-      if(e.target.closest(".n8n-handle")) return;
+      if(e.target.closest(".n8n-handle")||e.target.closest(".n8n-node-action-btn")) return;
       state.selected=n.name;state.inspectorTab="params";renderAll();
+    });
+    el.querySelectorAll(".n8n-node-action-btn").forEach(btn=>{
+      btn.addEventListener("click",e=>{
+        e.stopPropagation();
+        const act=btn.dataset.action;
+        if(act==="delete"){
+          if(confirm(`Delete ${n.name}?`)){
+            state.wf.nodes=state.wf.nodes.filter(x=>x.name!==n.name);delete state.wf.connections[n.name];
+            for(const k of Object.keys(state.wf.connections)){const m=state.wf.connections[k]?.main;if(!Array.isArray(m)) continue;m.forEach((br,i)=>{if(Array.isArray(br)) m[i]=br.filter(l=>!(l&&l.node===n.name))})}
+            state.selected=null;saveHistory();renderAll();toast("Deleted "+n.name);
+          }
+        }else if(act==="disable"){n.disabled=!n.disabled;saveHistory();renderAll();toast(n.disabled?"Disabled":"Enabled")}
+        else if(act==="exec"){toast("Execute node: "+n.name+" (use Execute Workflow for full)")}
+      });
     });
     const inputHandle=el.querySelector(".n8n-handle.input");
     const outputHandle=el.querySelector(".n8n-handle.output");
@@ -595,14 +750,16 @@ function renderEdges(){
   const marker=document.createElementNS("http://www.w3.org/2000/svg","marker");
   marker.setAttribute("id","n8n-arrow");marker.setAttribute("viewBox","0 0 10 10");marker.setAttribute("refX","8");marker.setAttribute("refY","5");
   marker.setAttribute("markerWidth","6");marker.setAttribute("markerHeight","6");marker.setAttribute("orient","auto");
-  const mp=document.createElementNS("http://www.w3.org/2000/svg","path");mp.setAttribute("d","M 0 0 L 10 5 L 0 10 z");mp.setAttribute("fill","#c8c8c8");
+  const mp=document.createElementNS("http://www.w3.org/2000/svg","path");mp.setAttribute("d","M 0 0 L 10 5 L 0 10 z");mp.setAttribute("fill","#c2c2c2");
   marker.appendChild(mp);defs.appendChild(marker);edgesSvg.appendChild(defs);
   for(const {from,to,bi} of allEdges()){
     const a=nodeByName(from),b=nodeByName(to);if(!a||!b) continue;
     const path=makePath(a.position,b.position,bi);
     const pe=document.createElementNS("http://www.w3.org/2000/svg","path");
     pe.setAttribute("d",path);pe.setAttribute("class","n8n-edge "+(bi===0?"true":"false"));pe.setAttribute("marker-end","url(#n8n-arrow)");
-    pe.addEventListener("click",e=>{e.stopPropagation();if(confirm(`Delete connection ${from} → ${to}?`)) deleteEdge(from,bi,to)});
+    pe.addEventListener("click",e=>{e.stopPropagation();if(confirm(`Delete ${from} → ${to}?`)) deleteEdge(from,bi,to)});
+    pe.addEventListener("mouseenter",()=>pe.classList.add("selected"));
+    pe.addEventListener("mouseleave",()=>pe.classList.remove("selected"));
     edgesSvg.appendChild(pe);
   }
   if(state.connect){
@@ -612,19 +769,19 @@ function renderEdges(){
   }
 }
 function makePath(a,b,bi){
-  const x1=a[0]+240,y1=a[1]+40,x2=b[0],y2=b[1]+40;
-  const dx=Math.max(80,Math.abs(x2-x1)/2);
-  const off=bi*3;
+  const x1=a[0]+260,y1=a[1]+42,x2=b[0],y2=b[1]+42;
+  const dx=Math.max(90,Math.abs(x2-x1)*0.5);
+  const off=bi*4;
   return `M ${x1} ${y1+off} C ${x1+dx} ${y1+off}, ${x2-dx} ${y2+off}, ${x2} ${y2+off}`;
 }
 function startConnect(e,from,branch){
   e.preventDefault();
   const [wx,wy]=screenToWorld(e.clientX,e.clientY);
-  state.connect={from,branch,d:`M ${from.position[0]+240} ${from.position[1]+40} L ${wx} ${wy}`};
+  state.connect={from,branch,d:`M ${from.position[0]+260} ${from.position[1]+42} L ${wx} ${wy}`};
   canvas.classList.add("connecting");
 }
 function addEdge(from,to,bi=0){
-  if(from===to){toast("Cannot connect node to itself","err");return}
+  if(from===to){toast("Cannot self-connect","err");return}
   if(!state.wf.connections[from]) state.wf.connections[from]={};
   const c=state.wf.connections[from];if(!Array.isArray(c.main)) c.main=[];
   const src=nodeByName(from);const isIf=src&&src.type==="n8n-nodes-base.if";const isSwitch=src&&src.type==="n8n-nodes-base.switch";
@@ -632,22 +789,20 @@ function addEdge(from,to,bi=0){
   else if(isSwitch){while(c.main[bi]&&c.main[bi].length) bi++}
   while(c.main.length<=bi) c.main.push([]);
   if(c.main[bi].some(l=>l&&l.node===to)){toast("Already connected","ok");return}
-  // check cycle
   const testWf=structuredClone(state.wf);
   if(!testWf.connections[from]) testWf.connections[from]={main:[]};
   while(testWf.connections[from].main.length<=bi) testWf.connections[from].main.push([]);
   testWf.connections[from].main[bi].push({node:to,type:"main",index:0});
-  try{mockTopo(testWf)}catch(e){toast("Cannot create cycle: "+e.message,"err");return}
+  try{mockTopo(testWf)}catch(e){toast("Cycle not allowed","err");return}
   c.main[bi].push({node:to,type:"main",index:0});
-  saveHistory();renderAll();setStatus(`Connected: ${from} → ${to}`);toast(`✓ ${from} → ${to}`);
+  saveHistory();renderAll();setStatus(`✓ ${from} → ${to}`);toast(`✓ Connected ${from} → ${to}`,"ok");
 }
 function deleteEdge(from,bi,to){
   const c=(state.wf.connections||{})[from];if(!c||!Array.isArray(c.main)||!Array.isArray(c.main[bi])) return;
-  c.main[bi]=c.main[bi].filter(l=>!(l&&l.node===to));saveHistory();renderAll();toast("Connection removed");
+  c.main[bi]=c.main[bi].filter(l=>!(l&&l.node===to));saveHistory();renderAll();toast("Connection removed","ok");
 }
 
-// NODE LIST with categories collapsible - n8n style
-let collapsedCats=new Set();
+// NODE LIST - n8n asli attractive
 function renderNodeList(filter=""){
   const q=filter.toLowerCase();
   nodeList.innerHTML="";
@@ -656,56 +811,75 @@ function renderNodeList(filter=""){
     if(q&&!(def.label.toLowerCase().includes(q)||def.type.toLowerCase().includes(q)||def.desc.toLowerCase().includes(q)||def.cat.toLowerCase().includes(q))) continue;
     (cats[def.cat]=cats[def.cat]||[]).push(def);
   }
-  for(const [cat,items] of Object.entries(cats).sort()){
-    const isCollapsed=collapsedCats.has(cat);
-    const h=document.createElement("div");h.className="n8n-category";
-    h.innerHTML=`<span>${cat} <span class="count">${items.length}</span></span><span>${isCollapsed?"›":"⌄"}</span>`;
-    h.onclick=()=>{if(isCollapsed) collapsedCats.delete(cat);else collapsedCats.add(cat);renderNodeList(filter)};
+  // sort cats: Trigger first, then Core, Logic, Transform
+  const order={"Trigger":0,"Core":1,"Logic":2,"Transform":3};
+  const sortedCats=Object.entries(cats).sort((a,b)=>(order[a[0]]??99)-(order[b[0]]??99));
+  for(const [cat,items] of sortedCats){
+    const isCollapsed=state.collapsedCats.has(cat);
+    const h=document.createElement("div");h.className="n8n-category"+(isCollapsed?" collapsed":"");
+    const sortedItems=items.sort((a,b)=> (b.popular?1:0)-(a.popular?1:0) || a.label.localeCompare(b.label));
+    h.innerHTML=`<div class="left"><span>${cat==="Trigger"?"⚡":cat==="Core"?"🧩":cat==="Logic"?"🔀":"🔧"} ${cat}</span><span class="count">${items.length}</span></div><span style="font-size:12px">${isCollapsed?"›":"⌄"}</span>`;
+    h.onclick=()=>{if(isCollapsed) state.collapsedCats.delete(cat);else state.collapsedCats.add(cat);renderNodeList(filter)};
     nodeList.appendChild(h);
     if(isCollapsed) continue;
-    for(const def of items){
-      const el=document.createElement("div");el.className="n8n-node-item";
-      el.innerHTML=`<div class="n8n-node-icon" style="background:${def.color}">${def.icon}</div><div class="n8n-node-info"><b>${def.label}</b><span>${def.desc}</span></div>`;
+    for(const def of sortedItems){
+      const el=document.createElement("div");el.className="n8n-node-item";el.style.setProperty("--node-color",def.color);
+      el.innerHTML=`
+        <div class="n8n-node-icon" style="background:${def.color}">${def.icon}</div>
+        <div class="n8n-node-info"><b>${def.label} ${def.popular?`<span style="font:600 9px var(--font);background:${def.bg};color:${def.color};padding:1px 5px;border-radius:8px;border:1px solid ${def.color}20;margin-left:4px;vertical-align:middle">POPULAR</span>`:""}</b><span>${def.desc}</span></div>
+        <div class="add-btn">+</div>
+      `;
       el.addEventListener("click",()=>addNode(def.type));
       el.draggable=true;
-      el.addEventListener("dragstart",e=>{e.dataTransfer.setData("text/plain",def.type)});
+      el.addEventListener("dragstart",e=>{
+        el.classList.add("dragging");
+        e.dataTransfer.setData("text/plain",def.type);
+        e.dataTransfer.effectAllowed="copy";
+      });
+      el.addEventListener("dragend",()=>el.classList.remove("dragging"));
       nodeList.appendChild(el);
     }
   }
-  if(!nodeList.children.length) nodeList.innerHTML=`<div class="n8n-empty"><b>No nodes found</b>Try different search</div>`;
+  if(!nodeList.children.length) nodeList.innerHTML=`<div class="n8n-empty"><b>No nodes found</b>Try different search term</div>`;
 }
 function addNode(type){
   const def=NODE_MAP[type];let base=def?def.label:type.replace("n8n-nodes-base.","");let name=base,i=2;
   while(nodeByName(name)) name=base+" "+(i++);
   const n=state.wf.nodes.length;
-  const pos=[400+(n*50)%600,220+(n*70)%400];
+  const pos=[500+(n*60)%500,240+(n*80)%400];
   state.wf.nodes.push({parameters:structuredClone(DEFAULTS[type]||{}),id:"ui-"+Date.now()+"-"+n,name,type,typeVersion:1,position:pos});
-  state.selected=name;state.inspectorTab="params";setRightCollapsed(false);saveHistory();renderAll();toast(`Added ${name}`);
+  state.selected=name;state.inspectorTab="params";setRightCollapsed(false);saveHistory();renderAll();toast(`Added ${name} — drag black handle to connect`,"ok");
 }
 
-// INSPECTOR with tabs like n8n asli
+// INSPECTOR - n8n asli exact
 function renderPanel(){
   const tabsEl=$("#inspectorTabs");
   const sel=state.selected?nodeByName(state.selected):null;
   if(sel){
     tabsEl.style.display="flex";
     $("#panelTitle").textContent=sel.name;
-    // tabs
     tabsEl.querySelectorAll(".n8n-inspector-tab").forEach(t=>{
       t.classList.toggle("active",t.dataset.tab===state.inspectorTab);
       t.onclick=()=>{state.inspectorTab=t.dataset.tab;renderPanel()};
     });
     panel.innerHTML="";
     if(state.inspectorTab==="params"){
-      const def=NODE_MAP[sel.type]||{label:sel.type,color:"#999",icon:"?"};
+      const def=NODE_MAP[sel.type]||{label:sel.type,color:"#999",bg:"#eee",icon:"?"};
       const head=document.createElement("div");head.className="n8n-prop-group";
       head.innerHTML=`
-        <div style="display:flex;gap:12px;align-items:center;margin-bottom:16px">
-          <div class="n8n-node-icon" style="width:40px;height:40px;background:${def.color};border-radius:8px;font-size:18px">${def.icon}</div>
-          <div style="flex:1;min-width:0"><div style="font:600 14px var(--font);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(sel.name)}</div><div style="font:400 12px var(--font);color:var(--text-light)">${esc(def.label)}</div></div>
+        <div style="display:flex;gap:12px;align-items:flex-start;margin-bottom:20px">
+          <div class="n8n-node-icon" style="width:44px;height:44px;background:${def.color};border-radius:10px;font-size:20px;box-shadow:0 2px 8px ${def.color}40">${def.icon}</div>
+          <div style="flex:1;min-width:0">
+            <div style="font:700 15px var(--font);line-height:1.2;letter-spacing:-0.01em">${esc(sel.name)}</div>
+            <div style="font:500 12px var(--font);color:var(--text-light);margin-top:4px;display:flex;align-items:center;gap:6px">
+              <span style="background:${def.bg};color:${def.color};padding:2px 8px;border-radius:12px;border:1px solid ${def.color}20;font:600 11px var(--font)">${esc(def.label)}</span>
+              <span>${esc(def.cat)}</span><span style="width:3px;height:3px;border-radius:50%;background:var(--text-lightest)"></span><span>${esc(sel.type)}</span>
+            </div>
+            <div style="font:400 12px var(--font);color:var(--text-light);margin-top:8px;line-height:1.5">${esc(def.desc)}</div>
+          </div>
         </div>
-        <div class="n8n-field"><label>Node Name</label><input id="editName" value="${esc(sel.name)}"></div>
-        <div style="display:flex;gap:6px"><button class="n8n-btn sm" id="bDup">Duplicate</button><button class="n8n-btn sm" id="bDis">${sel.disabled?"Enable":"Disable"}</button><button class="n8n-btn sm" style="color:var(--error)" id="bDel">Delete</button></div>
+        <div class="n8n-field"><label>Node Name</label><input id="editName" value="${esc(sel.name)}"><div class="hint">Name of the node, used to reference it in expressions: $node[&quot;${esc(sel.name)}&quot;]</div></div>
+        <div style="display:flex;gap:8px"><button class="n8n-btn sm" id="bDup">Duplicate</button><button class="n8n-btn sm" id="bDis">${sel.disabled?"Enable":"Disable"}</button><button class="n8n-btn sm" style="color:var(--error);border-color:#fecaca" id="bDel">Delete</button></div>
       `;
       panel.appendChild(head);
       head.querySelector("#editName").addEventListener("change",e=>{
@@ -717,103 +891,166 @@ function renderPanel(){
         state.selected=nn;saveHistory();renderAll();
       });
       head.querySelector("#bDup").onclick=()=>{
-        const copy=structuredClone(sel);copy.id="ui-"+Date.now();copy.name=sel.name+" copy";let base=copy.name,i=2;while(nodeByName(base)) base=copy.name+" "+(i++);copy.name=base;copy.position=[sel.position[0]+30,sel.position[1]+30];state.wf.nodes.push(copy);state.selected=copy.name;saveHistory();renderAll();
+        const copy=structuredClone(sel);copy.id="ui-"+Date.now();copy.name=sel.name+" copy";let base=copy.name,i=2;while(nodeByName(base)) base=copy.name+" "+(i++);copy.name=base;copy.position=[sel.position[0]+32,sel.position[1]+32];state.wf.nodes.push(copy);state.selected=copy.name;saveHistory();renderAll();
       };
-      head.querySelector("#bDis").onclick=()=>{sel.disabled=!sel.disabled;saveHistory();renderAll()};
+      head.querySelector("#bDis").onclick=()=>{sel.disabled=!sel.disabled;saveHistory();renderAll();toast(sel.disabled?"Disabled":"Enabled")};
       head.querySelector("#bDel").onclick=()=>{
+        if(!confirm(`Delete ${sel.name}?`)) return;
         state.wf.nodes=state.wf.nodes.filter(n=>n.name!==sel.name);delete state.wf.connections[sel.name];
         for(const k of Object.keys(state.wf.connections)){const m=state.wf.connections[k]?.main;if(!Array.isArray(m)) continue;m.forEach((br,i)=>{if(Array.isArray(br)) m[i]=br.filter(l=>!(l&&l.node===sel.name))})}
-        state.selected=null;saveHistory();renderAll();toast("Node deleted");
+        state.selected=null;saveHistory();renderAll();toast("Deleted");
       };
 
-      // Dynamic form based on node type - more like n8n asli than raw JSON
       const form=document.createElement("div");form.className="n8n-prop-group";
-      form.innerHTML=`<h3>Parameters</h3>`;
+      form.innerHTML=`<h3>Parameters <span class="line"></span></h3>`;
+      // More like n8n asli: show form per node type
       if(sel.type==="n8n-nodes-base.set"){
         const assigns=sel.parameters?.assignments?.assignments||[];
-        form.innerHTML+=`<div class="n8n-field"><label>Fields to Set (assignments)</label><div id="assignList"></div><button class="n8n-btn sm" id="bAddField" style="margin-top:8px">+ Add Field</button></div>`;
+        let html=`<div class="hint" style="margin-bottom:12px">Set key-value pairs. Use expressions like ={{ $json.field }} </div>`;
+        html+=`<div id="assignList">`;
+        assigns.forEach((a,idx)=>{
+          html+=`<div style="display:flex;gap:8px;margin-bottom:8px;align-items:center"><input value="${esc(a.name||"")}" placeholder="Name" data-idx="${idx}" data-field="name" style="flex:1;height:36px;border:1px solid var(--border);border-radius:6px;padding:0 10px;font:500 13px var(--font)"><input value="${esc(String(a.value||""))}" placeholder="Value" data-idx="${idx}" data-field="value" style="flex:1;height:36px;border:1px solid var(--border);border-radius:6px;padding:0 10px;font:400 13px var(--font)"><button class="n8n-icon-btn" style="width:28px;height:28px" data-del="${idx}">✕</button></div>`;
+        });
+        html+=`</div><button class="n8n-btn sm" id="bAddField">+ Add Field</button>`;
+        form.innerHTML+=html;
       }else if(sel.type==="n8n-nodes-base.httpRequest"){
         form.innerHTML+=`
-          <div class="n8n-field"><label>URL</label><input id="fUrl" value="${esc(sel.parameters?.url||"")}"></div>
-          <div class="n8n-field"><label>Method</label><select id="fMethod"><option>GET</option><option>POST</option><option>PUT</option><option>PATCH</option><option>DELETE</option></select></div>
+          <div class="n8n-field"><label>URL <span style="color:var(--error)">*</span></label><input id="fUrl" value="${esc(sel.parameters?.url||"")}" placeholder="https://api.example.com/endpoint"><div class="hint">The URL to request. Supports expressions.</div></div>
+          <div class="n8n-field"><label>Method</label><select id="fMethod"><option value="GET">GET</option><option value="POST">POST</option><option value="PUT">PUT</option><option value="PATCH">PATCH</option><option value="DELETE">DELETE</option></select></div>
+          <div class="n8n-field"><label>Send Body</label><select id="fBody"><option>No</option><option>Yes</option></select></div>
         `;
+      }else if(sel.type==="n8n-nodes-base.if"){
+        form.innerHTML+=`<div class="hint" style="margin-bottom:12px">Conditions to route items to true/false branches.</div><div class="n8n-code">${esc(JSON.stringify(sel.parameters?.conditions||{},null,2))}</div><div class="hint">Edit JSON below for advanced</div>`;
       }else if(sel.type==="n8n-nodes-base.limit"){
         form.innerHTML+=`
-          <div class="n8n-field"><label>Max Items</label><input id="fMax" type="number" value="${sel.parameters?.maxItems||10}"></div>
+          <div class="n8n-field"><label>Max Items</label><input id="fMax" type="number" value="${sel.parameters?.maxItems||10}" min="1"><div class="hint">How many items to keep.</div></div>
           <div class="n8n-field"><label>Keep</label><select id="fKeep"><option value="firstItems">First Items</option><option value="lastItems">Last Items</option></select></div>
         `;
       }else if(sel.type==="n8n-nodes-base.webhook"){
         form.innerHTML+=`
-          <div class="n8n-field"><label>Path</label><input id="fPath" value="${esc(sel.parameters?.path||"")}"></div>
+          <div class="n8n-field"><label>Path <span style="color:var(--error)">*</span></label><div style="display:flex;align-items:center;gap:8px"><span style="font:500 12px var(--mono);color:var(--text-light)">/hook/</span><input id="fPath" value="${esc(sel.parameters?.path||"")}" placeholder="my-webhook" style="flex:1"></div><div class="hint">Webhook path, e.g. 'my-webhook' → /hook/my-webhook</div></div>
           <div class="n8n-field"><label>HTTP Method</label><select id="fHMethod"><option>GET</option><option>POST</option><option>PUT</option><option>PATCH</option><option>DELETE</option></select></div>
+          <div class="n8n-field"><label>Response Mode</label><select id="fRMode"><option value="onReceived">On Received</option><option value="lastNode">Last Node</option><option value="responseNode">Response Node</option></select></div>
         `;
-      }else{
-        form.innerHTML+=`<div style="font:400 12px var(--font);color:var(--text-light);margin-bottom:8px">Raw parameters (JSON) — edit for advanced</div>`;
+      }else if(sel.type.includes("code")||sel.type.includes("function")){
+        form.innerHTML+=`<div class="n8n-field"><label>Mode</label><select id="fMode"><option value="runOnceForAllItems">Run Once for All Items</option><option value="runOnceForEachItem">Run Once for Each Item</option></select></div>
+          <div class="n8n-field"><label>Code (rhai)</label><textarea id="fCode" rows="10" style="font-family:var(--mono);font-size:12px">${esc(sel.parameters?.code||"")}</textarea><div class="hint">Use 'items' variable. Must return array.</div></div>`;
       }
-      form.innerHTML+=`<div class="n8n-field"><label>JSON (advanced)</label><textarea class="n8n-textarea" id="taParams" rows="8"></textarea><div style="display:flex;gap:6px;margin-top:8px"><button class="n8n-btn primary sm" id="bSave">Save</button><button class="n8n-btn sm" id="bFmt">Format</button></div></div>`;
+      form.innerHTML+=`<div class="n8n-field" style="margin-top:20px"><label>Raw JSON (advanced) <span style="font:400 11px var(--font);color:var(--text-lighter)">— edit with care</span></label><textarea class="n8n-textarea" id="taParams" rows="10"></textarea><div style="display:flex;gap:8px;margin-top:10px"><button class="n8n-btn primary sm" id="bSave">Save Parameters</button><button class="n8n-btn sm" id="bFmt">Format JSON</button></div></div>`;
       panel.appendChild(form);
       const ta=form.querySelector("#taParams");if(ta) ta.value=JSON.stringify(sel.parameters||{},null,2);
-      if(form.querySelector("#bSave")) form.querySelector("#bSave").onclick=()=>{try{const v=JSON.parse(ta.value);if(!v||typeof v!=="object"||Array.isArray(v)) throw new Error("must be object");sel.parameters=v;saveHistory();renderAll();toast("Saved")}catch(e){toast("Failed: "+e.message,"err")}};
+      if(form.querySelector("#bSave")) form.querySelector("#bSave").onclick=()=>{try{const v=JSON.parse(ta.value);if(!v||typeof v!=="object"||Array.isArray(v)) throw new Error("must be object");sel.parameters=v;saveHistory();renderAll();toast("Parameters saved","ok")}catch(e){toast("Failed: "+e.message,"err")}};
       if(form.querySelector("#bFmt")) form.querySelector("#bFmt").onclick=()=>{try{ta.value=JSON.stringify(JSON.parse(ta.value),null,2)}catch{}};
-      // bind simple fields
+      // bind
       if(form.querySelector("#fUrl")) form.querySelector("#fUrl").onchange=e=>{sel.parameters.url=e.target.value;ta.value=JSON.stringify(sel.parameters,null,2);saveHistory()};
       if(form.querySelector("#fMethod")){form.querySelector("#fMethod").value=sel.parameters?.method||"GET";form.querySelector("#fMethod").onchange=e=>{sel.parameters.method=e.target.value;ta.value=JSON.stringify(sel.parameters,null,2);saveHistory()}};
       if(form.querySelector("#fMax")) form.querySelector("#fMax").onchange=e=>{sel.parameters.maxItems=parseInt(e.target.value)||10;ta.value=JSON.stringify(sel.parameters,null,2);saveHistory()};
       if(form.querySelector("#fPath")) form.querySelector("#fPath").onchange=e=>{sel.parameters.path=e.target.value;ta.value=JSON.stringify(sel.parameters,null,2);saveHistory()};
+      if(form.querySelector("#fCode")) form.querySelector("#fCode").onchange=e=>{sel.parameters.code=e.target.value;ta.value=JSON.stringify(sel.parameters,null,2);saveHistory()};
+      // assignments
+      form.querySelectorAll("[data-field]").forEach(inp=>{
+        inp.onchange=e=>{
+          const idx=parseInt(e.target.dataset.idx);const field=e.target.dataset.field;
+          if(!sel.parameters.assignments) sel.parameters.assignments={assignments:[]};
+          if(!sel.parameters.assignments.assignments[idx]) sel.parameters.assignments.assignments[idx]={};
+          sel.parameters.assignments.assignments[idx][field]=field==="value"?e.target.value: e.target.value;
+          ta.value=JSON.stringify(sel.parameters,null,2);saveHistory();
+        };
+      });
+      form.querySelectorAll("[data-del]").forEach(btn=>{
+        btn.onclick=e=>{
+          const idx=parseInt(e.target.dataset.del);
+          sel.parameters.assignments.assignments.splice(idx,1);
+          ta.value=JSON.stringify(sel.parameters,null,2);saveHistory();renderPanel();
+        };
+      });
+      if(form.querySelector("#bAddField")){
+        form.querySelector("#bAddField").onclick=()=>{
+          if(!sel.parameters.assignments) sel.parameters.assignments={assignments:[]};
+          sel.parameters.assignments.assignments.push({name:"newField",value:"myValue"});
+          ta.value=JSON.stringify(sel.parameters,null,2);saveHistory();renderPanel();
+        };
+      }
 
       if(state.report&&state.report.outputs&&state.report.outputs[sel.name]!==undefined){
         const p3=document.createElement("div");p3.className="n8n-prop-group";
-        p3.innerHTML=`<h3>Output — ${state.report.outputs[sel.name][0]?.length||0} items</h3><div class="n8n-code">${esc(JSON.stringify(state.report.outputs[sel.name][0]||[],null,2))}</div>`;
+        const items=state.report.outputs[sel.name][0]||[];
+        p3.innerHTML=`<h3>Output <span class="line"></span> <span style="font:600 11px var(--font);background:var(--success-light);color:var(--success);padding:2px 8px;border-radius:12px;border:1px solid var(--success-border)">${items.length} items</span></h3>
+          <div style="display:flex;gap:6px;margin-bottom:12px"><button class="n8n-btn sm active" data-outtab="table">Table</button><button class="n8n-btn sm" data-outtab="json">JSON</button><button class="n8n-btn sm" data-outtab="schema">Schema</button></div>
+          <div class="n8n-code" style="max-height:300px">${esc(JSON.stringify(items.slice(0,5),null,2))}${items.length>5?`\n... and ${items.length-5} more`:""}</div>
+        `;
         panel.appendChild(p3);
       }
     }else if(state.inspectorTab==="settings"){
-      panel.innerHTML=`<div class="n8n-prop-group"><h3>Settings</h3>
-        <div class="n8n-field"><label><input type="checkbox" ${sel.disabled?"checked":""} id="fDisabled"> Disabled</label></div>
-        <div class="n8n-field"><label>Notes</label><textarea class="n8n-textarea" rows="4" placeholder="Add notes...">${esc(sel.notes||"")}</textarea></div>
-        <div class="n8n-kv"><dt>ID</dt><dd>${esc(sel.id)}</dd><dt>Type Version</dt><dd>${sel.typeVersion}</dd></div>
+      panel.innerHTML=`<div class="n8n-prop-group"><h3>Settings <span class="line"></span></h3>
+        <div class="n8n-field"><label style="display:flex;align-items:center;gap:8px"><input type="checkbox" ${sel.disabled?"checked":""} id="fDisabled" style="width:16px;height:16px"> Disabled <span style="font:400 11px var(--font);color:var(--text-lighter)">— node will be skipped</span></label></div>
+        <div class="n8n-field"><label>Notes</label><textarea placeholder="Add a note about this node..." rows="4">${esc(sel.notes||"")}</textarea><div class="hint">Notes are visible on canvas when hovering.</div></div>
+        <div class="n8n-kv" style="margin-top:16px"><dt>Node ID</dt><dd style="font-family:var(--mono);font-size:11px">${esc(sel.id)}</dd><dt>Type Version</dt><dd>${sel.typeVersion}</dd><dt>Position</dt><dd style="font-family:var(--mono)">${sel.position.map(v=>Math.round(v)).join(", ")}</dd></div>
       </div>`;
       panel.querySelector("#fDisabled").onchange=e=>{sel.disabled=e.target.checked;saveHistory();renderAll()};
     }else{
-      panel.innerHTML=`<div class="n8n-prop-group"><h3>Documentation</h3><div style="font:400 13px var(--font);line-height:1.6;color:var(--text-light)">
-        <b>${esc(NODE_MAP[sel.type]?.label||sel.type)}</b><br>${esc(NODE_MAP[sel.type]?.desc||"")}<br><br>
-        Type: <code>${esc(sel.type)}</code><br>
-        Learn more in n8n docs.
-      </div></div>`;
+      panel.innerHTML=`<div class="n8n-prop-group"><h3>Documentation <span class="line"></span></h3>
+        <div style="display:flex;gap:12px;align-items:flex-start;margin-bottom:16px">
+          <div class="n8n-node-icon" style="width:48px;height:48px;background:${NODE_MAP[sel.type]?.color||"#999"};border-radius:10px;font-size:20px">${NODE_MAP[sel.type]?.icon||"?"}</div>
+          <div><div style="font:700 16px var(--font)">${esc(NODE_MAP[sel.type]?.label||sel.type)}</div><div style="font:400 13px var(--font);color:var(--text-light);margin-top:4px">${esc(NODE_MAP[sel.type]?.desc||"")}</div></div>
+        </div>
+        <div style="font:400 13px var(--font);line-height:1.7;color:var(--text-secondary)">
+          <b>What this node does:</b><br>${esc(NODE_MAP[sel.type]?.desc||"")}<br><br>
+          <b>Type:</b> <code style="background:var(--bg-subtle);padding:2px 6px;border-radius:4px;border:1px solid var(--border);font:500 11px var(--mono)">${esc(sel.type)}</code><br><br>
+          <b>Learn more:</b> <a href="https://docs.n8n.io" target="_blank" style="color:var(--primary)">n8n documentation</a>
+        </div>
+      </div>`;
     }
   }else{
     tabsEl.style.display="none";
     $("#panelTitle").textContent="Workflow";
-    panel.innerHTML=`<div class="n8n-prop-group"><h3>Workflow</h3><div class="n8n-kv"><dt>Name</dt><dd>${esc(state.wf.name||"—")}</dd><dt>Nodes</dt><dd>${state.wf.nodes.length}</dd><dt>Connections</dt><dd>${allEdges().length}</dd></div>
-      <div style="margin-top:16px;display:flex;gap:8px"><button class="n8n-btn sm" id="bAddNode">+ Add Node</button><button class="n8n-btn sm" id="bClear">Clear</button></div>
-      <div style="margin-top:16px;padding:12px;background:var(--bg-subtle);border-radius:6px;font:400 12px var(--font);color:var(--text-light);line-height:1.6">
-        <b style="color:var(--text)">How to connect (flexible):</b><br>
-        • Drag from <b>right black handle</b> → drop on left handle or anywhere on target node<br>
-        • Click + drag on canvas background to pan, scroll to zoom<br>
-        • Click edge to delete, Del to delete node<br>
-        • Use <b>Full canvas</b> button to hide sidebars<br><br>
-        <b>Panels:</b><br>
-        • Click ☰ to toggle nodes panel<br>
-        • Click ◧ to toggle inspector<br>
-        • Both can be closed for full canvas view
+    const hasNodes=state.wf.nodes.length>0;
+    panel.innerHTML=`
+      <div class="n8n-prop-group">
+        <h3>Workflow <span class="line"></span></h3>
+        <div class="n8n-kv"><dt>Name</dt><dd>${esc(state.wf.name||"—")}</dd><dt>Nodes</dt><dd>${state.wf.nodes.length}</dd><dt>Connections</dt><dd>${allEdges().length}</dd><dt>Status</dt><dd><span style="display:inline-flex;align-items:center;gap:6px"><span class="dot" style="width:8px;height:8px;border-radius:50%;background:var(--success);display:inline-block"></span> Active</span></dd></div>
+        <div style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap">
+          <button class="n8n-btn primary sm" id="bAddNode">+ Add Node</button>
+          <button class="n8n-btn sm" id="bClear">Clear</button>
+          <button class="n8n-btn sm" id="bExample">Example</button>
+        </div>
       </div>
-    </div>`;
-    panel.querySelector("#bAddNode").onclick=()=>{setLeftCollapsed(false);toast("Choose node from left panel")};
-    panel.querySelector("#bClear").onclick=()=>{if(confirm("Clear workflow?")){state.wf.nodes=[];state.wf.connections={};saveHistory();renderAll();toast("Cleared")}};
-    if(state.diags){
+      <div class="n8n-prop-group">
+        <h3>How to use <span class="line"></span></h3>
+        <div style="background:var(--bg-subtle);border:1px solid var(--border);border-radius:8px;padding:14px;font:400 12px var(--font);line-height:1.7;color:var(--text-secondary)">
+          <div style="display:grid;gap:12px">
+            <div><b style="color:var(--text)">🎯 Connect nodes (flexible):</b><br>Drag from <b style="color:var(--text)">right black handle ●</b> → drop on left handle ○ or anywhere on target node card. Click edge to delete.</div>
+            <div><b style="color:var(--text)">🖱 Canvas:</b><br>Drag background to pan, scroll to zoom, Space+drag for pan, ⛶ fit view.</div>
+            <div><b style="color:var(--text)">📐 Full canvas:</b><br>Click ☰ and ◧ in header to close sidebars, or <b>Full canvas</b> button in statusbar. Floating › ‹ buttons appear to restore.</div>
+            <div><b style="color:var(--text)">⌨ Shortcuts:</b><br>⌘K command palette, ⌘⏎ execute, ⌘B toggle nodes, ⌘I toggle inspector, ⌘Z undo, Del delete, Esc clear.</div>
+          </div>
+        </div>
+      </div>
+      ${!hasNodes?`<div class="n8n-prop-group"><div class="n8n-empty"><div style="width:48px;height:48px;border-radius:12px;background:var(--primary-light);border:1px solid var(--primary);display:grid;place-items:center;margin:0 auto 12px;color:var(--primary);font-size:24px">+</div><b>Add your first step</b>Click + in canvas or choose node from left panel to start building your workflow.</div></div>`:""}
+    `;
+    panel.querySelector("#bAddNode").onclick=()=>{setLeftCollapsed(false);toast("Choose node from left panel","info")};
+    panel.querySelector("#bClear").onclick=()=>{if(confirm("Clear workflow? All nodes will be deleted.")){state.wf.nodes=[];state.wf.connections={};saveHistory();renderAll();toast("Workflow cleared")}};
+    const exBtn=panel.querySelector("#bExample");
+    if(exBtn) exBtn.onclick=()=>{
+      state.wf=structuredClone(EXAMPLE);saveHistory();renderAll();fitView();toast("Example loaded","ok");
+    };
+    if(state.diags&&state.diags.length){
       const g=document.createElement("div");g.className="n8n-prop-group";
-      g.innerHTML=`<h3>Validation — ${state.diags.length} issues</h3>`;
-      if(!state.diags.length){const d=document.createElement("div");d.className="n8n-diag ok";d.textContent="✓ No issues";g.appendChild(d)}
-      for(const dg of state.diags){const d=document.createElement("div");d.className="n8n-diag "+dg.level;d.textContent=`[${dg.level}] ${dg.message}`;g.appendChild(d)}
+      g.innerHTML=`<h3>Validation <span class="line"></span> <span style="background:${state.diags.some(d=>d.level==="error")?"var(--error-light)":"var(--success-light)"};color:${state.diags.some(d=>d.level==="error")?"var(--error)":"var(--success)"};padding:2px 8px;border-radius:12px;font:600 11px var(--font)">${state.diags.length} issues</span></h3>`;
+      for(const dg of state.diags){const d=document.createElement("div");d.className="n8n-diag "+dg.level;d.innerHTML=`<span>${dg.level==="error"?"✕":dg.level==="warning"?"⚠":"✓"}</span><span>${esc(dg.message)}</span>`;g.appendChild(d)}
       panel.appendChild(g);
     }
     if(state.plan){
       const g=document.createElement("div");g.className="n8n-prop-group";
-      g.innerHTML=`<h3>Execution Order</h3><div class="n8n-code">${esc(state.plan.join(" → "))}</div>`;panel.appendChild(g);
+      g.innerHTML=`<h3>Execution Plan <span class="line"></span></h3><div class="n8n-code">${esc(state.plan.join(" → "))}</div>`;panel.appendChild(g);
     }
     if(state.report){
       const g=document.createElement("div");g.className="n8n-prop-group";
       const total=Object.values(state.report.durations_ms||{}).reduce((a,b)=>a+b,0);
-      g.innerHTML=`<h3>Last Execution — ${total}ms</h3><div class="n8n-code">${esc(state.report.order.join(" → "))} (${total}ms)</div>`;panel.appendChild(g);
+      g.innerHTML=`<h3>Last Execution <span class="line"></span> <span style="background:var(--success-light);color:var(--success);padding:2px 8px;border-radius:12px;font:600 11px var(--font)">✓ ${total}ms</span></h3><div class="n8n-code">${esc(state.report.order.join(" → "))} — total ${total}ms</div>
+        <div style="margin-top:12px;display:flex;gap:8px"><button class="n8n-btn sm" id="bViewOutput">View Output</button><button class="n8n-btn sm" id="bClearExec">Clear</button></div>
+      `;panel.appendChild(g);
+      g.querySelector("#bClearExec").onclick=()=>{state.report=null;renderAll();toast("Cleared execution")};
     }
   }
 }
@@ -824,27 +1061,28 @@ function drawMinimap(){
   ctx.clearRect(0,0,c.width,c.height);ctx.fillStyle="#fff";ctx.fillRect(0,0,c.width,c.height);
   if(!state.wf.nodes.length) return;
   let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
-  for(const n of state.wf.nodes){minX=Math.min(minX,n.position[0]);minY=Math.min(minY,n.position[1]);maxX=Math.max(maxX,n.position[0]+240);maxY=Math.max(maxY,n.position[1]+80)}
+  for(const n of state.wf.nodes){minX=Math.min(minX,n.position[0]);minY=Math.min(minY,n.position[1]);maxX=Math.max(maxX,n.position[0]+260);maxY=Math.max(maxY,n.position[1]+80)}
   const bw=maxX-minX||1,bh=maxY-minY||1;
-  const scale=Math.min((c.width-20)/bw,(c.height-20)/bh);
+  const scale=Math.min((c.width-24)/bw,(c.height-24)/bh);
   const ox=(c.width-bw*scale)/2-minX*scale,oy=(c.height-bh*scale)/2-minY*scale;
-  ctx.strokeStyle="#e0e0e0";ctx.lineWidth=1;
+  ctx.strokeStyle="#e5e5e5";ctx.lineWidth=1;
   for(const {from,to} of allEdges()){
     const a=nodeByName(from),b=nodeByName(to);if(!a||!b) continue;
-    ctx.beginPath();ctx.moveTo(a.position[0]*scale+ox+120*scale,a.position[1]*scale+oy+40*scale);
-    ctx.lineTo(b.position[0]*scale+ox,b.position[1]*scale+oy+40*scale);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(a.position[0]*scale+ox+130*scale,a.position[1]*scale+oy+42*scale);
+    ctx.lineTo(b.position[0]*scale+ox,b.position[1]*scale+oy+42*scale);ctx.stroke();
   }
   for(const n of state.wf.nodes){
-    ctx.fillStyle=NODE_MAP[n.type]?.color||"#999";ctx.fillRect(n.position[0]*scale+ox,n.position[1]*scale+oy,240*scale,8*scale);
-    ctx.fillStyle="#fff";ctx.fillRect(n.position[0]*scale+ox,n.position[1]*scale+oy+8*scale,240*scale,72*scale);
-    ctx.strokeStyle="#e0e0e0";ctx.strokeRect(n.position[0]*scale+ox,n.position[1]*scale+oy,240*scale,80*scale);
+    const def=NODE_MAP[n.type]||{color:"#ccc"};
+    ctx.fillStyle=def.color;ctx.globalAlpha=0.9;ctx.fillRect(n.position[0]*scale+ox,n.position[1]*scale+oy,260*scale,4*scale);ctx.globalAlpha=1;
+    ctx.fillStyle="#fff";ctx.fillRect(n.position[0]*scale+ox,n.position[1]*scale+oy+4*scale,260*scale,76*scale);
+    ctx.strokeStyle="#e5e5e5";ctx.lineWidth=0.8;ctx.strokeRect(n.position[0]*scale+ox,n.position[1]*scale+oy,260*scale,80*scale);
   }
   const vw=canvas.clientWidth/state.viewport.zoom,vh=canvas.clientHeight/state.viewport.zoom;
   const vx=(-state.viewport.x)/state.viewport.zoom,vy=(-state.viewport.y)/state.viewport.zoom;
-  ctx.strokeStyle="#ff6d5a";ctx.lineWidth=1.5;ctx.strokeRect(vx*scale+ox,vy*scale+oy,vw*scale,vh*scale);
+  ctx.strokeStyle="#ff6d5a";ctx.lineWidth=1.5;ctx.setLineDash([]);ctx.strokeRect(vx*scale+ox,vy*scale+oy,vw*scale,vh*scale);
 }
 
-// INTERACTIONS - flexible like n8n asli
+// INTERACTIONS - n8n asli flexible
 canvas.addEventListener("pointermove",e=>{
   if(state.drag){
     const cur=screenToWorld(e.clientX,e.clientY);
@@ -863,7 +1101,7 @@ canvas.addEventListener("pointermove",e=>{
   if(state.connect){
     const [wx,wy]=screenToWorld(e.clientX,e.clientY);
     const a=state.connect.from.position;
-    state.connect.d=`M ${a[0]+240} ${a[1]+40} C ${a[0]+240+80} ${a[1]+40}, ${wx-80} ${wy}, ${wx} ${wy}`;
+    state.connect.d=`M ${a[0]+260} ${a[1]+42} C ${a[0]+260+90} ${a[1]+42}, ${wx-90} ${wy}, ${wx} ${wy}`;
     renderEdges();
   }
 });
@@ -872,7 +1110,7 @@ canvas.addEventListener("pointerup",e=>{
   if(state.pan){state.pan=null;canvas.classList.remove("panning")}
   if(state.connect){
     const [wx,wy]=screenToWorld(e.clientX,e.clientY);
-    let target=null;for(const n of state.wf.nodes){if(wx>=n.position[0]&&wx<=n.position[0]+240&&wy>=n.position[1]&&wy<=n.position[1]+80&&n.name!==state.connect.from.name) target=n}
+    let target=null;for(const n of state.wf.nodes){if(wx>=n.position[0]&&wx<=n.position[0]+260&&wy>=n.position[1]&&wy<=n.position[1]+80&&n.name!==state.connect.from.name) target=n}
     if(target) addEdge(state.connect.from.name,target.name,state.connect.branch);
     state.connect=null;renderEdges();canvas.classList.remove("connecting");
   }
@@ -880,7 +1118,7 @@ canvas.addEventListener("pointerup",e=>{
 canvas.addEventListener("wheel",e=>{
   e.preventDefault();
   const delta=e.deltaY>0?0.9:1.1;
-  const newZoom=Math.max(0.15,Math.min(2.5,state.viewport.zoom*delta));
+  const newZoom=Math.max(0.12,Math.min(2.5,state.viewport.zoom*delta));
   const rect=canvas.getBoundingClientRect();
   const mx=e.clientX-rect.left,my=e.clientY-rect.top;
   state.viewport.x=mx-(mx-state.viewport.x)*(newZoom/state.viewport.zoom);
@@ -888,13 +1126,16 @@ canvas.addEventListener("wheel",e=>{
   state.viewport.zoom=newZoom;applyViewport();
 },{passive:false});
 canvas.addEventListener("pointerdown",e=>{
-  if(e.button===1||(e.button===0&&(e.target===canvas||e.target.id==="n8n-viewport"||e.target.id==="n8n-edges"||e.target.classList.contains("n8n-canvas-bg")))){
+  if(e.button===1||(e.button===0&&(e.target===canvas||e.target.id==="n8n-viewport"||e.target.id==="n8n-edges"||e.target.classList.contains("n8n-canvas-bg")||e.target.id==="addFirst"||e.target.closest("#addFirst")))){
     if(e.target.closest(".n8n-node")) return;
     state.pan={sx:e.clientX,sy:e.clientY,vx:state.viewport.x,vy:state.viewport.y};
     canvas.classList.add("panning");
   }
   if(e.target===canvas||e.target.id==="n8n-viewport"||e.target.id==="n8n-edges"||e.target.classList.contains("n8n-canvas-bg")){
     state.selected=null;renderAll();
+  }
+  if(e.target.id==="addFirst"||e.target.closest("#addFirst")){
+    setLeftCollapsed(false);toast("Choose a trigger to start","info");
   }
 });
 
@@ -951,7 +1192,7 @@ function mockRun(wf){
       const assign=node.parameters?.assignments?.assignments||[];
       items=items.map(it=>{const base={...it};for(const a of assign){if(a.name) base[a.name]=a.value}return base});
     }
-    outputs[name]=[items];durations[name]=Math.floor(Math.random()*40)+10;
+    outputs[name]=[items];durations[name]=Math.floor(Math.random()*50)+12;
   }
   const total=Object.values(durations).reduce((a,b)=>a+b,0);
   return {outputs,order,durations_ms:durations,total_ms:total};
@@ -964,15 +1205,16 @@ function closeCmdk(){cmdk.classList.remove("open")}
 function renderCmdk(q){
   cmdkList.innerHTML="";const qq=q.toLowerCase();
   const cmds=[
-    {label:"Execute Workflow",action:()=>doRun(),icon:"▶"},
-    {label:"Toggle Full Canvas",action:()=>fullCanvas(),icon:"⛶"},
-    {label:"Fit View",action:()=>fitView(),icon:"◎"},
+    {label:"Execute Workflow",action:()=>doRun(),icon:"▶",color:"#ff6d5a"},
+    {label:"Toggle Full Canvas",action:()=>fullCanvas(),icon:"⛶",color:"#666"},
+    {label:"Fit View",action:()=>fitView(),icon:"◎",color:"#666"},
+    {label:"Clear Workflow",action:()=>{if(confirm("Clear?")){state.wf.nodes=[];state.wf.connections={};saveHistory();renderAll();toast("Cleared")}},icon:"🗑",color:"#ef4444"},
   ];
-  const nodes=N8N_NODES.filter(d=>!qq||d.label.toLowerCase().includes(qq));
+  const nodes=N8N_NODES.filter(d=>!qq||d.label.toLowerCase().includes(qq)||d.desc.toLowerCase().includes(qq));
   const all=[...cmds.filter(c=>!qq||c.label.toLowerCase().includes(qq)),...nodes.map(n=>({label:`Add ${n.label}`,desc:n.desc,action:()=>{addNode(n.type);closeCmdk()},icon:n.icon,color:n.color}))];
-  for(const item of all.slice(0,20)){
+  for(const item of all.slice(0,24)){
     const el=document.createElement("div");el.className="n8n-cmdk-item";
-    el.innerHTML=`<div class="n8n-node-icon" style="width:32px;height:32px;background:${item.color||"#eee"}">${item.icon||"•"}</div><div style="flex:1"><div style="font:500 13px var(--font)">${esc(item.label)}</div>${item.desc?`<div style="font:400 11px var(--font);color:var(--text-light)">${esc(item.desc)}</div>`:""}</div>`;
+    el.innerHTML=`<div class="icon" style="background:${item.color}">${item.icon}</div><div style="flex:1;min-width:0"><div style="font:600 13px var(--font);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(item.label)}</div>${item.desc?`<div style="font:400 11px var(--font);color:var(--text-light);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(item.desc)}</div>`:""}</div>`;
     el.onclick=()=>{item.action();closeCmdk()};cmdkList.appendChild(el);
   }
 }
@@ -982,23 +1224,24 @@ cmdkInput.addEventListener("keydown",e=>{if(e.key==="Escape") closeCmdk();if(e.k
 
 // ACTIONS
 async function doValidate(){try{const diags=await api("/api/validate",state.wf);state.diags=diags;renderPanel();toast(diags.filter(d=>d.level==="error").length?`${diags.filter(d=>d.level==="error").length} errors`:"✓ Valid","ok")}catch(e){toast("Validate failed: "+e.message,"err")}}
-async function doExplain(){try{state.plan=await api("/api/explain",state.wf);renderPanel();toast("Plan: "+state.plan.join(" → "))}catch(e){toast("Explain failed: "+e.message,"err")}}
+async function doExplain(){try{state.plan=await api("/api/explain",state.wf);renderPanel();toast("Plan: "+state.plan.join(" → "),"info")}catch(e){toast("Explain failed: "+e.message,"err")}}
 async function doRun(){
-  setStatus("Executing...");toast("Executing...");
+  setStatus("Executing workflow...");
+  toast("Executing workflow...","info");
   const order=state.plan||mockTopo(state.wf);
   for(let i=0;i<order.length;i++){
-    const name=order[i];const el=document.querySelector(`[data-name="${CSS.escape(name)}"]`);if(el){el.classList.add("executing");await new Promise(r=>setTimeout(r,220));el.classList.remove("executing")}
+    const name=order[i];const el=document.querySelector(`[data-name="${CSS.escape(name)}"]`);if(el){el.classList.add("executing");el.querySelector(".n8n-node-status").classList.add("running");await new Promise(r=>setTimeout(r,280));el.classList.remove("executing");el.querySelector(".n8n-node-status").classList.remove("running");el.querySelector(".n8n-node-status").classList.add("success")}
   }
-  try{state.report=await api("/api/run",state.wf);renderAll();const total=Object.values(state.report.durations_ms||{}).reduce((a,b)=>a+b,0);setStatus(`✓ Executed: ${state.report.order.join(" → ")} (${total}ms)`);toast(`✓ Executed in ${total}ms`,"ok")}catch(e){setStatus("Failed: "+e.message);toast("Failed: "+e.message,"err")}
+  try{state.report=await api("/api/run",state.wf);renderAll();const total=Object.values(state.report.durations_ms||{}).reduce((a,b)=>a+b,0);setStatus(`✓ Executed: ${state.report.order.join(" → ")} (${total}ms)`);toast(`✓ Executed in ${total}ms — ${state.report.order.length} nodes`,"ok");$("#execCount").textContent=state.report.order.length}catch(e){setStatus("Failed: "+e.message);toast("Failed: "+e.message,"err")}
 }
 function doExport(){
   const blob=new Blob([JSON.stringify(state.wf,null,2)],{type:"application/json"});
   const a=document.createElement("a");a.href=URL.createObjectURL(blob);
   const base=(state.wf.name||"workflow").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"")||"workflow";
-  a.download=base+".json";document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1000);toast("Exported "+a.download)
+  a.download=base+".json";document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1000);toast("Exported "+a.download,"ok")
 }
 
-// EVENTS - collapsible
+// EVENTS
 $("#bToggleLeft").onclick=toggleLeft;
 $("#bToggleRight").onclick=toggleRight;
 $("#bCloseLeft").onclick=()=>setLeftCollapsed(true);
@@ -1023,7 +1266,8 @@ $("#bRun").onclick=doRun;
 $("#bFit").onclick=fitView;
 $("#bReset").onclick=()=>{state.viewport={x:0,y:0,zoom:1};applyViewport()};
 $("#bZoomIn").onclick=()=>{state.viewport.zoom=Math.min(2.5,state.viewport.zoom*1.2);applyViewport()};
-$("#bZoomOut").onclick=()=>{state.viewport.zoom=Math.max(0.15,state.viewport.zoom/1.2);applyViewport()};
+$("#bZoomOut").onclick=()=>{state.viewport.zoom=Math.max(0.12,state.viewport.zoom/1.2);applyViewport()};
+$("#bAddNode").onclick=()=>{setLeftCollapsed(false);toast("Choose node from left panel","info")};
 $("#bMiniToggle").onclick=()=>{
   state.minimapCollapsed=!state.minimapCollapsed;
   $("#minimap").classList.toggle("collapsed",state.minimapCollapsed);
@@ -1031,12 +1275,17 @@ $("#bMiniToggle").onclick=()=>{
 };
 $("#bUndo").onclick=undo;$("#bRedo").onclick=redo;
 $("#nodeSearch").addEventListener("input",e=>renderNodeList(e.target.value));
-$("#wfName").addEventListener("change",e=>{state.wf.name=e.target.value;saveHistory()});
+$("#wfName").addEventListener("change",e=>{state.wf.name=e.target.value;saveHistory();updateStats()});
+document.querySelectorAll(".n8n-wf-tab").forEach(t=>t.addEventListener("click",()=>{
+  document.querySelectorAll(".n8n-wf-tab").forEach(x=>x.classList.remove("active"));t.classList.add("active");
+  if(t.dataset.wftab==="executions"){toast("Executions tab — shows run history","info");doValidate()}
+}));
 window.addEventListener("keydown",e=>{
   if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==="k"){e.preventDefault();openCmdk()}
   if((e.metaKey||e.ctrlKey)&&e.key==="Enter"){e.preventDefault();doRun()}
   if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==="z"){e.preventDefault();if(e.shiftKey) redo();else undo()}
   if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==="b"){e.preventDefault();toggleLeft()}
+  if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==="i"){e.preventDefault();toggleRight()}
   if(e.key==="Delete"&&state.selected){
     const name=state.selected;state.wf.nodes=state.wf.nodes.filter(n=>n.name!==name);delete state.wf.connections[name];
     for(const k of Object.keys(state.wf.connections)){const m=state.wf.connections[k]?.main;if(!Array.isArray(m)) continue;m.forEach((br,i)=>{if(Array.isArray(br)) m[i]=br.filter(l=>!(l&&l.node===name))})}
@@ -1054,7 +1303,7 @@ window.addEventListener("keydown",e=>{
   renderNodeList("");renderAll();applyViewport();fitView();
   if(leftC) setLeftCollapsed(true);
   if(rightC) setRightCollapsed(true);
-  setStatus("Ready — drag black dot → gray dot to connect, ⌘B toggle nodes, full canvas button for full view");
+  setStatus("Ready — n8n asli layout: ☰ toggle nodes, ◧ toggle inspector, ⛶ full canvas, drag black dot to connect");
 })();
 </script>
 </body>
