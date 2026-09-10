@@ -103,19 +103,13 @@ fn cmd_run(arg: Option<&String>, save: Option<&str>) -> Result<(), String> {
     let per: Vec<String> = report
         .order
         .iter()
-        .map(|n| {
-            format!(
-                "{n}={}ms",
-                report.durations_ms.get(n).copied().unwrap_or(0)
-            )
-        })
+        .map(|n| format!("{n}={}ms", report.durations_ms.get(n).copied().unwrap_or(0)))
         .collect();
     println!("waktu: {} (total {total}ms)", per.join(", "));
     let out = serde_json::to_string_pretty(&report.outputs).map_err(|e| e.to_string())?;
     println!("{out}");
     if let Some(path) = save {
-        let pretty =
-            serde_json::to_string_pretty(&report).map_err(|e| e.to_string())?;
+        let pretty = serde_json::to_string_pretty(&report).map_err(|e| e.to_string())?;
         std::fs::write(path, pretty).map_err(|e| format!("simpan '{path}' gagal: {e}"))?;
         println!("tersimpan: {path}");
     }

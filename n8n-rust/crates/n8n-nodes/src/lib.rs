@@ -27,7 +27,9 @@ mod merge;
 use filter::{evaluate as eval_conditions, resolve_opts};
 use n8n_core::expr::{render, render_value, ExprContext};
 use n8n_core::WorkflowNode;
-use n8n_engine::{BranchOutputs, EngineError, EngineResult, ExecContext, MultiInput, Node, Registry};
+use n8n_engine::{
+    BranchOutputs, EngineError, EngineResult, ExecContext, MultiInput, Node, Registry,
+};
 use serde_json::{json, Map, Value};
 use std::sync::Arc;
 
@@ -240,9 +242,7 @@ impl Node for SetNode {
             return Ok(vec![out]);
         }
         if mode != "manual" {
-            return Err(EngineError::new(format!(
-                "set: mode tak dikenal '{mode}'"
-            )));
+            return Err(EngineError::new(format!("set: mode tak dikenal '{mode}'")));
         }
         let include = node
             .parameters
@@ -267,9 +267,7 @@ impl Node for SetNode {
                 "selected" => {
                     let mut m = Map::new();
                     let fields = render_value(
-                        node.parameters
-                            .get("includeFields")
-                            .unwrap_or(&Value::Null),
+                        node.parameters.get("includeFields").unwrap_or(&Value::Null),
                         &ectx,
                     );
                     for key in split_csv(&fields) {
@@ -296,9 +294,7 @@ impl Node for SetNode {
                 "except" => {
                     let mut m = it.as_object().cloned().unwrap_or_default();
                     let fields = render_value(
-                        node.parameters
-                            .get("excludeFields")
-                            .unwrap_or(&Value::Null),
+                        node.parameters.get("excludeFields").unwrap_or(&Value::Null),
                         &ectx,
                     );
                     for key in split_csv(&fields) {
@@ -331,10 +327,7 @@ impl Node for SetNode {
 
 /// Field baru: `assignments` (n8n v3) → `fields.values` (n8n v1/v2) →
 /// `values` (ekstensi n8n-rust).
-fn set_new_fields(
-    node: &WorkflowNode,
-    ectx: &ExprContext,
-) -> EngineResult<Map<String, Value>> {
+fn set_new_fields(node: &WorkflowNode, ectx: &ExprContext) -> EngineResult<Map<String, Value>> {
     if let Some(list) = node
         .parameters
         .get("assignments")
@@ -397,9 +390,9 @@ fn set_raw(node: &WorkflowNode, ectx: &ExprContext) -> EngineResult<Value> {
         .get("jsonOutput")
         .map(|v| render_value(v, ectx))
         .unwrap_or(Value::Null);
-    let text = raw.as_str().ok_or_else(|| {
-        EngineError::new("set: mode raw butuh 'jsonOutput' string")
-    })?;
+    let text = raw
+        .as_str()
+        .ok_or_else(|| EngineError::new("set: mode raw butuh 'jsonOutput' string"))?;
     // Penanda ekspresi `=` di awal dibuang sebelum parse JSON.
     let text = text.trim_start().strip_prefix('=').unwrap_or(text);
     let parsed: Value = serde_json::from_str(text)
@@ -577,7 +570,11 @@ fn sort_fields(node: &WorkflowNode) -> EngineResult<Vec<SortField>> {
                 .and_then(Value::as_str)
                 .unwrap_or("")
                 .to_string();
-            let dir = match f.get("order").and_then(Value::as_str).unwrap_or("ascending") {
+            let dir = match f
+                .get("order")
+                .and_then(Value::as_str)
+                .unwrap_or("ascending")
+            {
                 "ascending" | "asc" => 1,
                 "descending" | "desc" => -1,
                 other => {
@@ -634,9 +631,7 @@ fn cmp_field(a: Option<&Value>, b: Option<&Value>) -> std::cmp::Ordering {
     let a = a.unwrap_or(&Value::Null);
     let b = b.unwrap_or(&Value::Null);
     match (a, b) {
-        (Value::String(x), Value::String(y)) => {
-            x.to_lowercase().cmp(&y.to_lowercase())
-        }
+        (Value::String(x), Value::String(y)) => x.to_lowercase().cmp(&y.to_lowercase()),
         (Value::Number(x), Value::Number(y)) => {
             let xf = x.as_f64().unwrap_or(f64::NAN);
             let yf = y.as_f64().unwrap_or(f64::NAN);
@@ -881,10 +876,7 @@ fn code_mode(node: &WorkflowNode) -> &str {
         .unwrap_or("runOnceForAllItems")
 }
 
-fn run_code_mode(
-    node: &WorkflowNode,
-    items: Vec<Value>,
-) -> EngineResult<Vec<Value>> {
+fn run_code_mode(node: &WorkflowNode, items: Vec<Value>) -> EngineResult<Vec<Value>> {
     match code_mode(node) {
         "runOnceForAllItems" => run_code(node, items),
         "runOnceForEachItem" => run_code_each(node, items),
@@ -1006,11 +998,7 @@ impl Node for ScheduleNode {
         _items: Vec<Value>,
         _ctx: &ExecContext,
     ) -> EngineResult<BranchOutputs> {
-        let rule = node
-            .parameters
-            .get("rule")
-            .cloned()
-            .unwrap_or(Value::Null);
+        let rule = node.parameters.get("rule").cloned().unwrap_or(Value::Null);
         Ok(vec![vec![schedule_item(&rule)]])
     }
 }
@@ -1066,10 +1054,7 @@ impl Node for WebhookNode {
         _items: Vec<Value>,
         ctx: &ExecContext,
     ) -> EngineResult<BranchOutputs> {
-        let item = ctx
-            .webhook
-            .cloned()
-            .unwrap_or(json!({"mode": "manual"}));
+        let item = ctx.webhook.cloned().unwrap_or(json!({"mode": "manual"}));
         Ok(vec![vec![item]])
     }
 }
@@ -1115,10 +1100,7 @@ impl Node for SwitchNode {
                     .filter(|c| c.is_object())
                     .cloned()
                     .ok_or_else(|| {
-                        EngineError::new(format!(
-                            "switch: rule {} tanpa conditions object",
-                            i + 1
-                        ))
+                        EngineError::new(format!("switch: rule {} tanpa conditions object", i + 1))
                     })?;
                 rules.push(conds);
             }
@@ -1287,9 +1269,10 @@ impl Node for WaitNode {
         let amount = match node.parameters.get("amount") {
             None => 1.0,
             Some(Value::Number(n)) => n.as_f64().unwrap_or(1.0),
-            Some(Value::String(s)) => s.trim().parse::<f64>().map_err(|_| {
-                EngineError::new(format!("wait: amount bukan angka ('{s}')"))
-            })?,
+            Some(Value::String(s)) => s
+                .trim()
+                .parse::<f64>()
+                .map_err(|_| EngineError::new(format!("wait: amount bukan angka ('{s}')")))?,
             Some(other) => {
                 return Err(EngineError::new(format!(
                     "wait: amount bukan angka ({other})"
@@ -1351,11 +1334,7 @@ impl Node for StopNode {
                     .filter(|s| !s.is_empty())
                     .map(str::to_string)
             })
-            .or_else(|| {
-                p.get("error")
-                    .and_then(Value::as_str)
-                    .map(str::to_string)
-            })
+            .or_else(|| p.get("error").and_then(Value::as_str).map(str::to_string))
             .unwrap_or_else(|| {
                 let dump: Map<String, Value> =
                     p.iter().map(|(k, v)| (k.clone(), v.clone())).collect();
@@ -1572,11 +1551,7 @@ mod tests {
         );
         let outputs = HashMap::new();
         let out = SetNode
-            .execute(
-                &node,
-                vec![json!({"drop": true})],
-                &empty_ctx(&outputs),
-            )
+            .execute(&node, vec![json!({"drop": true})], &empty_ctx(&outputs))
             .expect("exec");
         assert_eq!(out, vec![vec![json!({"a": 1})]]);
 
@@ -1626,10 +1601,7 @@ mod tests {
                 &empty_ctx(&outputs),
             )
             .expect("exec");
-        assert_eq!(
-            out,
-            vec![vec![json!({"keep": 1, "a": {"b": 5}})]]
-        );
+        assert_eq!(out, vec![vec![json!({"keep": 1, "a": {"b": 5}})]]);
     }
 
     #[test]
@@ -1685,10 +1657,7 @@ mod tests {
             "f",
             "Filter",
             "n8n-nodes-base.filter",
-            HashMap::from([(
-                "condition".to_string(),
-                json!("={{ $json.keep }}"),
-            )]),
+            HashMap::from([("condition".to_string(), json!("={{ $json.keep }}"))]),
         );
         let outputs = HashMap::new();
         let out = FilterNode
@@ -1703,13 +1672,7 @@ mod tests {
                 &empty_ctx(&outputs),
             )
             .expect("exec");
-        assert_eq!(
-            out,
-            vec![vec![
-                json!({"keep": true}),
-                json!({"keep": "x"})
-            ]]
-        );
+        assert_eq!(out, vec![vec![json!({"keep": true}), json!({"keep": "x"})]]);
     }
 
     #[test]
@@ -1872,7 +1835,11 @@ mod tests {
             ]),
         );
         let out = LimitNode
-            .execute(&last, vec![json!(1), json!(2), json!(3)], &empty_ctx(&outputs))
+            .execute(
+                &last,
+                vec![json!(1), json!(2), json!(3)],
+                &empty_ctx(&outputs),
+            )
             .expect("exec");
         assert_eq!(out, vec![vec![json!(2), json!(3)]]);
     }
@@ -1883,10 +1850,7 @@ mod tests {
             "i",
             "If",
             "n8n-nodes-base.if",
-            HashMap::from([(
-                "condition".to_string(),
-                json!("={{ $json.age > 18 }}"),
-            )]),
+            HashMap::from([("condition".to_string(), json!("={{ $json.age > 18 }}"))]),
         );
         let outputs = HashMap::new();
         let out = IfNode
@@ -1898,10 +1862,7 @@ mod tests {
             .expect("exec");
         assert_eq!(
             out,
-            vec![
-                vec![json!({"age": 20})],
-                vec![json!({"age": 10})]
-            ]
+            vec![vec![json!({"age": 20})], vec![json!({"age": 10})]]
         );
     }
 
@@ -1940,7 +1901,10 @@ mod tests {
         assert_eq!(
             out,
             vec![
-                vec![json!({"tag": "VIP", "age": 30}), json!({"tag": "x", "age": 70})],
+                vec![
+                    json!({"tag": "VIP", "age": 30}),
+                    json!({"tag": "x", "age": 70})
+                ],
                 vec![json!({"tag": "x", "age": 30})]
             ]
         );
@@ -1983,10 +1947,8 @@ mod tests {
     fn http_response_format_text_keeps_raw() {
         let (port, handle) = canned_server(1);
         let mut node = http_node(&format!("http://127.0.0.1:{port}/echo"));
-        node.parameters.insert(
-            "options".to_string(),
-            json!({"responseFormat": "text"}),
-        );
+        node.parameters
+            .insert("options".to_string(), json!({"responseFormat": "text"}));
         let outputs = HashMap::new();
         let out = HttpNode
             .execute(&node, vec![json!({})], &empty_ctx(&outputs))
@@ -2030,10 +1992,7 @@ mod tests {
                 &empty_ctx(&outputs),
             )
             .expect("exec");
-        assert_eq!(
-            out,
-            vec![vec![json!({"value": 10}), json!({"value": 20})]]
-        );
+        assert_eq!(out, vec![vec![json!({"value": 10}), json!({"value": 20})]]);
     }
 
     #[test]
@@ -2059,10 +2018,7 @@ mod tests {
             "n8n-nodes-base.code",
             HashMap::from([
                 ("mode".to_string(), json!("runOnceForEachItem")),
-                (
-                    "code".to_string(),
-                    json!("item.n = item.n + index; item;"),
-                ),
+                ("code".to_string(), json!("item.n = item.n + index; item;")),
             ]),
         );
         let outputs = HashMap::new();
@@ -2091,10 +2047,7 @@ mod tests {
         let out = CodeNode
             .execute(&node, vec![json!({})], &empty_ctx(&outputs))
             .expect("exec");
-        assert_eq!(
-            out,
-            vec![vec![json!({"value": 1}), json!({"value": 2})]]
-        );
+        assert_eq!(out, vec![vec![json!({"value": 1}), json!({"value": 2})]]);
     }
 
     #[test]
@@ -2103,10 +2056,7 @@ mod tests {
             "s",
             "Schedule",
             "n8n-nodes-base.scheduleTrigger",
-            HashMap::from([(
-                "rule".to_string(),
-                json!({"interval": [{"field": "days"}]}),
-            )]),
+            HashMap::from([("rule".to_string(), json!({"interval": [{"field": "days"}]}))]),
         );
         let outputs = HashMap::new();
         let out = ScheduleNode
@@ -2154,12 +2104,7 @@ mod tests {
 
     #[test]
     fn webhook_manual_placeholder_without_payload() {
-        let node = mk(
-            "w",
-            "Webhook",
-            "n8n-nodes-base.webhook",
-            HashMap::new(),
-        );
+        let node = mk("w", "Webhook", "n8n-nodes-base.webhook", HashMap::new());
         let outputs = HashMap::new();
         let out = WebhookNode
             .execute(&node, vec![], &empty_ctx(&outputs))
@@ -2300,10 +2245,7 @@ mod tests {
             "n8n-nodes-base.dateTime",
             HashMap::from([
                 ("operation".to_string(), json!("addToDate")),
-                (
-                    "magnitude".to_string(),
-                    json!("2026-01-01T00:00:00+00:00"),
-                ),
+                ("magnitude".to_string(), json!("2026-01-01T00:00:00+00:00")),
                 ("timeUnit".to_string(), json!("days")),
                 ("duration".to_string(), json!(1)),
             ]),
@@ -2400,12 +2342,7 @@ mod tests {
 
     #[test]
     fn stop_default_error_shape() {
-        let node = mk(
-            "s",
-            "Stop",
-            "n8n-nodes-base.stopAndError",
-            HashMap::new(),
-        );
+        let node = mk("s", "Stop", "n8n-nodes-base.stopAndError", HashMap::new());
         let outputs = HashMap::new();
         let err = StopNode
             .execute(&node, vec![], &empty_ctx(&outputs))

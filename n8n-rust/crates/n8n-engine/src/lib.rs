@@ -211,14 +211,18 @@ impl Engine {
         webhook: Option<Value>,
     ) -> EngineResult<RunReport> {
         let p = plan(workflow)?;
-        let by_name: HashMap<&str, &WorkflowNode> =
-            workflow.nodes.iter().map(|n| (n.name.as_str(), n)).collect();
+        let by_name: HashMap<&str, &WorkflowNode> = workflow
+            .nodes
+            .iter()
+            .map(|n| (n.name.as_str(), n))
+            .collect();
         let mut done: HashMap<String, BranchOutputs> = HashMap::new();
         let mut durations_ms: HashMap<String, u128> = HashMap::new();
         for name in &p.order {
-            let node = by_name.get(name.as_str()).copied().ok_or_else(|| {
-                EngineError::new(format!("plan menyebut node hilang '{name}'"))
-            })?;
+            let node = by_name
+                .get(name.as_str())
+                .copied()
+                .ok_or_else(|| EngineError::new(format!("plan menyebut node hilang '{name}'")))?;
             let mut inputs = Vec::new();
             if let Some(ps) = p.incoming.get(name) {
                 for (pr, bi) in ps {
@@ -319,8 +323,7 @@ impl Engine {
             if n.disabled {
                 continue;
             }
-            if !targets.contains(n.name.as_str())
-                && !n.node_type.to_lowercase().contains("trigger")
+            if !targets.contains(n.name.as_str()) && !n.node_type.to_lowercase().contains("trigger")
             {
                 out.push(warn(format!(
                     "node '{}' tak punya pendahulu dan bukan trigger — berjalan dengan 0 item",
@@ -425,10 +428,7 @@ mod tests {
         );
         let report = Engine::run(&wf, &registry()).expect("run");
         assert_eq!(report.order, vec!["A".to_string(), "B".to_string()]);
-        assert_eq!(
-            report.outputs["B"][0],
-            vec![Value::String("e".to_string())]
-        );
+        assert_eq!(report.outputs["B"][0], vec![Value::String("e".to_string())]);
         assert_eq!(report.durations_ms.len(), 2);
     }
 
@@ -559,11 +559,8 @@ mod tests {
     #[test]
     fn run_with_threads_webhook_payload() {
         let wf = workflow(vec![node("A", "test.echohook")], HashMap::new());
-        let report = Engine::run_with(&wf, &registry(), Some(serde_json::json!({"h": 1})))
-            .expect("run");
-        assert_eq!(
-            report.outputs["A"][0],
-            vec![serde_json::json!({"h": 1})]
-        );
+        let report =
+            Engine::run_with(&wf, &registry(), Some(serde_json::json!({"h": 1}))).expect("run");
+        assert_eq!(report.outputs["A"][0], vec![serde_json::json!({"h": 1})]);
     }
 }

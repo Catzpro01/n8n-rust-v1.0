@@ -103,9 +103,7 @@ fn eval(expr: &str, ctx: &ExprContext) -> Value {
         return paren_node(rest, ctx);
     }
     if e == "$now" {
-        return json!(
-            chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Millis, false)
-        );
+        return json!(chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Millis, false));
     }
     if e == "$today" {
         let d = chrono::Utc::now().date_naive();
@@ -114,9 +112,7 @@ fn eval(expr: &str, ctx: &ExprContext) -> Value {
     if e.ends_with(')') {
         if let Some(open) = e.find('(') {
             let name = e[..open].trim();
-            if !name.is_empty()
-                && name.chars().all(|c| c.is_alphanumeric() || c == '_')
-            {
+            if !name.is_empty() && name.chars().all(|c| c.is_alphanumeric() || c == '_') {
                 let arg = e[open + 1..e.len() - 1].trim();
                 let v = eval(arg, ctx);
                 return apply_func(name, &v);
@@ -148,21 +144,14 @@ fn paren_node(rest: &str, ctx: &ExprContext) -> Value {
 
 /// Ambil item pertama cabang 0 `name`, lalu telusuri akhiran
 /// [`.first()`]`.json...`. Akhiran tanpa `.json` → Null (seperti n8n).
-fn node_drill(
-    outputs: &HashMap<String, Vec<Vec<Value>>>,
-    name: &str,
-    rest: &str,
-) -> Value {
+fn node_drill(outputs: &HashMap<String, Vec<Vec<Value>>>, name: &str, rest: &str) -> Value {
     let first = outputs
         .get(name)
         .and_then(|branches| branches.first())
         .and_then(|items| items.first())
         .unwrap_or(&Value::Null);
     let r = rest.trim_start();
-    let r = r
-        .strip_prefix(".first()")
-        .map(str::trim_start)
-        .unwrap_or(r);
+    let r = r.strip_prefix(".first()").map(str::trim_start).unwrap_or(r);
     let r = match r.strip_prefix(".json") {
         Some(x) => x,
         None => return Value::Null,
@@ -379,10 +368,7 @@ mod tests {
     fn single_placeholder_preserves_type() {
         let item = json!({"n": 41});
         let outputs = HashMap::new();
-        assert_eq!(
-            render("={{ $json.n }}", &ctx(&item, &outputs)),
-            json!(41)
-        );
+        assert_eq!(render("={{ $json.n }}", &ctx(&item, &outputs)), json!(41));
     }
 
     #[test]
@@ -401,10 +387,7 @@ mod tests {
         let outputs = HashMap::from([("Up".to_string(), vec![vec![json!({"x": 7})]])]);
         let c = ctx(&item, &outputs);
         assert_eq!(render("={{ $node[\"Up\"].json.x }}", &c), json!(7));
-        assert_eq!(
-            render("={{ $node['Up'].first().json.x }}", &c),
-            json!(7)
-        );
+        assert_eq!(render("={{ $node['Up'].first().json.x }}", &c), json!(7));
     }
 
     #[test]
@@ -440,10 +423,7 @@ mod tests {
         assert!(s.contains('T') && s.contains('+'), "{s}");
         let today = render("={{ $today }}", &c);
         assert!(
-            today
-                .as_str()
-                .expect("string")
-                .ends_with("T00:00:00+00:00"),
+            today.as_str().expect("string").ends_with("T00:00:00+00:00"),
             "{today}"
         );
     }

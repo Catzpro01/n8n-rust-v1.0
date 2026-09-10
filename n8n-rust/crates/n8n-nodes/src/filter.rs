@@ -116,9 +116,7 @@ fn eval_condition(
     let operation = operator
         .get("operation")
         .and_then(Value::as_str)
-        .ok_or_else(|| {
-            EngineError::new(format!("conditions: operator.operation hilang {tag}"))
-        })?;
+        .ok_or_else(|| EngineError::new(format!("conditions: operator.operation hilang {tag}")))?;
     // Operasi panjang membandingkan angka (len vs rightValue) — kanan
     // harus number kecuali rightType eksplisit (n8n: input angka).
     let right_default = if type_ == "array" && operation.starts_with("length") {
@@ -286,21 +284,16 @@ fn parse_datetime(v: &Value) -> Option<Value> {
                 return Some(serde_json::json!(dt.timestamp_millis()));
             }
             if let Ok(naive) = chrono::NaiveDateTime::parse_from_str(t, "%Y-%m-%dT%H:%M:%S%.f") {
-                return Some(serde_json::json!(
-                    naive.and_utc().timestamp_millis()
-                ));
+                return Some(serde_json::json!(naive.and_utc().timestamp_millis()));
             }
             if let Ok(naive) = chrono::NaiveDateTime::parse_from_str(t, "%Y-%m-%d %H:%M:%S") {
-                return Some(serde_json::json!(
-                    naive.and_utc().timestamp_millis()
-                ));
+                return Some(serde_json::json!(naive.and_utc().timestamp_millis()));
             }
             if let Ok(date) = chrono::NaiveDate::parse_from_str(t, "%Y-%m-%d") {
-                return Some(serde_json::json!(
-                    date.and_hms_opt(0, 0, 0)
-                        .map(|d| d.and_utc().timestamp_millis())
-                        .unwrap_or(0)
-                ));
+                return Some(serde_json::json!(date
+                    .and_hms_opt(0, 0, 0)
+                    .map(|d| d.and_utc().timestamp_millis())
+                    .unwrap_or(0)));
             }
             None
         }

@@ -40,12 +40,21 @@ jobs:
           except OSError:
               pass
           import os
-          if (os.environ.get('GITHUB_JOB') or '').startswith('fmt'):
+          is_fmt = (os.environ.get('GITHUB_JOB') or '').startswith('fmt')
+          if is_fmt:
               raw = '\n'.join(l for l in raw.split('\n') if l.startswith(('Diff in', '@@', '+', '-')))
           CH = 3500
-          parts = [raw[i:i+CH] for i in range(0, len(raw), CH)] or ['']
+          parts, _cur = [], ''
+          for _ln in raw.split('\n'):
+              while len(_ln) > CH:
+                  parts.append(_ln[:CH]); _ln = _ln[CH:]
+              if len(_cur) + len(_ln) + 1 > CH and _cur:
+                  parts.append(_cur); _cur = ''
+              _cur += _ln + '\n'
+          if _cur or not parts:
+              parts.append(_cur)
           rx = re.compile(r'error|warning|Diff in|failures:|panicked|test result|FAILED', re.I)
-          keep = [(i, p) for i, p in enumerate(parts) if rx.search(p) or i == len(parts)-1][:7]
+          keep = [(i, p) for i, p in enumerate(parts)][:12] if is_fmt else [(i, p) for i, p in enumerate(parts) if rx.search(p) or i == len(parts)-1][:7]
           for i, p in keep:
               m = p.replace('%', '%25').replace(chr(13), '%0D').replace(chr(10), '%0A')
               print(f"::error::LOG[{i+1}/{len(parts)}]:{m}")
@@ -85,12 +94,21 @@ jobs:
           except OSError:
               pass
           import os
-          if (os.environ.get('GITHUB_JOB') or '').startswith('fmt'):
+          is_fmt = (os.environ.get('GITHUB_JOB') or '').startswith('fmt')
+          if is_fmt:
               raw = '\n'.join(l for l in raw.split('\n') if l.startswith(('Diff in', '@@', '+', '-')))
           CH = 3500
-          parts = [raw[i:i+CH] for i in range(0, len(raw), CH)] or ['']
+          parts, _cur = [], ''
+          for _ln in raw.split('\n'):
+              while len(_ln) > CH:
+                  parts.append(_ln[:CH]); _ln = _ln[CH:]
+              if len(_cur) + len(_ln) + 1 > CH and _cur:
+                  parts.append(_cur); _cur = ''
+              _cur += _ln + '\n'
+          if _cur or not parts:
+              parts.append(_cur)
           rx = re.compile(r'error|warning|Diff in|failures:|panicked|test result|FAILED', re.I)
-          keep = [(i, p) for i, p in enumerate(parts) if rx.search(p) or i == len(parts)-1][:7]
+          keep = [(i, p) for i, p in enumerate(parts)][:12] if is_fmt else [(i, p) for i, p in enumerate(parts) if rx.search(p) or i == len(parts)-1][:7]
           for i, p in keep:
               m = p.replace('%', '%25').replace(chr(13), '%0D').replace(chr(10), '%0A')
               print(f"::error::LOG[{i+1}/{len(parts)}]:{m}")
@@ -127,12 +145,21 @@ jobs:
           except OSError:
               pass
           import os
-          if (os.environ.get('GITHUB_JOB') or '').startswith('fmt'):
+          is_fmt = (os.environ.get('GITHUB_JOB') or '').startswith('fmt')
+          if is_fmt:
               raw = '\n'.join(l for l in raw.split('\n') if l.startswith(('Diff in', '@@', '+', '-')))
           CH = 3500
-          parts = [raw[i:i+CH] for i in range(0, len(raw), CH)] or ['']
+          parts, _cur = [], ''
+          for _ln in raw.split('\n'):
+              while len(_ln) > CH:
+                  parts.append(_ln[:CH]); _ln = _ln[CH:]
+              if len(_cur) + len(_ln) + 1 > CH and _cur:
+                  parts.append(_cur); _cur = ''
+              _cur += _ln + '\n'
+          if _cur or not parts:
+              parts.append(_cur)
           rx = re.compile(r'error|warning|Diff in|failures:|panicked|test result|FAILED', re.I)
-          keep = [(i, p) for i, p in enumerate(parts) if rx.search(p) or i == len(parts)-1][:7]
+          keep = [(i, p) for i, p in enumerate(parts)][:12] if is_fmt else [(i, p) for i, p in enumerate(parts) if rx.search(p) or i == len(parts)-1][:7]
           for i, p in keep:
               m = p.replace('%', '%25').replace(chr(13), '%0D').replace(chr(10), '%0A')
               print(f"::error::LOG[{i+1}/{len(parts)}]:{m}")
@@ -149,7 +176,7 @@ jobs:
         with:
           components: rustfmt
       - name: cargo fmt
-        run: set -o pipefail; (rustc --version; rustfmt --version; rustfmt --edition 2021 --check crates/n8n-nodes/src/lib.rs crates/n8n-nodes/src/filter.rs crates/n8n-nodes/src/merge.rs crates/n8n-nodes/src/datetime.rs crates/n8n-server/src/main.rs) 2>&1 | tee /tmp/out.log
+        run: set -o pipefail; (rustc --version; rustfmt --version; rustfmt --edition 2021 --check crates/n8n-nodes/src/lib.rs crates/n8n-nodes/src/filter.rs) 2>&1 | tee /tmp/out.log
       - name: Ekspor error sebagai anotasi
         if: failure()
         run: |
@@ -168,12 +195,72 @@ jobs:
           except OSError:
               pass
           import os
-          if (os.environ.get('GITHUB_JOB') or '').startswith('fmt'):
+          is_fmt = (os.environ.get('GITHUB_JOB') or '').startswith('fmt')
+          if is_fmt:
               raw = '\n'.join(l for l in raw.split('\n') if l.startswith(('Diff in', '@@', '+', '-')))
           CH = 3500
-          parts = [raw[i:i+CH] for i in range(0, len(raw), CH)] or ['']
+          parts, _cur = [], ''
+          for _ln in raw.split('\n'):
+              while len(_ln) > CH:
+                  parts.append(_ln[:CH]); _ln = _ln[CH:]
+              if len(_cur) + len(_ln) + 1 > CH and _cur:
+                  parts.append(_cur); _cur = ''
+              _cur += _ln + '\n'
+          if _cur or not parts:
+              parts.append(_cur)
           rx = re.compile(r'error|warning|Diff in|failures:|panicked|test result|FAILED', re.I)
-          keep = [(i, p) for i, p in enumerate(parts) if rx.search(p) or i == len(parts)-1][:7]
+          keep = [(i, p) for i, p in enumerate(parts)][:12] if is_fmt else [(i, p) for i, p in enumerate(parts) if rx.search(p) or i == len(parts)-1][:7]
+          for i, p in keep:
+              m = p.replace('%', '%25').replace(chr(13), '%0D').replace(chr(10), '%0A')
+              print(f"::error::LOG[{i+1}/{len(parts)}]:{m}")
+          EOF
+
+  fmt-c:
+    name: cargo fmt (merge/datetime/server)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: n8n-rust
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt
+      - name: cargo fmt
+        run: set -o pipefail; (rustc --version; rustfmt --version; rustfmt --edition 2021 --check crates/n8n-nodes/src/merge.rs crates/n8n-nodes/src/datetime.rs crates/n8n-server/src/main.rs) 2>&1 | tee /tmp/out.log
+      - name: Ekspor error sebagai anotasi
+        if: failure()
+        run: |
+          python3 - <<'EOF'
+          import re
+          raw = ''
+          try:
+              raw = open('/tmp/out.log', 'rb').read().decode('utf-8', 'replace')
+          except OSError:
+              pass
+          try:
+              _fix = open('/tmp/fmtfix.log', 'rb').read().decode('utf-8', 'replace')
+              if _fix.strip():
+                  _m = _fix[:3400].replace('%', '%25').replace(chr(13), '%0D').replace(chr(10), '%0A')
+                  print('::error::FMTFIX:' + _m)
+          except OSError:
+              pass
+          import os
+          is_fmt = (os.environ.get('GITHUB_JOB') or '').startswith('fmt')
+          if is_fmt:
+              raw = '\n'.join(l for l in raw.split('\n') if l.startswith(('Diff in', '@@', '+', '-')))
+          CH = 3500
+          parts, _cur = [], ''
+          for _ln in raw.split('\n'):
+              while len(_ln) > CH:
+                  parts.append(_ln[:CH]); _ln = _ln[CH:]
+              if len(_cur) + len(_ln) + 1 > CH and _cur:
+                  parts.append(_cur); _cur = ''
+              _cur += _ln + '\n'
+          if _cur or not parts:
+              parts.append(_cur)
+          rx = re.compile(r'error|warning|Diff in|failures:|panicked|test result|FAILED', re.I)
+          keep = [(i, p) for i, p in enumerate(parts)][:12] if is_fmt else [(i, p) for i, p in enumerate(parts) if rx.search(p) or i == len(parts)-1][:7]
           for i, p in keep:
               m = p.replace('%', '%25').replace(chr(13), '%0D').replace(chr(10), '%0A')
               print(f"::error::LOG[{i+1}/{len(parts)}]:{m}")

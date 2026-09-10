@@ -146,8 +146,7 @@ mod tests {
         let wf = Workflow::from_json(FIXTURE).expect("parse fixture");
         // pinData bukan field eksplisit Workflow -> harus mendarat di extra.
         assert!(wf.extra.contains_key("pinData"));
-        let back =
-            Workflow::from_json(&wf.to_json_pretty().expect("serialize")).expect("re-parse");
+        let back = Workflow::from_json(&wf.to_json_pretty().expect("serialize")).expect("re-parse");
         assert_eq!(wf, back);
     }
 }

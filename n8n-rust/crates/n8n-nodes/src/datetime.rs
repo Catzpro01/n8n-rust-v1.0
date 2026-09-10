@@ -84,11 +84,7 @@ fn from_local(naive: chrono::NaiveDateTime, tz: Tz) -> EngineResult<chrono::Date
 
 /// Parse ala n8n `parseDate`: angka (pecahan→×1000 ms; integer <12
 /// digit→detik, else ms), ISO/RFC3339, `fromFormat` token luxon.
-fn parse_dt(
-    v: &Value,
-    from_format: Option<&str>,
-    tz: Tz,
-) -> EngineResult<chrono::DateTime<Tz>> {
+fn parse_dt(v: &Value, from_format: Option<&str>, tz: Tz) -> EngineResult<chrono::DateTime<Tz>> {
     if from_format.is_none() {
         if let Some(f) = as_number_f64(v) {
             let ms: i64 = if f.fract() != 0.0 {
@@ -336,10 +332,7 @@ fn op_format(
         format
     };
     if fmt == "x" {
-        return Ok((
-            name,
-            Value::String(dt.timestamp_millis().to_string()),
-        ));
+        return Ok((name, Value::String(dt.timestamp_millis().to_string())));
     }
     let chrono_fmt = luxon_to_chrono(fmt)?;
     Ok((name, Value::String(dt.format(&chrono_fmt).to_string())))
@@ -363,10 +356,7 @@ fn op_round(
             )))
         }
     };
-    let unit = params
-        .get(unit_key)
-        .and_then(Value::as_str)
-        .unwrap_or(def);
+    let unit = params.get(unit_key).and_then(Value::as_str).unwrap_or(def);
     let dt = parse_dt(&date, None, chrono_tz::UTC)?;
     let result = if mode == "roundDown" {
         start_of(&dt, unit)?
@@ -411,10 +401,7 @@ fn start_of(dt: &chrono::DateTime<Tz>, unit: &str) -> EngineResult<chrono::DateT
             .and_hms_opt(0, 0, 0)
             .ok_or_else(bad)?,
         "day" => n.date().and_hms_opt(0, 0, 0).ok_or_else(bad)?,
-        "hour" => n
-            .date()
-            .and_hms_opt(n.hour(), 0, 0)
-            .ok_or_else(bad)?,
+        "hour" => n.date().and_hms_opt(n.hour(), 0, 0).ok_or_else(bad)?,
         "minute" => n
             .date()
             .and_hms_opt(n.hour(), n.minute(), 0)
@@ -438,7 +425,11 @@ fn op_between(
     let s = parse_dt(&start, None, chrono_tz::UTC)?;
     let e = parse_dt(&end, None, chrono_tz::UTC)?;
     let units: Vec<String> = match params.get("units") {
-        Some(Value::Array(a)) => a.iter().filter_map(Value::as_str).map(str::to_string).collect(),
+        Some(Value::Array(a)) => a
+            .iter()
+            .filter_map(Value::as_str)
+            .map(str::to_string)
+            .collect(),
         Some(Value::String(u)) => vec![u.clone()],
         _ => vec!["day".to_string()],
     };
@@ -519,7 +510,11 @@ fn iso_duration(total_ms: f64) -> String {
     rem %= 60000;
     let s = rem / 1000;
     let ms = rem % 1000;
-    let mut o = if neg { "-P".to_string() } else { "P".to_string() };
+    let mut o = if neg {
+        "-P".to_string()
+    } else {
+        "P".to_string()
+    };
     if w > 0 {
         o.push_str(&format!("{w}W"));
     }
@@ -588,16 +583,13 @@ mod tests {
     }
 
     fn p(pairs: Vec<(&str, Value)>) -> HashMap<String, Value> {
-        pairs
-            .into_iter()
-            .map(|(k, v)| (k.to_string(), v))
-            .collect()
+        pairs.into_iter().map(|(k, v)| (k.to_string(), v)).collect()
     }
 
     #[test]
     fn current_with_and_without_time() {
-        let (name, v) = compute(&p(vec![("operation", json!("getCurrentDate"))]), &ident)
-            .expect("run");
+        let (name, v) =
+            compute(&p(vec![("operation", json!("getCurrentDate"))]), &ident).expect("run");
         assert_eq!(name, "currentDate");
         let s = v.as_str().expect("string");
         assert!(s.contains('T') && s.contains("+00:00"), "{s}");
@@ -672,10 +664,12 @@ mod tests {
         .expect("run");
         assert_eq!(
             v,
-            json!(chrono::DateTime::parse_from_rfc3339("2026-09-11T14:30:00+00:00")
-                .expect("parse")
-                .timestamp()
-                .to_string())
+            json!(
+                chrono::DateTime::parse_from_rfc3339("2026-09-11T14:30:00+00:00")
+                    .expect("parse")
+                    .timestamp()
+                    .to_string()
+            )
         );
         let (_, v) = compute(
             &p([

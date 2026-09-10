@@ -221,9 +221,10 @@ fn combine_position(
         .unwrap_or(false);
     let preferred_idx = match clash.resolve.as_deref() {
         Some(r) if r.contains("preferInput") => {
-            let n: i64 = r.replace("preferInput", "").parse().map_err(|_| {
-                EngineError::new(format!("merge: resolveClash tak valid '{r}'"))
-            })?;
+            let n: i64 = r
+                .replace("preferInput", "")
+                .parse()
+                .map_err(|_| EngineError::new(format!("merge: resolveClash tak valid '{r}'")))?;
             if n < 1 || n > inputs.len() as i64 {
                 return Err(EngineError::new(format!(
                     "merge: resolveClash '{r}' di luar jumlah input {}",
@@ -492,12 +493,7 @@ fn combine_fields(
     }
 }
 
-fn merge_pair(
-    entry: &Value,
-    matches: &[Value],
-    clash: &ClashRaw,
-    join: Option<&str>,
-) -> Value {
+fn merge_pair(entry: &Value, matches: &[Value], clash: &ClashRaw, join: Option<&str>) -> Value {
     let mut acc = Value::Object(Map::new());
     if clash.resolve.as_deref() == Some("addSuffix") {
         merge_into(
@@ -583,10 +579,12 @@ fn find_matches(
         }
         let mut hits = Vec::new();
         for (j, e2) in in2.iter().enumerate() {
-            let ok = lookup.iter().all(|(f2, want)| match get_field(e2, f2, dot) {
-                Some(got) => entries_equal(want, got, fuzzy),
-                None => fuzzy && is_falsy(want),
-            });
+            let ok = lookup
+                .iter()
+                .all(|(f2, want)| match get_field(e2, f2, dot) {
+                    Some(got) => entries_equal(want, got, fuzzy),
+                    None => fuzzy && is_falsy(want),
+                });
             if ok {
                 hits.push(j);
                 if multiple == "first" {
@@ -667,16 +665,16 @@ mod tests {
     use serde_json::json;
 
     fn p(pairs: Vec<(&str, Value)>) -> HashMap<String, Value> {
-        pairs
-            .into_iter()
-            .map(|(k, v)| (k.to_string(), v))
-            .collect()
+        pairs.into_iter().map(|(k, v)| (k.to_string(), v)).collect()
     }
 
     #[test]
     fn append_concatenates_in_order() {
         let out = run(
-            &[vec![json!({"a": 1})], vec![json!({"b": 2}), json!({"b": 3})]],
+            &[
+                vec![json!({"a": 1})],
+                vec![json!({"b": 2}), json!({"b": 3})],
+            ],
             &p(vec![]),
         )
         .expect("run");
@@ -700,7 +698,10 @@ mod tests {
         assert_eq!(out, vec![vec![json!({"b": 2})]]);
         let empty = run(
             &inputs,
-            &p(vec![("mode", json!("chooseBranch")), ("output", json!("empty"))]),
+            &p(vec![
+                ("mode", json!("chooseBranch")),
+                ("output", json!("empty")),
+            ]),
         )
         .expect("run");
         assert_eq!(empty, vec![vec![json!({})]]);
@@ -735,7 +736,10 @@ mod tests {
     #[test]
     fn position_include_unpaired() {
         let out = run(
-            &[vec![json!({"a": 1}), json!({"a": 2})], vec![json!({"b": 9})]],
+            &[
+                vec![json!({"a": 1}), json!({"a": 2})],
+                vec![json!({"b": 9})],
+            ],
             &p(vec![
                 ("mode", json!("combine")),
                 ("combineBy", json!("combineByPosition")),
@@ -743,17 +747,20 @@ mod tests {
             ]),
         )
         .expect("run");
-        assert_eq!(
-            out,
-            vec![vec![json!({"a": 1, "b": 9}), json!({"a": 2})]]
-        );
+        assert_eq!(out, vec![vec![json!({"a": 1, "b": 9}), json!({"a": 2})]]);
     }
 
     #[test]
     fn all_cross_joins_first_two() {
         let out = run(
-            &[vec![json!({"a": 1}), json!({"a": 2})], vec![json!({"b": 9})]],
-            &p(vec![("mode", json!("combine")), ("combineBy", json!("combineAll"))]),
+            &[
+                vec![json!({"a": 1}), json!({"a": 2})],
+                vec![json!({"b": 9})],
+            ],
+            &p(vec![
+                ("mode", json!("combine")),
+                ("combineBy", json!("combineAll")),
+            ]),
         )
         .expect("run");
         assert_eq!(
@@ -777,10 +784,7 @@ mod tests {
             ]),
         )
         .expect("run");
-        assert_eq!(
-            keep,
-            vec![vec![json!({"id": 1, "x": "a", "z": "Z"})]]
-        );
+        assert_eq!(keep, vec![vec![json!({"id": 1, "x": "a", "z": "Z"})]]);
         let enrich = run(
             &inputs,
             &p(vec![
