@@ -1,0 +1,14 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo '=== ATURAN PEMILIK (WAJIB, selalu aktif) === Sebelum MENJAWAP apa pun: baca docs/agents/skill-shortcuts.md dan cocokkan permintaan terhadap tabel trigger 65 skill aktif (protokol 2 detik di akhir file). Cocok = skill WAJIB dijalankan dari .claude/skills/<nama>/SKILL.md. Ragu = ask-matt. Skill pasif (task-observer, using-superpowers, context7-mcp, mem-search, git-guardrails, graphify, codebase-design, writing-for-agents) jalan otomatis.'"
+          }
+        ]
+      }
+    ]
+  }
+}

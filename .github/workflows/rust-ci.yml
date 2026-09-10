@@ -1,0 +1,69 @@
+name: rust-ci
+
+on:
+  push:
+    branches:
+      - 'arena/**'
+
+concurrency:
+  group: rust-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+
+      - name: Build (workspace rust-engine)
+        working-directory: agent-workspace/rust-engine
+        run: |
+          cargo build --workspace --all-targets > /tmp/build.log 2>&1
+          rc=$?
+          echo "BUILD_EXIT=$rc"
+          tail -n 40 /tmp/build.log
+          exit 0
+
+      - name: Test (workspace rust-engine)
+        working-directory: agent-workspace/rust-engine
+        run: |
+          cargo test --workspace --all-targets > /tmp/test.log 2>&1
+          rc=$?
+          echo "TEST_EXIT=$rc"
+          tail -n 40 /tmp/test.log
+          exit 0
+
+      - name: Report to ci-results branch
+        run: |
+          set -e
+          {
+            echo "# CI RESULTS"
+            echo "commit: ${{ github.sha }}"
+            echo "branch: $GITHUB_REF_NAME"
+            echo "date: $(date -u +%FT%TZ)"
+            echo "rust: $(rustc --version)"
+            echo
+            echo "## BUILD LOG (agent-workspace/rust-engine)"
+            cat /tmp/build.log 2>/dev/null || echo "(missing)"
+            echo
+            echo "## TEST LOG"
+            cat /tmp/test.log 2>/dev/null || echo "(missing)"
+          } > /tmp/ci-results.txt
+          git config user.email "arena-ci@actions"
+          git config user.name "Arena CI"
+          git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPO}.git"
+          git checkout --orphan ci-results
+          git rm -rf . >/dev/null 2>&1 || true
+          cp /tmp/ci-results.txt ci-results.txt
+          git add ci-results.txt
+          git commit -m "ci results ${{ github.sha }}" >/dev/null
+          git push --force origin ci-results
+          git checkout "$GITHUB_REF_NAME"
+          echo "CI-RESULTS-PUSHED"
