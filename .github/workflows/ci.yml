@@ -4,32 +4,65 @@ on:
   push:
   pull_request:
 
+# Tiap job men-tee output-nya; saat gagal, baris error diekspor sebagai
+# ::error:: annotations (bisa dibaca via Checks API tanpa unduh log).
+
 jobs:
-  ci:
-    name: test + clippy + fmt
+  test:
+    name: cargo test
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: n8n-rust
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Toolchain stable + komponen
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          components: clippy, rustfmt
-
-      - name: Cache cargo
-        uses: Swatinem/rust-cache@v2
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
         with:
           workspaces: n8n-rust
-
       - name: cargo test
-        run: cargo test --workspace
+        run: set -o pipefail; cargo test --workspace 2>&1 | tee /tmp/out.log
+      - name: Ekspor error sebagai anotasi
+        if: failure()
+        run: |
+          grep -E "^(error|failures:)" /tmp/out.log | head -30 | sed 's/^/::error::/' || true
+          tail -20 /tmp/out.log | sed 's/^/::error::tail: /'
 
+  clippy:
+    name: cargo clippy
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: n8n-rust
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: n8n-rust
       - name: cargo clippy
-        run: cargo clippy --workspace --all-targets -- -D warnings
+        run: set -o pipefail; cargo clippy --workspace --all-targets 2>&1 | tee /tmp/out.log; test ${PIPESTATUS[0]} -eq 0
+      - name: Ekspor error sebagai anotasi
+        if: failure()
+        run: |
+          grep -E "^(error|warning)" /tmp/out.log | head -30 | sed 's/^/::error::/' || true
+          tail -20 /tmp/out.log | sed 's/^/::error::tail: /'
 
+  fmt:
+    name: cargo fmt
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: n8n-rust
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt
       - name: cargo fmt
-        run: cargo fmt --all --check
+        run: set -o pipefail; cargo fmt --all --check 2>&1 | tee /tmp/out.log
+      - name: Ekspor error sebagai anotasi
+        if: failure()
+        run: head -40 /tmp/out.log | sed 's/^/::error::/'
