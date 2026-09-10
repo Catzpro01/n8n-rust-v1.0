@@ -45,6 +45,7 @@
 | 2+ tugas independen tanpa shared state | `dispatching-parallel-agents` | (superpowers) Dispatch paralel ke beberapa agent, lalu rangkai hasilnya |
 | mulai kerja fitur yang butuh isolasi | `using-git-worktrees` | (superpowers) Isolasi workspace via git worktree sebelum eksekusi plan |
 | "semua test lulus, gimana lanjutnya?" | `finishing-a-development-branch` | (superpowers) Keputusan integrasi kerja selesai: merge/PR/cleanup yang benar |
+| "/ralph-loop ...", "loop tugasku sampai beres" | `ralph-wiggum` | (anthropics) Loop otonom in-session: ulangi prompt yang sama sampai `<promise>` benar-benar tercapai atau max-iterasi — wajib ada verifikasi otomatis (test/lint/build) |
 
 ## 3. Kualitas kode, debug & konflik
 

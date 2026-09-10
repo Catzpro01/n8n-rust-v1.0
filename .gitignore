@@ -14,3 +14,10 @@ Cargo.lock.bak
 *.log
 .DS_Store
 Thumbs.db
+
+# n8n-rust v1 frontend (bila Opsi A diputuskan)
+n8n-rust/web/node_modules/
+n8n-rust/web/dist/
+
+# Ralph loop state (machine-local, jangan di-commit)
+.ralph-loop.local.md

@@ -1,0 +1,14 @@
+[package]
+name = "n8n-nodes"
+version = "0.7.0"
+edition = "2021"
+
+[dependencies]
+n8n-core = { path = "../n8n-core" }
+n8n-engine = { path = "../n8n-engine" }
+serde_json = "1"
+reqwest = { version = "0.12", default-features = false, features = ["blocking", "json", "rustls-tls"] }
+rhai = { version = "1", features = ["serde"] }
+chrono = "0.4"
+chrono-tz = "0.8"
+regex = "1"
