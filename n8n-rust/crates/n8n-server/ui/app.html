@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>n8n-rust</title>
+<style>
+  :root { --bg:#f0f0f5; --card:#fff; --line:#d9d9e3; --ink:#1a1a2e; --mut:#6b6b80; --acc:#ea4b71; --ok:#2e9e5b; --warn:#c77b0a; --err:#c0392b; }
+  * { box-sizing:border-box; }
+  html,body { height:100%; }
+  body { margin:0; font:14px/1.45 system-ui,-apple-system,Segoe UI,Roboto,sans-serif; color:var(--ink); background:var(--bg); display:flex; flex-direction:column; }
+  header { background:var(--card); border-bottom:1px solid var(--line); padding:8px 14px; display:flex; align-items:center; gap:8px; }
+  header h1 { font-size:16px; margin:0 8px 0 0; }
+  header h1 span { color:var(--acc); }
+  header .wf { color:var(--mut); font-size:13px; margin-right:auto; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  button { border:1px solid var(--line); background:#fff; border-radius:8px; padding:6px 12px; font-size:13px; cursor:pointer; }
+  button:hover { background:#f6f6fa; }
+  button.primary { background:var(--acc); border-color:var(--acc); color:#fff; font-weight:600; }
+  button.primary:hover { filter:brightness(.95); }
+  main { flex:1; display:flex; min-height:0; }
+  #wrap { flex:1; overflow:auto; }
+  #canvas { display:block; width:1600px; height:900px; }
+  aside { width:360px; background:var(--card); border-left:1px solid var(--line); overflow:auto; padding:12px 14px; }
+  aside h2 { font-size:13px; text-transform:uppercase; letter-spacing:.04em; color:var(--mut); margin:14px 0 6px; }
+  aside h2:first-child { margin-top:0; }
+  pre { background:#f6f6fa; border:1px solid var(--line); border-radius:8px; padding:8px; overflow:auto; font-size:12px; margin:6px 0; }
+  .kv { display:grid; grid-template-columns:110px 1fr; gap:2px 8px; font-size:13px; }
+  .kv dt { color:var(--mut); } .kv dd { margin:0; overflow-wrap:anywhere; }
+  .diag { border-left:4px solid; padding:4px 8px; margin:4px 0; background:#fafafc; font-size:13px; }
+  .diag.error { border-color:var(--err); } .diag.warning { border-color:var(--warn); }
+  .pill { display:inline-block; min-width:22px; text-align:center; border-radius:11px; background:var(--ink); color:#fff; font-size:12px; padding:1px 6px; margin-right:6px; }
+  .ok { color:var(--ok); font-weight:600; } .bad { color:var(--err); font-weight:600; }
+  footer { background:var(--card); border-top:1px solid var(--line); padding:6px 14px; font-size:13px; color:var(--mut); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .node { cursor:grab; } .node:active { cursor:grabbing; }
+</style>
+</head>
+<body>
+<header>
+  <h1>n8n<span>-rust</span></h1>
+  <span class="wf" id="wfname">—</span>
+  <button id="bExample">Contoh</button>
+  <button id="bOpen">Buka JSON</button>
+  <input type="file" id="file" accept="application/json" hidden>
+  <button id="bValidate">Validate</button>
+  <button id="bExplain">Explain</button>
+  <button id="bRun" class="primary">Run</button>
+</header>
+<main>
+  <div id="wrap"><svg id="canvas" xmlns="http://www.w3.org/2000/svg"></svg></div>
+  <aside id="panel"></aside>
+</main>
+<footer id="status">siap.</footer>
+<script>
+"use strict";
+const SVGNS = "http://www.w3.org/2000/svg";
+const NW = 180, NH = 64;
+
+const EXAMPLE = {
+  "name": "Manual to Set (v1 fixture)",
+  "nodes": [
+    {"parameters": {}, "id": "ex-1", "name": "Manual Trigger", "type": "n8n-nodes-base.manualTrigger", "typeVersion": 1, "position": [240, 300]},
+    {"parameters": {"values": {"greeting": "halo", "n": 1}}, "id": "ex-2", "name": "Set", "type": "n8n-nodes-base.set", "typeVersion": 3.4, "position": [460, 300]},
+    {"parameters": {}, "id": "ex-3", "name": "NoOp", "type": "n8n-nodes-base.noOp", "typeVersion": 1, "position": [680, 300]}
+  ],
+  "connections": {
+    "Manual Trigger": {"main": [[{"node": "Set", "type": "main", "index": 0}]]},
+    "Set": {"main": [[{"node": "NoOp", "type": "main", "index": 0}]]}
+  },
+  "active": false, "settings": {"executionOrder": "v1"}, "pinData": {}
+};
+
+const COLORS = {
+  "n8n-nodes-base.manualTrigger": "#2e9e5b",
+  "n8n-nodes-base.set": "#3b82f6",
+  "n8n-nodes-base.filter": "#8b5cf6",
+  "n8n-nodes-base.sort": "#0d9488",
+  "n8n-nodes-base.limit": "#64748b",
+  "n8n-nodes-base.noOp": "#9aa0ae"
+};
+
+const state = { wf: structuredClone(EXAMPLE), selected: null, report: null, diags: null, plan: null };
+const svg = document.getElementById("canvas");
+const panel = document.getElementById("panel");
+const statusEl = document.getElementById("status");
+
+function setStatus(msg, cls) {
+  statusEl.textContent = msg;
+  statusEl.className = cls || "";
+}
+function el(tag, attrs, parent) {
+  const e = document.createElementNS(SVGNS, tag);
+  for (const k in attrs) e.setAttribute(k, attrs[k]);
+  if (parent) parent.appendChild(e);
+  return e;
+}
+function shortType(t) { return t.replace("n8n-nodes-base.", ""); }
+function nodeByName(name) { return state.wf.nodes.find(n => n.name === name); }
+function successors(name) {
+  const out = [];
+  const entry = (state.wf.connections || {})[name];
+  const mains = entry && entry.main;
+  if (!Array.isArray(mains)) return out;
+  for (const branch of mains) {
+    if (!Array.isArray(branch)) continue;
+    for (const link of branch) {
+      if (link && typeof link.node === "string") out.push(link.node);
+    }
+  }
+  return out;
+}
+function edgePath(a, b) {
+  const x1 = a[0] + NW, y1 = a[1] + NH / 2, x2 = b[0], y2 = b[1] + NH / 2;
+  const dx = Math.max(40, (x2 - x1) / 2);
+  return `M ${x1} ${y1} C ${x1 + dx} ${y1}, ${x2 - dx} ${y2}, ${x2} ${y2}`;
+}
+
+function render() {
+  document.getElementById("wfname").textContent = state.wf.name || "(tanpa nama)";
+  while (svg.firstChild) svg.removeChild(svg.firstChild);
+  const defs = el("defs", {}, svg);
+  const pat = el("pattern", {id: "dots", width: 24, height: 24, patternUnits: "userSpaceOnUse"}, defs);
+  el("circle", {cx: 2, cy: 2, r: 1.4, fill: "#cfcfda"}, pat);
+  el("rect", {x: 0, y: 0, width: 1600, height: 900, fill: "url(#dots)"}, svg);
+  const gE = el("g", {}, svg), gN = el("g", {}, svg);
+  const orderIdx = {};
+  if (state.report) state.report.order.forEach((n, i) => { orderIdx[n] = i + 1; });
+  for (const n of state.wf.nodes) {
+    for (const s of successors(n.name)) {
+      const t = nodeByName(s);
+      if (!t) continue;
+      el("path", {d: edgePath(n.position, t.position), fill: "none", stroke: "#8b8b9e", "stroke-width": 2}, gE);
+    }
+  }
+  for (const n of state.wf.nodes) {
+    const [x, y] = n.position;
+    const g = el("g", {class: "node", transform: `translate(${x},${y})`}, gN);
+    const sel = state.selected === n.name;
+    el("rect", {width: NW, height: NH, rx: 8, fill: "#fff", stroke: sel ? "#ea4b71" : "#d9d9e3", "stroke-width": sel ? 2.5 : 1.5}, g);
+    el("rect", {x: 10, y: 12, width: 22, height: 22, rx: 5, fill: COLORS[n.type] || "#c0392b"}, g);
+    const t1 = el("text", {x: 40, y: 24, "font-size": 13, "font-weight": 600, fill: "#1a1a2e"}, g);
+    t1.textContent = n.name.length > 20 ? n.name.slice(0, 19) + "…" : n.name;
+    const t2 = el("text", {x: 40, y: 41, "font-size": 11, fill: "#6b6b80"}, g);
+    t2.textContent = shortType(n.type);
+    if (orderIdx[n.name]) {
+      el("circle", {cx: NW - 14, cy: 14, r: 11, fill: "#1a1a2e"}, g);
+      const tb = el("text", {x: NW - 14, y: 18.5, "font-size": 12, "text-anchor": "middle", fill: "#fff", "font-weight": 700}, g);
+      tb.textContent = String(orderIdx[n.name]);
+      if (state.report && state.report.durations_ms) {
+        const ms = state.report.durations_ms[n.name];
+        if (ms !== undefined) {
+          const tt = el("text", {x: 10, y: NH - 8, "font-size": 11, fill: "#2e9e5b"}, g);
+          tt.textContent = ms + "ms";
+        }
+      }
+    }
+    if (n.disabled) {
+      const td = el("text", {x: 10, y: NH - 8, "font-size": 11, fill: "#c0392b"}, g);
+      td.textContent = "disabled";
+    }
+    attachDrag(g, n);
+  }
+  renderPanel();
+}
+
+let drag = null;
+function attachDrag(g, n) {
+  g.addEventListener("pointerdown", ev => {
+    ev.preventDefault();
+    g.setPointerCapture(ev.pointerId);
+    drag = {node: n, x0: ev.clientX, y0: ev.clientY, px: n.position[0], py: n.position[1], moved: false};
+  });
+  g.addEventListener("pointermove", ev => {
+    if (!drag || drag.node !== n) return;
+    const dx = ev.clientX - drag.x0, dy = ev.clientY - drag.y0;
+    if (Math.abs(dx) + Math.abs(dy) > 3) drag.moved = true;
+    if (drag.moved) {
+      n.position = [Math.round(drag.px + dx), Math.round(drag.py + dy)];
+      render();
+    }
+  });
+  g.addEventListener("pointerup", () => {
+    if (drag && drag.node === n && !drag.moved) {
+      state.selected = (state.selected === n.name) ? null : n.name;
+      render();
+    }
+    drag = null;
+  });
+}
+
+function h2(text) { const h = document.createElement("h2"); h.textContent = text; return h; }
+function pre(obj) { const p = document.createElement("pre"); p.textContent = typeof obj === "string" ? obj : JSON.stringify(obj, null, 2); return p; }
+
+function renderPanel() {
+  while (panel.firstChild) panel.removeChild(panel.firstChild);
+  const sel = state.selected ? nodeByName(state.selected) : null;
+  if (sel) {
+    panel.appendChild(h2("Node"));
+    const dl = document.createElement("dl"); dl.className = "kv";
+    [["nama", sel.name], ["tipe", sel.type], ["versi", String(sel.typeVersion)],
+     ["posisi", "[" + sel.position.join(", ") + "]"],
+     ["disabled", String(!!sel.disabled)]].forEach(([k, v]) => {
+      const dt = document.createElement("dt"); dt.textContent = k;
+      const dd = document.createElement("dd"); dd.textContent = v;
+      dl.appendChild(dt); dl.appendChild(dd);
+    });
+    panel.appendChild(dl);
+    panel.appendChild(h2("Parameters"));
+    panel.appendChild(pre(sel.parameters || {}));
+    if (state.report && state.report.outputs && state.report.outputs[sel.name] !== undefined) {
+      panel.appendChild(h2("Output"));
+      panel.appendChild(pre(state.report.outputs[sel.name]));
+    }
+  } else {
+    panel.appendChild(h2("Workflow"));
+    const dl = document.createElement("dl"); dl.className = "kv";
+    const edges = state.wf.nodes.reduce((a, n) => a + successors(n.name).length, 0);
+    [["nama", state.wf.name || "—"], ["node", String(state.wf.nodes.length)],
+     ["edge", String(edges)]].forEach(([k, v]) => {
+      const dt = document.createElement("dt"); dt.textContent = k;
+      const dd = document.createElement("dd"); dd.textContent = v;
+      dl.appendChild(dt); dl.appendChild(dd);
+    });
+    panel.appendChild(dl);
+    const p = document.createElement("p");
+    p.style.color = "#6b6b80"; p.style.fontSize = "13px";
+    p.textContent = "Klik node untuk detail. Drag untuk memindah (posisi ikut terkirim saat Run).";
+    panel.appendChild(p);
+  }
+  if (state.diags) {
+    panel.appendChild(h2("Validate"));
+    if (!state.diags.length) {
+      const d = document.createElement("div"); d.className = "ok"; d.textContent = "bersih — tanpa error/warning.";
+      panel.appendChild(d);
+    }
+    for (const dg of state.diags) {
+      const d = document.createElement("div"); d.className = "diag " + dg.level;
+      d.textContent = "[" + dg.level + "] " + dg.message;
+      panel.appendChild(d);
+    }
+  }
+  if (state.plan) {
+    panel.appendChild(h2("Explain"));
+    const d = document.createElement("div");
+    d.textContent = state.plan.join(" → ");
+    panel.appendChild(d);
+  }
+  if (state.report) {
+    panel.appendChild(h2("Run terakhir"));
+    const total = Object.values(state.report.durations_ms || {}).reduce((a, b) => a + b, 0);
+    const d = document.createElement("div");
+    d.textContent = state.report.order.join(" → ") + "  (total " + total + "ms)";
+    panel.appendChild(d);
+  }
+}
+
+async function api(path, body) {
+  const r = await fetch(path, {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(body)});
+  const txt = await r.text();
+  let data = null;
+  try { data = JSON.parse(txt); } catch { /* pesan mentah */ }
+  if (!r.ok) throw new Error((data && data.message) || txt || ("HTTP " + r.status));
+  return data;
+}
+
+document.getElementById("bExample").onclick = () => {
+  state.wf = structuredClone(EXAMPLE);
+  state.selected = null; state.report = null; state.diags = null; state.plan = null;
+  render(); setStatus("contoh dimuat.");
+};
+document.getElementById("bOpen").onclick = () => document.getElementById("file").click();
+document.getElementById("file").onchange = ev => {
+  const f = ev.target.files[0];
+  if (!f) return;
+  const rd = new FileReader();
+  rd.onload = () => {
+    try {
+      const wf = JSON.parse(rd.result);
+      if (!Array.isArray(wf.nodes)) throw new Error("bukan workflow: nodes[] hilang");
+      for (const n of wf.nodes) {
+        if (!Array.isArray(n.position)) n.position = [120, 120];
+        if (!n.parameters) n.parameters = {};
+      }
+      if (!wf.connections) wf.connections = {};
+      state.wf = wf;
+      state.selected = null; state.report = null; state.diags = null; state.plan = null;
+      render(); setStatus("dimuat: " + (wf.name || f.name));
+    } catch (e) { setStatus("gagal baca file: " + e.message, "bad"); }
+  };
+  rd.readAsText(f);
+  ev.target.value = "";
+};
+document.getElementById("bValidate").onclick = async () => {
+  try {
+    const diags = await api("/api/validate", state.wf);
+    state.diags = diags; render();
+    const errs = diags.filter(d => d.level === "error").length;
+    setStatus(errs ? ("validate: " + errs + " error.") : "validate: OK.", errs ? "bad" : "ok");
+  } catch (e) { setStatus("validate gagal: " + e.message, "bad"); }
+};
+document.getElementById("bExplain").onclick = async () => {
+  try {
+    state.plan = await api("/api/explain", state.wf);
+    render(); setStatus("rencana: " + state.plan.join(" → "));
+  } catch (e) { state.plan = null; render(); setStatus("explain gagal: " + e.message, "bad"); }
+};
+document.getElementById("bRun").onclick = async () => {
+  try {
+    state.report = await api("/api/run", state.wf);
+    state.diags = null; render();
+    const total = Object.values(state.report.durations_ms || {}).reduce((a, b) => a + b, 0);
+    setStatus("run OK: " + state.report.order.join(" → ") + " (" + total + "ms).", "ok");
+  } catch (e) { setStatus("run gagal: " + e.message, "bad"); }
+};
+
+render();
+setStatus("siap. Muat contoh / buka JSON, lalu Validate → Run.");
+</script>
+</body>
+</html>

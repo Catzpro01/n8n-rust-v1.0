@@ -1,10 +1,11 @@
 //! n8n-engine: executor workflow sinkron (tanpa runtime async — ringan).
 //!
-//! v1: topological order (Kahn) deterministik sesuai urutan node di file,
-//! node `disabled` dikeluarkan dari graf, tipe tak dikenal = error eksplisit
-//! (gagal cepat lebih jujur daripada diam-diam melewatkan node).
+//! v0.2.0: node menerima `ExecContext` (output node lain untuk `$node[...]`),
+//! tiap run mencatat durasi per node, `explain` memberi rencana dry-run,
+//! dan `lint` memberi diagnostik error/warning deterministik.
 
 use n8n_core::{Workflow, WorkflowNode};
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -32,12 +33,28 @@ impl std::error::Error for EngineError {}
 
 pub type EngineResult<T> = Result<T, EngineError>;
 
+/// Konteks eksekusi: output semua node yang sudah jalan (kunci = nama node).
+pub struct ExecContext<'a> {
+    pub outputs: &'a HashMap<String, Vec<Value>>,
+}
+
+impl ExecContext<'_> {
+    pub fn output_of(&self, name: &str) -> Option<&Vec<Value>> {
+        self.outputs.get(name)
+    }
+}
+
 /// Kontrak satu tipe node. `Send + Sync` supaya kelak bisa paralel.
 pub trait Node: Send + Sync {
     /// Nama tipe persis n8n, mis. `"n8n-nodes-base.set"`.
     fn node_type(&self) -> &'static str;
     /// `items` = gabungan output para pendahulu (urutan deterministik).
-    fn execute(&self, node: &WorkflowNode, items: Vec<Value>) -> EngineResult<Vec<Value>>;
+    fn execute(
+        &self,
+        node: &WorkflowNode,
+        items: Vec<Value>,
+        ctx: &ExecContext,
+    ) -> EngineResult<Vec<Value>>;
 }
 
 #[derive(Default)]
@@ -54,7 +71,7 @@ impl Registry {
         self.nodes.get(node_type)
     }
 
-    /// Daftar tipe terdaftar, terurut — untuk CLI `nodes`.
+    /// Daftar tipe terdaftar, terurut — untuk CLI `nodes` dan API.
     pub fn types(&self) -> Vec<String> {
         let mut v: Vec<String> = self.nodes.keys().cloned().collect();
         v.sort();
@@ -62,93 +79,201 @@ impl Registry {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct RunReport {
     /// Output per nama node.
     pub outputs: HashMap<String, Vec<Value>>,
     /// Urutan eksekusi aktual.
     pub order: Vec<String>,
+    /// Durasi per node (milidetik) — observabilitas bawaan tiap run.
+    pub durations_ms: HashMap<String, u128>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum Level {
+    Error,
+    Warning,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Diagnostic {
+    pub level: Level,
+    pub message: String,
+}
+
+struct Plan {
+    order: Vec<String>,
+    preds: HashMap<String, Vec<String>>,
+}
+
+/// Urutan topo (Kahn) deterministik sesuai urutan node di file.
+fn plan(workflow: &Workflow) -> EngineResult<Plan> {
+    let enabled: Vec<&WorkflowNode> = workflow.nodes.iter().filter(|n| !n.disabled).collect();
+    let mut preds: HashMap<String, Vec<String>> = HashMap::new();
+    for n in &enabled {
+        preds.entry(n.name.clone()).or_default();
+    }
+    for n in &enabled {
+        for s in workflow.successors(&n.name) {
+            if let Some(list) = preds.get_mut(&s) {
+                list.push(n.name.clone());
+            }
+        }
+    }
+    let mut done: Vec<String> = Vec::new();
+    let mut done_set: std::collections::HashSet<String> = std::collections::HashSet::new();
+    loop {
+        let mut progressed = false;
+        for n in &enabled {
+            if done_set.contains(&n.name) {
+                continue;
+            }
+            let ready = preds
+                .get(&n.name)
+                .map(|ps| ps.iter().all(|p| done_set.contains(p)))
+                .unwrap_or(true);
+            if !ready {
+                continue;
+            }
+            done_set.insert(n.name.clone());
+            done.push(n.name.clone());
+            progressed = true;
+        }
+        if !progressed {
+            break;
+        }
+    }
+    if done.len() != enabled.len() {
+        let stuck: Vec<&str> = enabled
+            .iter()
+            .map(|n| n.name.as_str())
+            .filter(|k| !done_set.contains(*k))
+            .collect();
+        return Err(EngineError::new(format!(
+            "cycle detected, stuck at: {}",
+            stuck.join(", ")
+        )));
+    }
+    Ok(Plan { order: done, preds })
 }
 
 pub struct Engine;
 
 impl Engine {
+    /// Rencana eksekusi TANPA menjalankan (dry-run; tak butuh registry).
+    pub fn explain(workflow: &Workflow) -> EngineResult<Vec<String>> {
+        Ok(plan(workflow)?.order)
+    }
+
     pub fn run(workflow: &Workflow, registry: &Registry) -> EngineResult<RunReport> {
-        let enabled: Vec<&WorkflowNode> =
-            workflow.nodes.iter().filter(|n| !n.disabled).collect();
-
-        // Peta nama -> daftar nama pendahulu (hanya antar node aktif).
-        let mut preds: HashMap<&str, Vec<&str>> = HashMap::new();
-        for n in &enabled {
-            preds.entry(n.name.as_str()).or_default();
-        }
-        for n in &enabled {
-            for s in workflow.successors(&n.name) {
-                if let Some(list) = preds.get_mut(s.as_str()) {
-                    list.push(n.name.as_str());
+        let p = plan(workflow)?;
+        let by_name: HashMap<&str, &WorkflowNode> =
+            workflow.nodes.iter().map(|n| (n.name.as_str(), n)).collect();
+        let mut done: HashMap<String, Vec<Value>> = HashMap::new();
+        let mut durations_ms: HashMap<String, u128> = HashMap::new();
+        for name in &p.order {
+            let node = by_name.get(name.as_str()).copied().ok_or_else(|| {
+                EngineError::new(format!("plan menyebut node hilang '{name}'"))
+            })?;
+            let mut items = Vec::new();
+            if let Some(ps) = p.preds.get(name) {
+                for pr in ps {
+                    items.extend(done.get(pr).cloned().unwrap_or_default());
                 }
             }
+            let node_impl = registry.get(&node.node_type).ok_or_else(|| {
+                EngineError::new(format!(
+                    "unknown node type '{}' (node '{name}')",
+                    node.node_type
+                ))
+            })?;
+            let ctx = ExecContext { outputs: &done };
+            let t0 = std::time::Instant::now();
+            let out = node_impl.execute(node, items, &ctx).map_err(|e| {
+                EngineError::new(format!("node '{name}' failed: {e}"))
+            })?;
+            durations_ms.insert(name.clone(), t0.elapsed().as_millis());
+            done.insert(name.clone(), out);
         }
+        Ok(RunReport {
+            outputs: done,
+            order: p.order,
+            durations_ms,
+        })
+    }
 
-        // Kahn: berulang kali jalankan node yang semua pendahulunya sudah
-        // selesai, sesuai urutan file — deterministik penuh.
-        let mut done: HashMap<&str, Vec<Value>> = HashMap::new();
-        let mut order: Vec<String> = Vec::new();
-        loop {
-            let mut progressed = false;
-            for n in &enabled {
-                let key = n.name.as_str();
-                if done.contains_key(key) {
-                    continue;
-                }
-                let ready = preds
-                    .get(key)
-                    .map(|ps| ps.iter().all(|p| done.contains_key(*p)))
-                    .unwrap_or(true);
-                if !ready {
-                    continue;
-                }
-                let mut items = Vec::new();
-                if let Some(ps) = preds.get(key) {
-                    for p in ps {
-                        items.extend(done.get(*p).cloned().unwrap_or_default());
-                    }
-                }
-                let node_impl = registry.get(&n.node_type).ok_or_else(|| {
-                    EngineError::new(format!(
-                        "unknown node type '{}' (node '{}')",
-                        n.node_type, n.name
-                    ))
-                })?;
-                let out = node_impl.execute(n, items).map_err(|e| {
-                    EngineError::new(format!("node '{}' failed: {}", n.name, e))
-                })?;
-                done.insert(key, out);
-                order.push(n.name.clone());
-                progressed = true;
-            }
-            if !progressed {
-                break;
+    /// Linter: error + warning deterministik (urutan file).
+    pub fn lint(workflow: &Workflow, registry: &Registry) -> Vec<Diagnostic> {
+        let mut out = Vec::new();
+        let err = |message: String| Diagnostic {
+            level: Level::Error,
+            message,
+        };
+        let warn = |message: String| Diagnostic {
+            level: Level::Warning,
+            message,
+        };
+        for n in &workflow.nodes {
+            if registry.get(&n.node_type).is_none() {
+                out.push(err(format!(
+                    "node '{}': tipe tak dikenal '{}'",
+                    n.name, n.node_type
+                )));
             }
         }
-
-        if order.len() != enabled.len() {
-            let stuck: Vec<&str> = enabled
-                .iter()
-                .map(|n| n.name.as_str())
-                .filter(|k| !done.contains_key(*k))
-                .collect();
-            return Err(EngineError::new(format!(
-                "cycle detected, stuck at: {}",
-                stuck.join(", ")
+        for (from, to) in workflow.dangling_edges() {
+            out.push(err(format!(
+                "edge gantung: '{from}' -> '{to}' (target tak ada)"
             )));
         }
-
-        let outputs: HashMap<String, Vec<Value>> = done
-            .into_iter()
-            .map(|(k, v)| (k.to_string(), v))
-            .collect();
-        Ok(RunReport { outputs, order })
+        {
+            let names: std::collections::HashSet<&str> =
+                workflow.nodes.iter().map(|n| n.name.as_str()).collect();
+            let mut ghosts: Vec<&str> = workflow
+                .connections
+                .keys()
+                .map(String::as_str)
+                .filter(|k| !names.contains(k))
+                .collect();
+            ghosts.sort_unstable();
+            for g in ghosts {
+                out.push(warn(format!(
+                    "connections dari '{g}' yang bukan node — diabaikan"
+                )));
+            }
+        }
+        if let Err(e) = plan(workflow) {
+            out.push(err(e.to_string()));
+        }
+        let mut targets: std::collections::HashSet<String> = std::collections::HashSet::new();
+        for n in &workflow.nodes {
+            for s in workflow.successors(&n.name) {
+                targets.insert(s);
+            }
+        }
+        if workflow.nodes.len() > 1 {
+            for n in &workflow.nodes {
+                let has_out = !workflow.successors(&n.name).is_empty();
+                if !has_out && !targets.contains(n.name.as_str()) {
+                    out.push(warn(format!("node '{}' terisolasi (tanpa edge)", n.name)));
+                }
+            }
+        }
+        for n in &workflow.nodes {
+            if n.disabled {
+                continue;
+            }
+            if !targets.contains(n.name.as_str())
+                && !n.node_type.to_lowercase().contains("trigger")
+            {
+                out.push(warn(format!(
+                    "node '{}' tak punya pendahulu dan bukan trigger — berjalan dengan 0 item",
+                    n.name
+                )));
+            }
+        }
+        out
     }
 }
 
@@ -163,7 +288,12 @@ mod tests {
         fn node_type(&self) -> &'static str {
             "test.emit"
         }
-        fn execute(&self, _node: &WorkflowNode, _items: Vec<Value>) -> EngineResult<Vec<Value>> {
+        fn execute(
+            &self,
+            _node: &WorkflowNode,
+            _items: Vec<Value>,
+            _ctx: &ExecContext,
+        ) -> EngineResult<Vec<Value>> {
             Ok(vec![Value::String("e".to_string())])
         }
     }
@@ -172,7 +302,12 @@ mod tests {
         fn node_type(&self) -> &'static str {
             "test.pass"
         }
-        fn execute(&self, _node: &WorkflowNode, items: Vec<Value>) -> EngineResult<Vec<Value>> {
+        fn execute(
+            &self,
+            _node: &WorkflowNode,
+            items: Vec<Value>,
+            _ctx: &ExecContext,
+        ) -> EngineResult<Vec<Value>> {
             Ok(items)
         }
     }
@@ -219,10 +354,8 @@ mod tests {
         );
         let report = Engine::run(&wf, &registry()).expect("run");
         assert_eq!(report.order, vec!["A".to_string(), "B".to_string()]);
-        assert_eq!(
-            report.outputs["B"],
-            vec![Value::String("e".to_string())]
-        );
+        assert_eq!(report.outputs["B"], vec![Value::String("e".to_string())]);
+        assert_eq!(report.durations_ms.len(), 2);
     }
 
     #[test]
@@ -249,5 +382,46 @@ mod tests {
         );
         let err = Engine::run(&wf, &registry()).expect_err("must fail");
         assert!(err.to_string().contains("cycle"), "{err}");
+    }
+
+    #[test]
+    fn explain_plans_without_executing() {
+        // Tipe tak dikenal: explain tetap sukses (tak butuh registry),
+        // run akan gagal. Itulah bedanya dry-run.
+        let wf = workflow(
+            vec![node("A", "test.missing"), node("B", "test.missing")],
+            HashMap::from([(
+                "A".to_string(),
+                serde_json::json!({ "main": [[{ "node": "B" }]] }),
+            )]),
+        );
+        assert_eq!(
+            Engine::explain(&wf).expect("plan"),
+            vec!["A".to_string(), "B".to_string()]
+        );
+    }
+
+    #[test]
+    fn lint_reports_unknown_type_and_dangling_edge() {
+        let wf = workflow(
+            vec![node("A", "test.missing")],
+            HashMap::from([(
+                "A".to_string(),
+                serde_json::json!({ "main": [[{ "node": "Ghost" }]] }),
+            )]),
+        );
+        let diags = Engine::lint(&wf, &registry());
+        assert!(
+            diags
+                .iter()
+                .any(|d| d.level == Level::Error && d.message.contains("tak dikenal")),
+            "{diags:?}"
+        );
+        assert!(
+            diags
+                .iter()
+                .any(|d| d.level == Level::Error && d.message.contains("gantung")),
+            "{diags:?}"
+        );
     }
 }

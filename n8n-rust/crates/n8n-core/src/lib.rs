@@ -3,6 +3,8 @@
 //! Prinsip: field yang dikenal dimodelkan bertipe, field asing ditampung di
 //! `extra` (flatten) supaya tidak ada data yang hilang saat impor → ekspor.
 
+pub mod expr;
+
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::HashMap;
@@ -91,6 +93,21 @@ impl Workflow {
             .iter()
             .map(|n| self.successors(&n.name).len())
             .sum()
+    }
+
+    /// Edge yang targetnya bukan node (`(dari, ke)`) — untuk linter.
+    pub fn dangling_edges(&self) -> Vec<(String, String)> {
+        let names: std::collections::HashSet<&str> =
+            self.nodes.iter().map(|n| n.name.as_str()).collect();
+        let mut out = Vec::new();
+        for n in &self.nodes {
+            for s in self.successors(&n.name) {
+                if !names.contains(s.as_str()) {
+                    out.push((n.name.clone(), s));
+                }
+            }
+        }
+        out
     }
 }
 
