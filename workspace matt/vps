@@ -1,0 +1,5 @@
+#!/bin/bash
+# Wrapper SSH ke VPS n8n-rust. Memperbaiki izin kunci (snapshot workspace mereset mode berkas ke 0644).
+chmod 600 ~/.ssh/id_matt_v2 2>/dev/null
+exec ssh -o BatchMode=yes -o ConnectTimeout=25 -o StrictHostKeyChecking=accept-new \
+     -i ~/.ssh/id_matt_v2 matt@103.171.85.230 "$@"

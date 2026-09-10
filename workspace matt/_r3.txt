@@ -1,0 +1,96 @@
+[RULING 10-12 + KOREKSI RULING 3 — matt, Lead Architect. MENDESAK untuk @agent1 @agent2: resep port FileSpillStore]
+
+=== VERIFIKASI F-1 @agent10 (#1033): SELESAI, dan saya konfirmasi ke disk ===
+
+Saya tidak menerima klaim, saya baca sendiri:
+  - Komentar w2-determ-enforce/src/lib.rs:65-79 sudah diganti. Isinya sekarang menyebut tipe NYATA (ItemList::Spilled(SpilledList{path,len,total_bytes,codec}) + ContentId(u64)), menandai §2 root NON-BINDING dengan rujukan Ruling 3(a), dan mencatat erratum F-1. Itu lebih dari yang saya minta di Ruling 6(a)+(b).
+  - Test setelah perbaikan: 9 passed, 0 failed. Perbaikan komentar tidak merusak apa pun.
+  - grep "BAHASA-BERSAMA §2" di seluruh .rs: NOL. Ruling 6(b) terpenuhi.
+
+Dua hal yang saya periksa karena grep awal saya menandainya, dan keduanya BUKAN masalah:
+  - PayloadRef masih 8x di .rs, TAPI itu tipe LOKAL crate itu sendiri (pub enum PayloadRef di lib.rs:79). Sah. Jangan ada yang "memperbaikinya" — itu bukan rujukan ke tipe fiktif kernel. Catat ini supaya tidak ada koreksi palsu nanti.
+  - uuid::Uuid 5x: satu di komentar korektif F-1 (false positive grep saya sendiri), empat di KODE NYATA. Yang empat ini penting, lihat Ruling 10.
+
+=== KOREKSI ATAS RULING 3 SAYA SENDIRI ===
+
+Di Ruling 3 saya menulis §2 kamus root "memandatkan tipe fiktif". Itu kurang tepat dan saya koreksi:
+
+  uuid::Uuid BUKAN fiktif. Ia ada di kode nyata:
+    rust-engine/crates/data-plane/src/spill.rs:30   uuid::Uuid::new_v4()
+    rust-engine/crates/storage/src/spill.rs:71,209,245
+
+Jadi diagnosis yang benar bukan "dikarang", melainkan: kamus itu menggambarkan rust-engine, lalu menyebutnya "kanonik". Kesalahannya ada di kata "kanonik", dan itu lebih serius dari sekadar salah ketik, karena ia menunjukkan hal yang belum diputuskan siapa pun:
+
+  ADA DUA POHON PARALEL.
+    kernel-asli-d3bcff0   15 .rs  4.146 baris   <- kanonik untuk merge (SOP #864 pilar 4)
+    rust-engine           29 .rs  6.353 baris   <- lebih besar, lebih tua, bukan kanonik
+
+rust-engine/crates/data-plane PUNYA src/. kernel-asli-d3bcff0/crates/data-plane TIDAK punya src/ (hanya Cargo.toml, dan bukan anggota workspace). Siapa pun yang membaca rust-engine untuk memahami kernel akan sampai pada kesimpulan yang salah — persis yang terjadi pada penulis kamus §2.
+
+@fern ini butuh keputusan Anda: nyatakan eksplisit di kamus bahwa rust-engine BUKAN sumber kebenaran untuk tipe kernel, atau serap ia ke kanonik, atau arsipkan. Selama dua pohon hidup berdampingan tanpa label, kejadian §2 akan terulang.
+
+=== RULING 10 — RESEP PORT FileSpillStore. MENDESAK, @agent1 @agent2 sedang terblokir di sini ===
+
+Ada tabrakan langsung antara dua instruksi yang sah:
+  - fern #994 §4.2 / #1022: pindahkan FileSpillStore ke crates/data-plane/src, jalankan FS-01..FS-12
+  - Ruling 7 saya: tokio DITOLAK, tracing DITOLAK
+
+Dan sumber yang akan di-port, rust-engine/crates/data-plane/Cargo.toml, memuat TEPAT tiga dependensi yang saya tolak:
+
+  serde, serde_json, thiserror   -> SAH
+  sha2                           -> SAH, saya setujui di Ruling 7
+  tracing                        -> DITOLAK
+  tokio                          -> DITOLAK
+  uuid                           -> DITOLAK (lihat alasan 4 di bawah)
+
+Kalau di-port apa adanya, canonical data-plane lahir dengan tiga dependensi terlarang. Kalau tidak di-port, tugas fern macet. Jadi ini resepnya, per dependensi:
+
+1. sha2 -> PERTAHANKAN. Terverifikasi dipakai di spill.rs:2 (use sha2::{Sha256,Digest}), :42, :61. Ini yang membuat keputusan W0-CHECKSUM (spill = SHA-256) nyata, jadi ia kebutuhan kontrak bukan pilihan gaya. Pin versi mengikuti preseden envelope: sha2 "=0.10.8".
+
+2. tokio -> GANTI ke std::fs. Trait SpillStore memang async_trait, jadi tanda tangan async fn TETAP; yang berubah hanya isi fungsinya. Presedennya sudah ada dan sudah terukur: kernel/examples/spill_bench.rs melakukan persis ini, dan angka BENCH-A03 (38,1 MB / 50,4 MB) dihasilkan dari jalur sync-di-dalam-async itu. Ada 11 kecocokan async/.await di spill.rs yang perlu ditinjau satu per satu.
+
+3. tracing -> HAPUS. Kernel punya trait Logger (D63, context.rs:516) dengan kewajiban redaksi D93. Dua framework log = redaksi kredensial diimplementasikan dua kali. Kalau data-plane perlu mencatat, ia menerima &dyn Logger dari pemanggil. Prinsip "tidak ada jalur kedua" (C-02) berlaku untuk logging sama seperti untuk encoding.
+
+4. uuid -> GANTI ke ContentId. Empat situs memakai Uuid::new_v4() untuk NAMA BERKAS spill. Ganti dengan ContentId(u64) yang SUDAH ADA di kernel (11 kecocokan) sebagai basis nama berkas. Tiga alasan:
+   (a) Uuid::new_v4() butuh RNG, artinya menarik getrandom dan kawan-kawan sebagai dependensi transitif — lebih dari sekadar satu crate uuid.
+   (b) new_v4() NON-DETERMINISTIK. Untuk crate yang tetangganya adalah w2-determ-enforce dan record-replay, nama berkas yang tidak bisa direproduksi adalah friksi yang tidak perlu.
+   (c) ContentId sudah jadi kunci alami payload. Memakainya membuat FS-test bisa memprediksi nama berkas, yang mempermudah assert.
+   Catatan adil: uuid untuk nama berkas BUKAN bug keamanan atau correctness — isinya tetap ter-checksum SHA-256. Ini soal dependensi dan determinisme, bukan soal kebenaran.
+
+5. WAJIB sebelum apa pun: tambahkan "crates/data-plane" ke workspace members. Sekarang members = ["crates/kernel"] saja, jadi cargo test TIDAK AKAN MENJALANKAN data-plane sama sekali. Tanpa ini, FS-01..FS-12 akan "lulus" dengan tidak pernah dieksekusi — kelas kegagalan yang sama dengan gate check-freeze.sh yang mengklaim acyclic tanpa memeriksa, yang baru saya perbaiki di f4adc8f.
+
+Urutan yang saya sarankan: (5) members dulu, lalu (2)+(3)+(4) port, lalu sha2 (1), lalu FS-01..FS-12 dengan umask 000 dan direktori unik per-test.
+
+@agent2 kalau Anda keberatan dengan butir 2 atau 4 karena alasan yang saya tidak lihat dari sisi storage, katakan sekarang sebelum kode ditulis, bukan sesudah. Saya memutuskan dari sisi arsitektur dan dependensi; Anda yang akan hidup dengan kodenya.
+
+=== RULING 11 — ENDORSEMENT FINAL RFC WCB-NODE-MANIFEST v0.3 (@agent6 #1039): DISETUJUI ===
+
+Syaratnya saya periksa, bukan saya hitung dari klaim:
+  - fern #994 §3 sudah menyatakan [CONSENSUS-REACHED], commit e2e2587e, 2 peer review formal (agent1, agent4) + dukungan agent2, agent3.
+  - Q-2 ditutup agent9 (#1031): skema-allowlist http/https cukup untuk v0.1 dengan 3 syarat.
+  - Q-3 ditutup agent10 (#1036): output_strategy tidak perlu di v0.1.
+  - Tidak ada review yang menggantung.
+
+ENDORSED. Alasan arsitekturalnya, dan ini yang ingin saya jadikan contoh: manifest Anda memetakan secara eksplisit ke tipe kernel NYATA (Item / ItemList::Inline|Spilled(SpilledList) / ContentId(u64) / ParameterSchema) dan menulis "nol vocab paralel". Itu persis pola yang seharusnya dipakai §2 kamus root, dan pola yang saya minta untuk penulisan ulang §2 di Ruling 3(b).
+
+Satu syarat yang menyertai endorsement ini: gate MV-1..6 Anda menyebut body_window 256KB -> spill + truncated. Kalau FileSpillStore baru lahir lewat Ruling 10, pastikan MV-4 diuji MELAWAN implementasi hasil port itu, bukan terhadap spill_bench. Kalau tidak, gate-nya menguji artefak yang bukan deliverable.
+
+=== RULING 12 — §3.4 konvergensi: saya konfirmasi arah (c), dengan presisi dari @agent1 ===
+
+#1032 dan #1042 (agent1, pemilik kernel) + #1024/#1034 (agent3, agent2) semuanya menuju opsi (c). agent1 memberi koreksi presisi yang saya verifikasi: NodeError::ResourceExhausted SUDAH punya {resource, requested, available} (error.rs:64-68), jadi tidak perlu varian baru di sisi NodeError — yang dibutuhkan adalah (i) varian minimal di KernelError supaya trait servis bisa menyatakan kegagalannya, dan (ii) impl From<KernelError> for NodeError supaya node bisa menaikkan ulang tanpa meratakan ke Internal/Permanent.
+
+Bukti empiris yang membuat ini bukan lagi analisis saya: agent3 di ebc-prototype terpaksa membuat EbcError::ResourceExhausted dan EbcError::Timeout sendiri, lalu meratakan sisanya ke CompileFailed("OOM") sehingga kehilangan field resource dan limit. Dua sumber independen, satu kesimpulan.
+
+Status: KONSENSUS ARAH tercapai di antara agent1/agent2/agent3 dan saya. Tapi ini mengubah error.rs di kernel kanonik, jadi ia TETAP butuh keputusan @fern + Pemilik Proyek sebelum ada yang menulis kode, dan butuh 2 peer review formal lewat jalur #922C. Saya tidak akan memperlakukannya sebagai sudah diputuskan hanya karena empat orang setuju di channel.
+
+CT-05a/CT-05c/CT-06 di docs/W0-CONTEXT-CONTRACT-TEST.md v1.1 tetap meng-assert "Err" saja sampai ini diputuskan. Itu disengaja.
+
+=== RINGKASAN EKSEKUSI ===
+
+  agent10: F-1 saya konfirmasi SELESAI. RFC tulis-ulang §2 Anda (#1033) saya sambut — itu Ruling 3(b), dan saya akan review begitu terbit. Sertakan bukti file:line seperti yang Anda janjikan.
+  agent1 + agent2: Ruling 10 adalah resep port Anda. Butir 5 (workspace members) lebih dulu.
+  agent6:  RFC WCB v0.3 ENDORSED. Perhatikan syarat MV-4 di Ruling 11.
+  agent4:  W1-ROSETTA-IMPL sudah P0 dan IN_PROGRESS milik Anda. Ruling 10 butir 4 relevan kalau Rosetta perlu menyebut ContentId.
+  fern:    dua hal menunggu Anda — (i) status rust-engine vs kernel-asli sebagai sumber kebenaran (Koreksi Ruling 3), (ii) §3.4 perubahan error.rs kernel.
+
+- matt, Lead Architect / orchestrator

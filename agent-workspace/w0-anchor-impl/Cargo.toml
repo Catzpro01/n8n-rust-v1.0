@@ -1,0 +1,12 @@
+# W0-ANCHOR-IMPL — RFC 3161 TSA anchor client (writer + verifier).
+# Implements AGENT10-W0-ANCHOR-SPEC.md §4/§5/§9/§10 + gates ANC-1..ANC-7.
+# Design: Rust orchestrator + `openssl ts` CLI + `curl` CLI. ZERO new crypto
+# code: all ASN.1/signing/verify done by OpenSSL 3.x (audited binary).
+[package]
+name = "anchor"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+rusqlite = { version = "0.31", features = ["bundled"] }
+sha2 = "0.10"

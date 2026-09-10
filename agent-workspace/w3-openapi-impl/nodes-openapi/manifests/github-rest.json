@@ -1,0 +1,109 @@
+{
+  "generator": "openapi-codegen v0.1-M3",
+  "hash_domain": "raw-bytes",
+  "ops_emitted": 1206,
+  "ops_rejected": [
+    {
+      "code": "CG-E-201",
+      "operation_id": "actions/create-workflow-dispatch",
+      "reason": "skema parameter 'workflow_id': oneOf/anyOf varian campuran — kurasi manual"
+    },
+    {
+      "code": "CG-E-201",
+      "operation_id": "actions/disable-workflow",
+      "reason": "skema parameter 'workflow_id': oneOf/anyOf varian campuran — kurasi manual"
+    },
+    {
+      "code": "CG-E-201",
+      "operation_id": "actions/enable-workflow",
+      "reason": "skema parameter 'workflow_id': oneOf/anyOf varian campuran — kurasi manual"
+    },
+    {
+      "code": "CG-E-201",
+      "operation_id": "actions/get-workflow",
+      "reason": "skema parameter 'workflow_id': oneOf/anyOf varian campuran — kurasi manual"
+    },
+    {
+      "code": "CG-E-201",
+      "operation_id": "actions/get-workflow-usage",
+      "reason": "skema parameter 'workflow_id': oneOf/anyOf varian campuran — kurasi manual"
+    },
+    {
+      "code": "CG-E-201",
+      "operation_id": "actions/list-workflow-runs",
+      "reason": "skema parameter 'workflow_id': oneOf/anyOf varian campuran — kurasi manual"
+    },
+    {
+      "code": "CG-E-201",
+      "operation_id": "dependabot/list-alerts-for-enterprise",
+      "reason": "skema parameter 'has': oneOf/anyOf varian campuran — kurasi manual"
+    },
+    {
+      "code": "CG-E-201",
+      "operation_id": "dependabot/list-alerts-for-org",
+      "reason": "skema parameter 'has': oneOf/anyOf varian campuran — kurasi manual"
+    },
+    {
+      "code": "CG-E-201",
+      "operation_id": "dependabot/list-alerts-for-repo",
+      "reason": "skema parameter 'has': oneOf/anyOf varian campuran — kurasi manual"
+    },
+    {
+      "code": "CG-E-201",
+      "operation_id": "projects/get-org-item",
+      "reason": "skema parameter 'fields': oneOf/anyOf varian campuran — kurasi manual"
+    },
+    {
+      "code": "CG-E-201",
+      "operation_id": "projects/get-user-item",
+      "reason": "skema parameter 'fields': oneOf/anyOf varian campuran — kurasi manual"
+    },
+    {
+      "code": "CG-E-201",
+      "operation_id": "projects/list-items-for-org",
+      "reason": "skema parameter 'fields': oneOf/anyOf varian campuran — kurasi manual"
+    },
+    {
+      "code": "CG-E-201",
+      "operation_id": "projects/list-items-for-user",
+      "reason": "skema parameter 'fields': oneOf/anyOf varian campuran — kurasi manual"
+    },
+    {
+      "code": "CG-E-201",
+      "operation_id": "projects/list-view-items-for-org",
+      "reason": "skema parameter 'fields': oneOf/anyOf varian campuran — kurasi manual"
+    },
+    {
+      "code": "CG-E-201",
+      "operation_id": "projects/list-view-items-for-user",
+      "reason": "skema parameter 'fields': oneOf/anyOf varian campuran — kurasi manual"
+    },
+    {
+      "code": "CG-E-201",
+      "operation_id": "repos/cancel-pages-deployment",
+      "reason": "skema parameter 'pages_deployment_id': oneOf/anyOf varian campuran — kurasi manual"
+    },
+    {
+      "code": "CG-E-201",
+      "operation_id": "repos/get-pages-deployment",
+      "reason": "skema parameter 'pages_deployment_id': oneOf/anyOf varian campuran — kurasi manual"
+    },
+    {
+      "code": "CG-E-205",
+      "operation_id": "repos/upload-release-asset",
+      "reason": "requestBody content-type 'application/octet-stream' binary/multipart: butuh binary path data-plane (PRD-1 8.2)"
+    },
+    {
+      "code": "CG-E-201",
+      "operation_id": "security-advisories/list-global-advisories",
+      "reason": "skema parameter 'cwes': oneOf/anyOf varian campuran — kurasi manual"
+    }
+  ],
+  "registry_digest_c02": "32e4233ac1226d94c2b930fc654cd9bdafacb0fed5ee9f0c6b7e4200ff408d73",
+  "side_effect_summary": {
+    "idempotent": 946,
+    "non_idempotent": 260
+  },
+  "spec": "specs/github-rest.openapi.json",
+  "spec_sha256": "531b05749a9f86c7be01330e6d89d052fd3102ff31df4e0c765d9550b11bbad8"
+}

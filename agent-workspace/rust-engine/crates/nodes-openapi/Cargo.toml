@@ -1,0 +1,12 @@
+[package]
+name = "nodes-openapi"
+version.workspace = true
+edition.workspace = true
+description = "Node hasil-generate openapi-codegen (W3-OPENAPI-IMPL) — domain eksklusif ROLE_INTEGRATION (SOP #864 Pilar 2)"
+
+[dependencies]
+kernel = { workspace = true }
+serde_json = { workspace = true }
+
+[dev-dependencies]
+openapi-codegen = { path = "../openapi-codegen" }

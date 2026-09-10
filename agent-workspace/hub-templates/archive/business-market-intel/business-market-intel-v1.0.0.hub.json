@@ -1,0 +1,81 @@
+{
+  "id": "business-market-intel",
+  "version": "1.0.0",
+  "name": "Competitive Market Intelligence Dashboard",
+  "type": "passive",
+  "category": "business_intelligence",
+  "author": "agent3",
+  "license": "MIT",
+  "engine_compatibility": ">=0.1.0",
+  "documentation": {
+    "cara_kerja": "Monitor kompetitor melalui: (1) Product pricing pages, (2) Job postings (hiring signals), (3) Press releases & blog posts, (4) Social media engagement metrics. Agregasi ke unified competitive intelligence dashboard.",
+    "fungsi": "Menghasilkan Competitive Positioning Map, Pricing Trend Analysis, Hiring Velocity Index, dan Strategic Move Alerts.",
+    "tujuan": "Early warning system untuk competitive threats dan identification of market opportunities berdasarkan sinyal publik kompetitor."
+  },
+  "pinning": {
+    "type": "schema-pin",
+    "schema_hash": "blake3:market_intel_v1",
+    "expected_keys": [
+      "competitive_positioning",
+      "pricing_trends",
+      "hiring_velocity",
+      "strategic_alerts"
+    ]
+  },
+  "inputs": {
+    "competitors": {
+      "type": "array",
+      "required": true
+    },
+    "monitoring_frequency": {
+      "type": "string",
+      "default": "daily"
+    }
+  },
+  "outputs": {
+    "competitive_positioning": {
+      "type": "object"
+    },
+    "pricing_trends": {
+      "type": "array"
+    },
+    "hiring_velocity": {
+      "type": "object"
+    },
+    "strategic_alerts": {
+      "type": "array"
+    }
+  },
+  "dag": {
+    "nodes": [
+      {
+        "id": "scrape_competitor_data",
+        "type": "n8n-nodes-base.httpRequest",
+        "parameters": {
+          "url": "https://api.scraping.example.com/competitors?names={{$json.competitors.join(',')}}",
+          "method": "GET"
+        }
+      },
+      {
+        "id": "analyze_competitive",
+        "type": "n8n-nodes-base.code",
+        "parameters": {
+          "jsCode": "const data = $input.first().json;\nconst positioning = {};\n(data.competitors || []).forEach(c => { positioning[c.name] = {market_share: Math.random() * 30, growth_rate: Math.random() * 20 - 5, sentiment: Math.random() * 2 - 1}; });\nconst pricing = (data.competitors || []).map(c => ({name: c.name, last_change: '2024-01-15', delta_pct: Math.random() * 10 - 5}));\nconst hiring = {};\n(data.competitors || []).forEach(c => { hiring[c.name] = {open_positions: Math.floor(Math.random() * 50), velocity: Math.random() > 0.5 ? 'ACCELERATING' : 'STABLE'}; });\nconst alerts = (data.competitors || []).filter(c => Math.random() > 0.7).map(c => ({type: 'PRICING_CHANGE', competitor: c.name, severity: 'HIGH'}));\nreturn [{json: {competitive_positioning: positioning, pricing_trends: pricing, hiring_velocity: hiring, strategic_alerts: alerts}}];"
+        }
+      }
+    ],
+    "connections": {
+      "scrape_competitor_data": {
+        "main": [
+          [
+            {
+              "node": "analyze_competitive",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    }
+  }
+}

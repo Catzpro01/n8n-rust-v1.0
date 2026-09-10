@@ -1,0 +1,58 @@
+{
+  "name": "TB Fixture B - Set chain with expressions",
+  "nodes": [
+    {
+      "id": "f1b00000-0000-4000-8000-000000000001",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [240, 300],
+      "parameters": {}
+    },
+    {
+      "id": "f1b00000-0000-4000-8000-000000000002",
+      "name": "Set price",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 2,
+      "position": [460, 300],
+      "parameters": {
+        "mode": "manual",
+        "duplicateItem": false,
+        "include": "none",
+        "assignments": {
+          "assignments": [
+            { "id": "f1b00000-0000-4000-8000-00000000a001", "name": "price", "value": 21, "type": "number" }
+          ]
+        }
+      }
+    },
+    {
+      "id": "f1b00000-0000-4000-8000-000000000003",
+      "name": "Set derived",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 2,
+      "position": [680, 300],
+      "parameters": {
+        "mode": "manual",
+        "duplicateItem": false,
+        "include": "none",
+        "assignments": {
+          "assignments": [
+            { "id": "f1b00000-0000-4000-8000-00000000a002", "name": "total", "value": "={{ $json.price * 2 }}", "type": "number" },
+            { "id": "f1b00000-0000-4000-8000-00000000a003", "name": "label", "value": "={{ 'n8n-' + 'rust' }}", "type": "string" },
+            { "id": "f1b00000-0000-4000-8000-00000000a004", "name": "ok", "value": "={{ $json.price > 10 ? 'yes' : 'no' }}", "type": "string" }
+          ]
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Manual Trigger": {
+      "main": [[{ "node": "Set price", "type": "main", "index": 0 }]]
+    },
+    "Set price": {
+      "main": [[{ "node": "Set derived", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": { "executionOrder": "v1" }
+}

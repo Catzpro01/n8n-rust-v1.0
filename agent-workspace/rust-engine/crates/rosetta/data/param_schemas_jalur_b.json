@@ -1,0 +1,1902 @@
+[
+  {
+    "type_full": "n8n-nodes-base.box",
+    "typeVersion": "1",
+    "n": 1,
+    "anchor": "n8n 2.38.5 fcf21f5e",
+    "provenance": "upstream-verified (INodeProperties @ n8n 2.38.5 fcf21f5e)",
+    "operation_context": "file:upload (default resource/operation tak terserialisasi; field binaryData+fileName displayOptions show operation upload/resource file)",
+    "fields": [
+      {
+        "name": "binaryData",
+        "type_ui": "boolean",
+        "required_ui": true,
+        "default": false,
+        "verified": "Box/FileDescription.ts:675-690"
+      },
+      {
+        "name": "fileName",
+        "type_ui": "string",
+        "required_ui": false,
+        "default": "",
+        "verified": "Box/FileDescription.ts:659-674"
+      }
+    ],
+    "provisional": true
+  },
+  {
+    "type_full": "n8n-nodes-base.coda",
+    "typeVersion": "1",
+    "n": 1,
+    "anchor": "n8n 2.38.5 fcf21f5e",
+    "provenance": "upstream-verified (INodeProperties @ n8n 2.38.5 fcf21f5e)",
+    "operation_context": "resource table (operation tak terserialisasi; docId/tableId/options = tableFields displayOptions resource table; op createRow default per desc)",
+    "fields": [
+      {
+        "name": "docId",
+        "type_ui": "options",
+        "required_ui": true,
+        "default": "",
+        "verified": "Coda/TableDescription.ts:66-86 (table:createRow)"
+      },
+      {
+        "name": "tableId",
+        "type_ui": "options",
+        "required_ui": true,
+        "default": "",
+        "verified": "Coda/TableDescription.ts:86-106"
+      },
+      {
+        "name": "options",
+        "type_ui": "collection",
+        "required_ui": false,
+        "default": {},
+        "verified": "Coda/TableDescription.ts:106-120"
+      }
+    ],
+    "provisional": true
+  },
+  {
+    "type_full": "n8n-nodes-base.github",
+    "typeVersion": "1",
+    "n": 1,
+    "anchor": "n8n 2.38.5 fcf21f5e",
+    "provenance": "upstream-verified (INodeProperties @ n8n 2.38.5 fcf21f5e)",
+    "operation_context": "resource/operation terserialisasi di korpus; owner+repository = shared fields (hide utk invite/getUserIssues)",
+    "fields": [
+      {
+        "name": "operation",
+        "type_ui": "options",
+        "required_ui": true,
+        "default": "",
+        "verified": "Github/Github.node.ts (opsi per resource)"
+      },
+      {
+        "name": "owner",
+        "type_ui": "resourceLocator",
+        "required_ui": true,
+        "default": {
+          "mode": "list",
+          "value": ""
+        },
+        "verified": "Github/Github.node.ts:537-603"
+      },
+      {
+        "name": "repository",
+        "type_ui": "resourceLocator",
+        "required_ui": true,
+        "default": {
+          "mode": "list",
+          "value": ""
+        },
+        "verified": "Github/Github.node.ts:601+"
+      },
+      {
+        "name": "resource",
+        "type_ui": "options",
+        "required_ui": true,
+        "default": "",
+        "verified": "Github/Github.node.ts (resource options)"
+      }
+    ],
+    "provisional": true
+  },
+  {
+    "type_full": "n8n-nodes-base.autopilotTrigger",
+    "typeVersion": "1",
+    "n": 1,
+    "anchor": "n8n 2.38.5 fcf21f5e",
+    "provenance": "upstream-verified (INodeProperties @ n8n 2.38.5 fcf21f5e)",
+    "operation_context": "trigger webhook event (polling)",
+    "fields": [
+      {
+        "name": "event",
+        "type_ui": "options",
+        "required_ui": true,
+        "default": "",
+        "verified": "AutopilotTrigger.node.ts:45-50"
+      }
+    ],
+    "provisional": true
+  },
+  {
+    "type_full": "n8n-nodes-base.airtableTrigger",
+    "typeVersion": "1",
+    "n": 1,
+    "anchor": "n8n 2.38.5 fcf21f5e",
+    "provenance": "upstream-verified (INodeProperties @ n8n 2.38.5 fcf21f5e)",
+    "operation_context": "polling trigger; pollTimes = corpus-legacy (lihat field; pass-through, tak pernah required_ui/sumber kegagalan)",
+    "fields": [
+      {
+        "name": "authentication",
+        "type_ui": "options",
+        "required_ui": true,
+        "default": "airtableApi",
+        "verified": "AirtableTrigger.node.ts:61-77"
+      },
+      {
+        "name": "baseId",
+        "type_ui": "resourceLocator",
+        "required_ui": true,
+        "default": {
+          "mode": "url",
+          "value": ""
+        },
+        "verified": "AirtableTrigger.node.ts:79-90"
+      },
+      {
+        "name": "tableId",
+        "type_ui": "resourceLocator",
+        "required_ui": true,
+        "default": {
+          "mode": "url",
+          "value": ""
+        },
+        "verified": "AirtableTrigger.node.ts:126-137"
+      },
+      {
+        "name": "triggerField",
+        "type_ui": "string",
+        "required_ui": true,
+        "default": "",
+        "verified": "AirtableTrigger.node.ts:169-176"
+      },
+      {
+        "name": "additionalFields",
+        "type_ui": "collection",
+        "required_ui": false,
+        "default": {},
+        "verified": "AirtableTrigger.node.ts:199-207"
+      },
+      {
+        "name": "pollTimes",
+        "type_ui": "?",
+        "provenance": "corpus-legacy",
+        "legacy_reason": "0 hit di n8n 2.38.5 (fcf21f5e) dan n8n@1.0.0",
+        "legacy_detected": "2026-09-09T15:00:00Z"
+      }
+    ],
+    "provisional": true
+  },
+  {
+    "type_full": "n8n-nodes-base.awsTranscribe",
+    "typeVersion": "1",
+    "n": 1,
+    "anchor": "n8n 2.38.5 fcf21f5e",
+    "provenance": "upstream-verified (INodeProperties @ n8n 2.38.5 fcf21f5e)",
+    "operation_context": "__schema__ v1.0.0 transcriptionJob create/get ada (RULING 46 __schema__ diutamakan)",
+    "fields": [
+      {
+        "name": "operation",
+        "type_ui": "options",
+        "required_ui": true,
+        "default": "",
+        "verified": "AwsTranscribe.node.ts:47"
+      },
+      {
+        "name": "transcriptionJobName",
+        "type_ui": "string",
+        "required_ui": true,
+        "default": "",
+        "verified": "AwsTranscribe.node.ts:80"
+      },
+      {
+        "name": "mediaFileUri",
+        "type_ui": "string",
+        "required_ui": true,
+        "default": "",
+        "verified": "AwsTranscribe.node.ts:93"
+      },
+      {
+        "name": "detectLanguage",
+        "type_ui": "boolean",
+        "required_ui": false,
+        "default": "",
+        "verified": "AwsTranscribe.node.ts:106"
+      },
+      {
+        "name": "options",
+        "type_ui": "collection",
+        "required_ui": false,
+        "default": {},
+        "verified": "AwsTranscribe.node.ts:167"
+      }
+    ],
+    "provisional": true
+  },
+  {
+    "type_full": "n8n-nodes-base.compareDatasets",
+    "typeVersion": "2.3",
+    "n": 1,
+    "anchor": "n8n 2.38.5 fcf21f5e",
+    "provenance": "upstream-verified (INodeProperties @ n8n 2.38.5 fcf21f5e)",
+    "operation_context": "mergeByFields default {values:[{field1:'',field2:''}]} (pilot-1); resolve dua seksi (differences 1&2)",
+    "fields": [
+      {
+        "name": "mergeByFields",
+        "type_ui": "fixedCollection",
+        "required_ui": false,
+        "default": {
+          "values": [
+            {
+              "field1": "",
+              "field2": ""
+            }
+          ]
+        },
+        "verified": "CompareDatasets.node.ts:49-52"
+      },
+      {
+        "name": "options",
+        "type_ui": "collection",
+        "required_ui": false,
+        "default": {},
+        "verified": "CompareDatasets.node.ts:198"
+      },
+      {
+        "name": "resolve",
+        "type_ui": "options",
+        "required_ui": false,
+        "default": "preferInput2",
+        "verified": "CompareDatasets.node.ts:87-118"
+      }
+    ],
+    "provisional": true
+  },
+  {
+    "type_full": "n8n-nodes-base.elasticsearch",
+    "typeVersion": "1",
+    "n": 1,
+    "anchor": "n8n 2.38.5 fcf21f5e",
+    "provenance": "upstream-verified (INodeProperties @ n8n 2.38.5 fcf21f5e)",
+    "operation_context": "descriptions/DocumentDescription.ts + IndexDescription.ts; __schema__ v1.0.0 document/index (diutamakan)",
+    "fields": [
+      {
+        "name": "operation",
+        "type_ui": "options",
+        "required_ui": true,
+        "default": "",
+        "verified": "descriptions/DocumentDescription.ts:8"
+      },
+      {
+        "name": "indexId",
+        "type_ui": "options/string",
+        "required_ui": true,
+        "default": "",
+        "verified": "descriptions/DocumentDescription.ts:58"
+      },
+      {
+        "name": "options",
+        "type_ui": "collection",
+        "required_ui": false,
+        "default": {},
+        "verified": "descriptions/DocumentDescription.ts:86"
+      },
+      {
+        "name": "fieldsUi",
+        "type_ui": "fixedCollection",
+        "required_ui": false,
+        "default": "",
+        "verified": "descriptions/DocumentDescription.ts:598"
+      },
+      {
+        "name": "additionalFields",
+        "type_ui": "collection",
+        "required_ui": false,
+        "default": {},
+        "verified": "descriptions/DocumentDescription.ts:636"
+      }
+    ],
+    "provisional": true
+  },
+  {
+    "type_full": "n8n-nodes-base.mailchimp",
+    "typeVersion": "1",
+    "n": 1,
+    "anchor": "n8n 2.38.5 fcf21f5e",
+    "provenance": "upstream-verified (INodeProperties @ n8n 2.38.5 fcf21f5e)",
+    "operation_context": "resource/operation; list (options loadOptions getLists, required) utk member:create dst",
+    "fields": [
+      {
+        "name": "resource",
+        "type_ui": "options",
+        "required_ui": true,
+        "default": "",
+        "verified": "Mailchimp.node.ts:106"
+      },
+      {
+        "name": "operation",
+        "type_ui": "options",
+        "required_ui": true,
+        "default": "",
+        "verified": "Mailchimp.node.ts:132"
+      },
+      {
+        "name": "list",
+        "type_ui": "options",
+        "required_ui": true,
+        "default": "",
+        "verified": "Mailchimp.node.ts:279-292"
+      },
+      {
+        "name": "options",
+        "type_ui": "collection",
+        "required_ui": false,
+        "default": {},
+        "verified": "Mailchimp.node.ts:361"
+      }
+    ],
+    "provisional": true
+  },
+  {
+    "type_full": "n8n-nodes-base.crypto",
+    "typeVersion": "1",
+    "n": 1,
+    "anchor": "n8n 2.38.5 fcf21f5e",
+    "provenance": "upstream-verified (INodeProperties @ n8n 2.38.5 fcf21f5e)",
+    "provisional": true,
+    "operation_context": "tpl-574: value='n8n rocks!' (hash); action tak terserialisasi -> default 'hash'; type -> default 'MD5'; binaryData -> false (semua default, tak diserialkan). defaultVersion 2.38.5 = 2, korpus tv1 -> sumber per-major v1/CryptoV1.node.ts.",
+    "fields": [
+      {
+        "name": "value",
+        "type_ui": "string",
+        "required_ui": true,
+        "default": "",
+        "verified": "Crypto/v1/CryptoV1.node.ts:152-165 (displayOptions action hash+binaryData false; varian hmac :249-261, sign :311-323)"
+      }
+    ]
+  },
+  {
+    "type_full": "n8n-nodes-base.aiTransform",
+    "typeVersion": "1",
+    "n": 1,
+    "anchor": "n8n 2.38.5 fcf21f5e",
+    "provenance": "upstream-verified (INodeProperties @ n8n 2.38.5 fcf21f5e)",
+    "provisional": true,
+    "operation_context": "node hidden:true di 2.38.5 (AiTransform.node.ts:24). tpl-4966: jsCode+instructions terisi, codeGeneratedForPrompt='' tersimpan walau = default (artefak template). Nama field = konstanta n8n-workflow AI_TRANSFORM_JS_CODE / AI_TRANSFORM_CODE_GENERATED_FOR_PROMPT. Tak ada required di INodeProperties mana pun.",
+    "fields": [
+      {
+        "name": "instructions",
+        "type_ui": "button",
+        "required_ui": false,
+        "default": "",
+        "verified": "AiTransform/AiTransform.node.ts:41-60 (type button, trigger askAiCodeGeneration)"
+      },
+      {
+        "name": "codeGeneratedForPrompt",
+        "type_ui": "hidden",
+        "required_ui": false,
+        "default": "",
+        "verified": "AiTransform/AiTransform.node.ts:62-66"
+      },
+      {
+        "name": "jsCode",
+        "type_ui": "string",
+        "required_ui": false,
+        "default": "",
+        "verified": "AiTransform/AiTransform.node.ts:68-78 (editor jsEditor read-only, noDataExpression)"
+      }
+    ]
+  },
+  {
+    "type_full": "n8n-nodes-base.markdown",
+    "typeVersion": "1",
+    "n": 1,
+    "anchor": "n8n 2.38.5 fcf21f5e",
+    "provenance": "upstream-verified (INodeProperties @ n8n 2.38.5 fcf21f5e)",
+    "provisional": true,
+    "operation_context": "tpl-2281: mode='markdownToHtml' (non-default -> terserialisasi), markdown=ekspresi, destinationKey='Blog Body', options={} (artefak template). Koleksi options 2 varian: htmlToMarkdown :94-296, markdownToHtml :297+.",
+    "fields": [
+      {
+        "name": "mode",
+        "type_ui": "options",
+        "required_ui": false,
+        "default": "htmlToMarkdown",
+        "verified": "Markdown/Markdown.node.ts:34-50"
+      },
+      {
+        "name": "markdown",
+        "type_ui": "string",
+        "required_ui": true,
+        "default": "",
+        "verified": "Markdown/Markdown.node.ts:65-76 (displayOptions mode markdownToHtml)"
+      },
+      {
+        "name": "destinationKey",
+        "type_ui": "string",
+        "required_ui": true,
+        "default": "data",
+        "verified": "Markdown/Markdown.node.ts:78-91"
+      },
+      {
+        "name": "options",
+        "type_ui": "collection",
+        "required_ui": false,
+        "default": {},
+        "verified": "Markdown/Markdown.node.ts:297-345 (displayOptions mode markdownToHtml; inner openLinksInNewWindow :310-312, completeHTMLDocument :332-334)"
+      }
+    ]
+  },
+  {
+    "type_full": "n8n-nodes-base.renameKeys",
+    "typeVersion": "1",
+    "n": 1,
+    "anchor": "n8n 2.38.5 fcf21f5e",
+    "provenance": "upstream-verified (INodeProperties @ n8n 2.38.5 fcf21f5e)",
+    "provisional": true,
+    "operation_context": "tpl-582: keys={key:[{newKey:'newkey', currentKey:'key'}]} (default {} tergantikan). additionalOptions collection :73+ tak terpakai.",
+    "fields": [
+      {
+        "name": "keys",
+        "type_ui": "fixedCollection",
+        "required_ui": false,
+        "default": {},
+        "verified": "RenameKeys/RenameKeys.node.ts:33-46 (values[].currentKey :50-52 default \"\"; values[].newKey :60-62 default \"\")"
+      }
+    ]
+  },
+  {
+    "type_full": "n8n-nodes-base.sort",
+    "typeVersion": "1",
+    "n": 1,
+    "anchor": "n8n 2.38.5 fcf21f5e",
+    "provenance": "upstream-verified (INodeProperties @ n8n 2.38.5 fcf21f5e)",
+    "provisional": true,
+    "operation_context": "tpl-2421: type tak terserialisasi -> default 'simple'; sortFieldsUi={sortField:[{fieldName:'fileName'}]} (order tak ada -> default 'ascending'); options={} artefak.",
+    "fields": [
+      {
+        "name": "sortFieldsUi",
+        "type_ui": "fixedCollection",
+        "required_ui": false,
+        "default": {},
+        "verified": "Transform/Sort/Sort.node.ts:57-108 (sortField[].fieldName :70-73 required default \"\"; order :82-94 default ascending)"
+      },
+      {
+        "name": "options",
+        "type_ui": "collection",
+        "required_ui": false,
+        "default": {},
+        "verified": "Transform/Sort/Sort.node.ts:141-150 (displayOptions type simple)"
+      }
+    ]
+  },
+  {
+    "type_full": "n8n-nodes-base.summarize",
+    "typeVersion": "1",
+    "n": 1,
+    "anchor": "n8n 2.38.5 fcf21f5e",
+    "provenance": "upstream-verified (INodeProperties @ n8n 2.38.5 fcf21f5e)",
+    "provisional": true,
+    "operation_context": "tpl-2301: fieldsToSummarize={values:[{field:'info',aggregation:'append'}]} (aggregation non-default), fieldsToSplitBy='workflowName, workflowId', options={} -> outputFormat default 'separateItems' (fieldToSplitBy varian :209-223 berlaku). Tak ada required di berkas.",
+    "fields": [
+      {
+        "name": "fieldsToSplitBy",
+        "type_ui": "string",
+        "required_ui": false,
+        "default": "",
+        "verified": "Transform/Summarize/Summarize.node.ts:209-223 (hide saat /options.outputFormat=singleItem; varian :224-238)"
+      },
+      {
+        "name": "fieldsToSummarize",
+        "type_ui": "fixedCollection",
+        "required_ui": false,
+        "default": {
+          "values": [
+            {
+              "aggregation": "count",
+              "field": ""
+            }
+          ]
+        },
+        "verified": "Transform/Summarize/Summarize.node.ts:39-98 (values[].aggregation :54-90 default count; values[].field :96-98 default \"\"; separateBy utk concatenate :155+)"
+      },
+      {
+        "name": "options",
+        "type_ui": "collection",
+        "required_ui": false,
+        "default": {},
+        "verified": "Transform/Summarize/Summarize.node.ts:240-292 (outputFormat :270-272 default separateItems; continueIfFieldNotFound :249-251; disableDotNotation :262-264)"
+      }
+    ]
+  },
+  {
+    "type_full": "n8n-nodes-base.calendlyTrigger",
+    "typeVersion": "1",
+    "n": 1,
+    "anchor": "n8n 2.38.5 fcf21f5e",
+    "provenance": "upstream-verified (INodeProperties @ n8n 2.38.5 fcf21f5e)",
+    "provisional": true,
+    "operation_context": "Polling trigger. Korpus {events:['invitee.created']}; authentication default 'apiKey' & scope (required:true) default 'user' tak terserialisasi krn = default — pola persis RULING 45 §1 ({events} saja). Opsi events multiOptions statis.",
+    "fields": [
+      {
+        "name": "events",
+        "type_ui": "multiOptions",
+        "required_ui": true,
+        "default": [],
+        "verified": "Calendly/v1/CalendlyTriggerV1.node.ts:127-143 (nilai korpus invitee.created ada di opsi; default [] ; authentication :91-105, scope :108-119)"
+      }
+    ]
+  },
+  {
+    "type_full": "n8n-nodes-base.dhl",
+    "typeVersion": "1",
+    "n": 1,
+    "anchor": "n8n 2.38.5 fcf21f5e",
+    "provenance": "upstream-verified (INodeProperties @ n8n 2.38.5 fcf21f5e)",
+    "provisional": true,
+    "operation_context": "Korpus {options:{}, trackingNumber:ekspresi}. resource hidden default 'shipment' (:41-51) & operation options default 'get' (:54-69) tak terserialisasi. options = koleksi (recipientPostalCode dll).",
+    "fields": [
+      {
+        "name": "trackingNumber",
+        "type_ui": "string",
+        "required_ui": true,
+        "default": "",
+        "verified": "Dhl/Dhl.node.ts:73-77"
+      },
+      {
+        "name": "options",
+        "type_ui": "collection",
+        "required_ui": false,
+        "default": {},
+        "verified": "Dhl/Dhl.node.ts:80-84"
+      }
+    ]
+  },
+  {
+    "type_full": "n8n-nodes-base.hackerNews",
+    "typeVersion": "1",
+    "n": 1,
+    "anchor": "n8n 2.38.5 fcf21f5e",
+    "provenance": "upstream-verified (INodeProperties @ n8n 2.38.5 fcf21f5e)",
+    "provisional": true,
+    "operation_context": "Korpus {limit:ekspresi, resource:'all' (non-default), additionalFields:{}}; operation tak terserialisasi → default getAll (:59-77). Berkas menyusun blok deskripsi per resource/operation; koleksi additionalFields 2 varian (:180 article, :202 all).",
+    "fields": [
+      {
+        "name": "resource",
+        "type_ui": "options",
+        "required_ui": false,
+        "default": "article",
+        "verified": "HackerNews/HackerNews.node.ts:34-51 (nilai korpus all; default article)"
+      },
+      {
+        "name": "limit",
+        "type_ui": "number",
+        "required_ui": false,
+        "default": 100,
+        "verified": "HackerNews/HackerNews.node.ts:162-168"
+      },
+      {
+        "name": "additionalFields",
+        "type_ui": "collection",
+        "required_ui": false,
+        "default": {},
+        "verified": "HackerNews/HackerNews.node.ts:202-205 (keyword :215-217, tags multiOptions :222-256)"
+      }
+    ]
+  },
+  {
+    "type_full": "n8n-nodes-base.hunter",
+    "typeVersion": "1",
+    "n": 1,
+    "anchor": "n8n 2.38.5 fcf21f5e",
+    "provenance": "upstream-verified (INodeProperties @ n8n 2.38.5 fcf21f5e)",
+    "provisional": true,
+    "operation_context": "Korpus {email:ekspresi, operation:'emailVerifier'} — operation non-default → terserialisasi; email tampil via displayOptions operation emailVerifier. Node API key hunter.",
+    "fields": [
+      {
+        "name": "operation",
+        "type_ui": "options",
+        "required_ui": false,
+        "default": "domainSearch",
+        "verified": "Hunter/Hunter.node.ts:37-64 (opsi domainSearch/emailFinder/emailVerifier; korpus emailVerifier)"
+      },
+      {
+        "name": "email",
+        "type_ui": "string",
+        "required_ui": true,
+        "default": "",
+        "verified": "Hunter/Hunter.node.ts:261-271 (displayOptions operation emailVerifier; default \"\" :270)"
+      }
+    ]
+  },
+  {
+    "type_full": "n8n-nodes-base.mauticTrigger",
+    "typeVersion": "1",
+    "n": 1,
+    "anchor": "n8n 2.38.5 fcf21f5e",
+    "provenance": "upstream-verified (INodeProperties @ n8n 2.38.5 fcf21f5e)",
+    "provisional": true,
+    "operation_context": "Korpus {events:['mautic.form_on_submit']}. authentication default 'credentials' (:63-75) tak terserialisasi; eventsOrder default 'ASC' (:91-101). Opsi events = loadOptions DINAMIS (eventName/eventId :121-122) — nilai korpus format webhook Mautic, bukan dari daftar statis.",
+    "fields": [
+      {
+        "name": "events",
+        "type_ui": "multiOptions",
+        "required_ui": true,
+        "default": [],
+        "verified": "Mautic/MauticTrigger.node.ts:79-122 (required; default []; opsi dinamis loadOptions :121-122)"
+      }
+    ]
+  },
+  {
+    "type_full": "n8n-nodes-base.mindee",
+    "typeVersion": "1",
+    "n": 1,
+    "anchor": "n8n 2.38.5 fcf21f5e",
+    "provenance": "upstream-verified (INodeProperties @ n8n 2.38.5 fcf21f5e)",
+    "provisional": true,
+    "operation_context": "KORPUS 0 PARAMETER (semua default; tpl-741). Verifikasi upstream tetap dicatat: resource options default 'receipt' (:130-143), operation options default 'predict' (:147-156), binaryPropertyName string required default 'data' (:160-163), rawData bool default false (:174-176); blok apiVersion berbeda per kredensial (:49-125). Tak ada kunci korpus untuk diverifikasi.",
+    "fields": []
+  },
+  {
+    "type_full": "n8n-nodes-base.awsRekognition",
+    "typeVersion": "1",
+    "n": 1,
+    "anchor": "n8n 2.38.5 fcf21f5e",
+    "provenance": "upstream-verified (INodeProperties @ n8n 2.38.5 fcf21f5e)",
+    "provisional": true,
+    "operation_context": "Korpus {type:'detectLabels', binaryData:true, additionalFields:{}}; resource/operation tak terserialisasi -> default image/analyze (:33-55). CATATAN __schema__ (RULING 46): __schema__/v1.0.0/image/analyze.json ADA tapi isinya skema RESPONS AWS (TextDetections/TextModelVersion), bukan parameter UI -> verifikasi memakai .ts; dicatat jujur.",
+    "fields": [
+      {
+        "name": "type",
+        "type_ui": "options",
+        "required_ui": false,
+        "default": "detectFaces",
+        "verified": "Aws/Rekognition/AwsRekognition.node.ts:59-89 (Detect Labels :73-74; korpus detectLabels non-default -> terserialisasi)"
+      },
+      {
+        "name": "binaryData",
+        "type_ui": "boolean",
+        "required_ui": true,
+        "default": false,
+        "verified": "Aws/Rekognition/AwsRekognition.node.ts:93-96 (korpus true -> terserialisasi)"
+      },
+      {
+        "name": "additionalFields",
+        "type_ui": "collection",
+        "required_ui": false,
+        "default": {},
+        "verified": "Aws/Rekognition/AwsRekognition.node.ts:152-161 (default {}; korpus {} artefak)"
+      }
+    ]
+  },
+  {
+    "type_full": "n8n-nodes-base.githubTrigger",
+    "typeVersion": "1",
+    "n": 1,
+    "anchor": "n8n 2.38.5 fcf21f5e",
+    "provenance": "upstream-verified (INodeProperties @ n8n 2.38.5 fcf21f5e)",
+    "provisional": true,
+    "operation_context": "Korpus {owner:'n8n-io', repository:'n8n', events:['star']}; authentication default 'accessToken' tak terserialisasi (:90-106); options collection (:464+) tak terpakai.",
+    "fields": [
+      {
+        "name": "owner",
+        "type_ui": "resourceLocator",
+        "required_ui": true,
+        "default": {
+          "mode": "list",
+          "value": ""
+        },
+        "verified": "Github/GithubTrigger.node.ts:110-113 (mode list/url :117-160)"
+      },
+      {
+        "name": "repository",
+        "type_ui": "resourceLocator",
+        "required_ui": true,
+        "default": {
+          "mode": "list",
+          "value": ""
+        },
+        "verified": "Github/GithubTrigger.node.ts:165-168 (mode list/url :172-213)"
+      },
+      {
+        "name": "events",
+        "type_ui": "multiOptions",
+        "required_ui": true,
+        "default": [],
+        "verified": "Github/GithubTrigger.node.ts:219-461 (opsi statis; Star :433-434 value star; required :459 default [] :460)"
+      }
+    ]
+  },
+  {
+    "type_full": "n8n-nodes-base.shopifyTrigger",
+    "typeVersion": "1",
+    "n": 1,
+    "anchor": "n8n 2.38.5 fcf21f5e",
+    "provenance": "upstream-verified (INodeProperties @ n8n 2.38.5 fcf21f5e)",
+    "provisional": true,
+    "operation_context": "Korpus {topic:'fulfillments/create'}; authentication default 'apiKey' tak terserialisasi (:68-84); topic = daftar STATIS topik Shopify, tidak required, default ''.",
+    "fields": [
+      {
+        "name": "topic",
+        "type_ui": "options",
+        "required_ui": false,
+        "default": "",
+        "verified": "Shopify/ShopifyTrigger.node.ts:88-90 (daftar opsi :93-330; Fulfillment Created :185-186 value fulfillments/create)"
+      }
+    ]
+  },
+  {
+    "type_full": "n8n-nodes-base.slackTrigger",
+    "typeVersion": "1",
+    "n": 1,
+    "anchor": "n8n 2.38.5 fcf21f5e",
+    "provenance": "upstream-verified (INodeProperties @ n8n 2.38.5 fcf21f5e)",
+    "provisional": true,
+    "operation_context": "Korpus {trigger:['app_mention'], watchWorkspace:true, options:{}}; authentication hidden default accessToken (:50-52); watchWorkspace tampil hanya utk trigger any_event/message/reaction_added/file_share/app_mention (:121-123); channelId tak diserialkan krn watchWorkspace=true.",
+    "fields": [
+      {
+        "name": "trigger",
+        "type_ui": "multiOptions",
+        "required_ui": false,
+        "default": [],
+        "verified": "Slack/SlackTrigger.node.ts:63-112 (nilai app_mention :78; default [] :112)"
+      },
+      {
+        "name": "watchWorkspace",
+        "type_ui": "boolean",
+        "required_ui": false,
+        "default": false,
+        "verified": "Slack/SlackTrigger.node.ts:116-118 (korpus true -> terserialisasi)"
+      },
+      {
+        "name": "options",
+        "type_ui": "collection",
+        "required_ui": false,
+        "default": {},
+        "verified": "Slack/SlackTrigger.node.ts:215-218 (resolveIds/userIds loadOptions getUsers :222-234)"
+      }
+    ]
+  },
+  {
+    "type_full": "n8n-nodes-base.medium",
+    "typeVersion": "1",
+    "n": 1,
+    "anchor": "n8n 2.38.5 fcf21f5e",
+    "provenance": "upstream-verified (INodeProperties @ n8n 2.38.5 fcf21f5e)",
+    "provisional": true,
+    "operation_context": "Korpus {title/content ekspresi, contentFormat:'markdown', additionalFields:{}}; resource/operation tak terserialisasi -> default post/create (resource :69-82 default post; operation :86-102 default create); semua field displayOptions create/post.",
+    "fields": [
+      {
+        "name": "title",
+        "type_ui": "string",
+        "required_ui": true,
+        "default": "",
+        "verified": "Medium/Medium.node.ts:140-152"
+      },
+      {
+        "name": "contentFormat",
+        "type_ui": "options",
+        "required_ui": true,
+        "default": "",
+        "verified": "Medium/Medium.node.ts:154-177 (nilai html :169 / markdown :173; korpus markdown non-default)"
+      },
+      {
+        "name": "content",
+        "type_ui": "string",
+        "required_ui": true,
+        "default": "",
+        "verified": "Medium/Medium.node.ts:178-192"
+      },
+      {
+        "name": "additionalFields",
+        "type_ui": "collection",
+        "required_ui": false,
+        "default": {},
+        "verified": "Medium/Medium.node.ts:193-204"
+      }
+    ]
+  },
+  {
+    "type_full": "n8n-nodes-base.trello",
+    "typeVersion": "1",
+    "n": 1,
+    "anchor": "n8n 2.38.5 fcf21f5e",
+    "provenance": "upstream-verified (INodeProperties @ n8n 2.38.5 fcf21f5e)",
+    "provisional": true,
+    "operation_context": "Korpus {name, listId, description, additionalFields} tanpa resource/operation -> default card/create (resource default card Trello.node.ts:107; operation default create CardDescription.ts:43). Semua field = blok create.",
+    "fields": [
+      {
+        "name": "listId",
+        "type_ui": "string",
+        "required_ui": true,
+        "default": "",
+        "verified": "Trello/CardDescription.ts:53-56 (displayOptions operation create)"
+      },
+      {
+        "name": "name",
+        "type_ui": "string",
+        "required_ui": true,
+        "default": "",
+        "verified": "Trello/CardDescription.ts:67-71"
+      },
+      {
+        "name": "description",
+        "type_ui": "string",
+        "required_ui": false,
+        "default": "",
+        "verified": "Trello/CardDescription.ts:82-87"
+      },
+      {
+        "name": "additionalFields",
+        "type_ui": "collection",
+        "required_ui": false,
+        "default": {},
+        "verified": "Trello/CardDescription.ts:95-104 (inner due/dueComplete/pos/idLabels dll)"
+      }
+    ]
+  },
+  {
+    "type_full": "n8n-nodes-base.mqtt",
+    "typeVersion": "1",
+    "n": 1,
+    "anchor": "n8n 2.38.5 fcf21f5e",
+    "provenance": "upstream-verified (INodeProperties @ n8n 2.38.5 fcf21f5e)",
+    "provisional": true,
+    "operation_context": "Tanpa resource/operation. Korpus tpl-2371 {topic, message:'getbackup', options:{}, sendInputData:false}: sendInputData false != default true -> sinyal asli, dan message hanya tampil saat sendInputData=false -> konsisten. Credential 'mqtt' required (:34-35).",
+    "fields": [
+      {
+        "name": "topic",
+        "type_ui": "string",
+        "required_ui": true,
+        "default": "",
+        "verified": "MQTT/Mqtt.node.ts:41-46"
+      },
+      {
+        "name": "sendInputData",
+        "type_ui": "boolean",
+        "required_ui": false,
+        "default": true,
+        "verified": "MQTT/Mqtt.node.ts:49-53"
+      },
+      {
+        "name": "message",
+        "type_ui": "string",
+        "required_ui": true,
+        "default": "",
+        "verified": "MQTT/Mqtt.node.ts:56-66 (displayOptions sendInputData:[false] :60-64; korpus false -> tampil)"
+      },
+      {
+        "name": "options",
+        "type_ui": "collection",
+        "required_ui": false,
+        "default": {},
+        "verified": "MQTT/Mqtt.node.ts:69-73 (qos options default 0 :77-94; retain boolean default false :97-105; korpus {} artefak)"
+      }
+    ]
+  },
+  {
+    "type_full": "n8n-nodes-base.mqttTrigger",
+    "typeVersion": "1",
+    "n": 1,
+    "anchor": "n8n 2.38.5 fcf21f5e",
+    "provenance": "upstream-verified (INodeProperties @ n8n 2.38.5 fcf21f5e)",
+    "provisional": true,
+    "operation_context": "Korpus tpl-2371 {topics:'zigbee2mqtt/bridge/response/backup', options:{}}: topics non-default, options {} artefak. CATATAN 45b: topics TIDAK required di UI tapi runtime wajib (throw 'Topics are mandatory!' :101-103) -> kandidat runtime-required tanpa flag UI; docs: string tunggal topic[:qos], multi dipisah koma (:100). Credential mqtt required (:48-49).",
+    "fields": [
+      {
+        "name": "topics",
+        "type_ui": "string",
+        "required_ui": false,
+        "default": "",
+        "verified": "MQTT/MqttTrigger.node.ts:54-61 (default '' :57; UI tidak required)"
+      },
+      {
+        "name": "options",
+        "type_ui": "collection",
+        "required_ui": false,
+        "default": {},
+        "verified": "MQTT/MqttTrigger.node.ts:63-66 (jsonParseBody false :70-72; onlyMessage false :77-79; parallelProcessing true :84-88)"
+      }
+    ]
+  },
+  {
+    "type_full": "n8n-nodes-base.readPDF",
+    "typeVersion": "1",
+    "n": 1,
+    "anchor": "n8n 2.38.5 fcf21f5e",
+    "provenance": "upstream-verified (INodeProperties @ n8n 2.38.5 fcf21f5e)",
+    "provisional": true,
+    "operation_context": "Korpus tpl-585: parameters {} = semua default -> valid (binaryPropertyName 'data' default tak diserialkan; encrypted false default; password tersembunyi saat encrypted false). Tanpa resource/operation/credential.",
+    "fields": [
+      {
+        "name": "binaryPropertyName",
+        "type_ui": "string",
+        "required_ui": true,
+        "default": "data",
+        "verified": "ReadPdf/ReadPDF.node.ts:30-35"
+      },
+      {
+        "name": "encrypted",
+        "type_ui": "boolean",
+        "required_ui": true,
+        "default": false,
+        "verified": "ReadPdf/ReadPDF.node.ts:38-43"
+      },
+      {
+        "name": "password",
+        "type_ui": "string",
+        "required_ui": false,
+        "default": "",
+        "verified": "ReadPdf/ReadPDF.node.ts:45-56 (displayOptions encrypted:[true])"
+      }
+    ]
+  },
+  {
+    "type_full": "n8n-nodes-base.graphql",
+    "typeVersion": "1",
+    "n": 1,
+    "anchor": "n8n 2.38.5 fcf21f5e",
+    "provenance": "upstream-verified (INodeProperties @ n8n 2.38.5 fcf21f5e)",
+    "provisional": true,
+    "operation_context": "Korpus tpl-216 tv=1 {query, endpoint, requestMethod:'GET', responseFormat:'string'}: requestMethod GET != default + responseFormat string != default -> sinyal; requestFormat/variables/operationName tersembunyi (POST-only) -> absen valid; dataPropertyName 'data' = default walau responseFormat string -> absen valid (required dgn default). CATATAN: kode memuat branching @version [1] (:220) vs [{_cnd:gte 1.1}] (:246) -> requestFormat tv=1 default 'graphql', >=1.1 default 'json' (:227-251).",
+    "fields": [
+      {
+        "name": "authentication",
+        "type_ui": "options",
+        "required_ui": false,
+        "default": "none",
+        "verified": "GraphQL/GraphQL.node.ts:105-150 (nilai: none/basicAuth/customAuth/digestAuth/headerAuth/oAuth1/oAuth2/queryAuth/predefinedCredentialType)"
+      },
+      {
+        "name": "requestMethod",
+        "type_ui": "options",
+        "required_ui": false,
+        "default": "POST",
+        "verified": "GraphQL/GraphQL.node.ts:168-191 (GET/POST)"
+      },
+      {
+        "name": "endpoint",
+        "type_ui": "string",
+        "required_ui": true,
+        "default": "",
+        "verified": "GraphQL/GraphQL.node.ts:185-197"
+      },
+      {
+        "name": "allowUnauthorizedCerts",
+        "type_ui": "boolean",
+        "required_ui": false,
+        "default": false,
+        "verified": "GraphQL/GraphQL.node.ts:199-205 (displayName Ignore SSL Issues)"
+      },
+      {
+        "name": "requestFormat",
+        "type_ui": "options",
+        "required_ui": true,
+        "default": "graphql",
+        "verified": "GraphQL/GraphQL.node.ts:203-225 (@version [1] + show POST; opsi graphql/json)"
+      },
+      {
+        "name": "query",
+        "type_ui": "string",
+        "required_ui": true,
+        "default": "",
+        "verified": "GraphQL/GraphQL.node.ts:255-266 (tanpa displayOptions; GET & POST)"
+      },
+      {
+        "name": "variables",
+        "type_ui": "json",
+        "required_ui": false,
+        "default": "",
+        "verified": "GraphQL/GraphQL.node.ts:268-279 (show requestFormat json + POST)"
+      },
+      {
+        "name": "operationName",
+        "type_ui": "string",
+        "required_ui": false,
+        "default": "",
+        "verified": "GraphQL/GraphQL.node.ts:281-292 (show requestFormat json + POST)"
+      },
+      {
+        "name": "responseFormat",
+        "type_ui": "options",
+        "required_ui": false,
+        "default": "json",
+        "verified": "GraphQL/GraphQL.node.ts:292-306 (json/string; korpus string -> sinyal)"
+      },
+      {
+        "name": "dataPropertyName",
+        "type_ui": "string",
+        "required_ui": true,
+        "default": "data",
+        "verified": "GraphQL/GraphQL.node.ts:308-318 (show responseFormat string)"
+      }
+    ]
+  },
+  {
+    "type_full": "n8n-nodes-base.dropcontact",
+    "typeVersion": "1",
+    "n": 1,
+    "anchor": "n8n 2.38.5 fcf21f5e",
+    "provenance": "upstream-verified (INodeProperties @ n8n 2.38.5 fcf21f5e)",
+    "provisional": true,
+    "operation_context": "Korpus tpl-1891 {options:{}, additionalFields:{company,website,first_name,last_name}}: keempat inner key valid di source (snake_case); options {} artefak; email kosong tak diserialkan (bukan required); resource/operation default contact/enrich. Default path: resource contact (satu-satunya) + operation enrich; async op fetchRequest -> requestId. Tanpa credential (API key via header).",
+    "fields": [
+      {
+        "name": "resource",
+        "type_ui": "options",
+        "required_ui": true,
+        "default": "contact",
+        "verified": "Dropcontact/Dropcontact.node.ts:35-46 (hanya Contact)"
+      },
+      {
+        "name": "operation",
+        "type_ui": "options",
+        "required_ui": true,
+        "default": "enrich",
+        "verified": "Dropcontact/Dropcontact.node.ts:49-66 (enrich :55-56; fetchRequest :61-62)"
+      },
+      {
+        "name": "email",
+        "type_ui": "string",
+        "required_ui": false,
+        "default": "",
+        "verified": "Dropcontact/Dropcontact.node.ts:82-94 (contact/enrich; TIDAK required di UI)"
+      },
+      {
+        "name": "simplify",
+        "type_ui": "boolean",
+        "required_ui": false,
+        "default": false,
+        "verified": "Dropcontact/Dropcontact.node.ts:95-108 (contact/enrich)"
+      },
+      {
+        "name": "additionalFields",
+        "type_ui": "collection",
+        "required_ui": false,
+        "default": {},
+        "verified": "Dropcontact/Dropcontact.node.ts:110-183 (inner default '': num_siren, siret, company, country, first_name, full_name, last_name, linkedin, phone, website)"
+      },
+      {
+        "name": "options",
+        "type_ui": "collection",
+        "required_ui": false,
+        "default": {},
+        "verified": "Dropcontact/Dropcontact.node.ts:186-240 (waitTime number default 45 show /simplify false :199-211; siren boolean false :215-219; language options en/fr default en :223-235)"
+      }
+    ]
+  },
+  {
+    "type_full": "n8n-nodes-base.oneSimpleApi",
+    "typeVersion": "1",
+    "n": 1,
+    "anchor": "n8n 2.38.5 fcf21f5e",
+    "provenance": "upstream-verified (INodeProperties @ n8n 2.38.5 fcf21f5e)",
+    "provisional": true,
+    "operation_context": "Korpus tpl-1461 {resource:'utility', emailAddress:ekspresi}: tanpa operation -> default utility/validateEmail (:160 area) -> emailAddress tampil; valid. CATATAN: operation = 4 blok per-resource dgn default berbeda: website->pdf (:61-90), socialProfile->instagramProfile (:91-121), information->exchangeRate (:122-148), utility->validateEmail (:149-160; opsi expandURL/qrCode/validateEmail). Tanpa credential.",
+    "fields": [
+      {
+        "name": "resource",
+        "type_ui": "options",
+        "required_ui": true,
+        "default": "website",
+        "verified": "OneSimpleApi/OneSimpleApi.node.ts:34-58 (information/socialProfile/utility/website; korpus utility -> sinyal)"
+      },
+      {
+        "name": "operation",
+        "type_ui": "options",
+        "required_ui": true,
+        "default": "validateEmail",
+        "verified": "OneSimpleApi/OneSimpleApi.node.ts:149-160 (konteks resource utility; default validateEmail; korpus absen = default)"
+      },
+      {
+        "name": "emailAddress",
+        "type_ui": "string",
+        "required_ui": true,
+        "default": "",
+        "verified": "OneSimpleApi/OneSimpleApi.node.ts:620-631 (show operation validateEmail; korpus ekspresi -> sinyal)"
+      },
+      {
+        "name": "link",
+        "type_ui": "string",
+        "required_ui": true,
+        "default": "",
+        "verified": "OneSimpleApi/OneSimpleApi.node.ts:640-650 (show utility/expandURL; bukan korpus)"
+      }
+    ]
+  },
+  {
+    "type_full": "n8n-nodes-base.perplexity",
+    "typeVersion": "1",
+    "n": 1,
+    "anchor": "n8n 2.38.5 fcf21f5e",
+    "provenance": "upstream-verified (INodeProperties @ n8n 2.38.5 fcf21f5e)",
+    "provisional": true,
+    "operation_context": "tv=1 -> PerplexityV2 (map {1:v2,2:v2,3:v3}; Perplexity.node.ts:33-37): tv=1 resource HIDDEN 'chat' (PerplexityV2.node.ts:63-76), op chat/complete default (Chat.resource.ts:34). Korpus tpl-10000 tv=1 {model:ekspresi, options:{}, messages:{message:[{content}]}, requestOptions:{}}: messages cocok bentuk default {message:[{role:user,content:''}]} (role absen=default); ANOMALI requestOptions -> lihat field corpus-legacy. Credential perplexityApi required (PerplexityV2.node.ts:28-31).",
+    "fields": [
+      {
+        "name": "model",
+        "type_ui": "options",
+        "required_ui": true,
+        "default": "sonar",
+        "verified": "Perplexity/descriptions/chat/complete.operation.ts:6-17 (sonar/sonar-deep-research/sonar-pro/sonar-reasoning-pro)"
+      },
+      {
+        "name": "messages",
+        "type_ui": "fixedCollection",
+        "required_ui": true,
+        "default": {
+          "message": [
+            {
+              "role": "user",
+              "content": ""
+            }
+          ]
+        },
+        "verified": "Perplexity/descriptions/chat/complete.operation.ts:26-99 (values message: content string default '' :52-60, role options req default user :61-85; korpus tanpa role = default)"
+      },
+      {
+        "name": "simplify",
+        "type_ui": "boolean",
+        "required_ui": false,
+        "default": false,
+        "verified": "Perplexity/descriptions/chat/complete.operation.ts:101-110 (Simplify Output)"
+      },
+      {
+        "name": "options",
+        "type_ui": "collection",
+        "required_ui": false,
+        "default": {},
+        "verified": "Perplexity/descriptions/chat/complete.operation.ts:122-603 (disableSearch false :129-137; frequencyPenalty 0 :165; topP 0.9 :557; webSearchOptions json '' :575; korpus {} artefak)"
+      },
+      {
+        "name": "requestOptions",
+        "type_ui": "?",
+        "provenance": "corpus-legacy",
+        "legacy_reason": "0 hit di UI n8n 2.38.5 (fcf21f5e) — top-level chat/complete hanya model/messages/simplify/options; korpus tpl-10000 menyimpan requestOptions {} (sisa UI lama)",
+        "legacy_detected": "2026-09-09T16:45:00Z"
+      }
+    ]
+  },
+  {
+    "type_full": "n8n-nodes-base.supabase",
+    "typeVersion": "1",
+    "n": 1,
+    "anchor": "n8n 2.38.5 fcf21f5e",
+    "provenance": "upstream-verified (INodeProperties @ n8n 2.38.5 fcf21f5e)",
+    "provisional": true,
+    "operation_context": "Korpus tpl-11807 tv=1 {tableId:ekspresi, operation:'delete', filterType:'string', filterString:ekspresi} -> row/delete: getFilters(['row'],['delete'],{includeNoneOption:false}) MEMANG menyediakan filterType/filterString di UI saat ini (bukan legacy). Resource row (Supabase.node.ts:85-96). Credential supabaseApi (:Supabase.node.ts ~40-50).",
+    "fields": [
+      {
+        "name": "useCustomSchema",
+        "type_ui": "boolean",
+        "required_ui": false,
+        "default": false,
+        "verified": "Supabase/Supabase.node.ts:67-71"
+      },
+      {
+        "name": "schema",
+        "type_ui": "string",
+        "required_ui": false,
+        "default": "public",
+        "verified": "Supabase/Supabase.node.ts:76-84 (show useCustomSchema true)"
+      },
+      {
+        "name": "resource",
+        "type_ui": "options",
+        "required_ui": false,
+        "default": "row",
+        "verified": "Supabase/Supabase.node.ts:85-96 (Row)"
+      },
+      {
+        "name": "operation",
+        "type_ui": "options",
+        "required_ui": false,
+        "default": "create",
+        "verified": "Supabase/RowDescription.ts:8-56 (create/delete/get/getAll/update; korpus delete != default -> sinyal)"
+      },
+      {
+        "name": "tableId",
+        "type_ui": "options",
+        "required_ui": true,
+        "default": "",
+        "verified": "Supabase/RowDescription.ts:58-91 (loadOptions getTables; show row create/delete/get/getAll/update)"
+      },
+      {
+        "name": "filterType",
+        "type_ui": "options",
+        "required_ui": false,
+        "default": "manual",
+        "verified": "Supabase/GenericFunctions.ts:158-178 (opsi manual/string krn includeNoneOption false utk delete; korpus string != default -> sinyal)"
+      },
+      {
+        "name": "filterString",
+        "type_ui": "string",
+        "required_ui": false,
+        "default": "",
+        "verified": "Supabase/GenericFunctions.ts:332-343 (show filterType string)"
+      }
+    ]
+  },
+  {
+    "type_full": "n8n-nodes-base.jiraTrigger",
+    "typeVersion": "1",
+    "n": 1,
+    "anchor": "n8n 2.38.5 fcf21f5e",
+    "provenance": "upstream-verified (INodeProperties @ n8n 2.38.5 fcf21f5e)",
+    "provisional": true,
+    "operation_context": "Korpus tpl-1831 tv=1 {events:[jira:issue_created,jira:issue_deleted,jira:issue_updated], additionalFields:{}}: semua event ada di opsi (kedua blok events); additionalFields {} artefak; jiraVersion default cloud tak diserialkan. @version: incomingAuthentication (v1) vs authenticateWebhook (>=1.1).",
+    "fields": [
+      {
+        "name": "jiraVersion",
+        "type_ui": "options",
+        "required_ui": false,
+        "default": "cloud",
+        "verified": "Jira/JiraTrigger.node.ts:111-131 (cloud/...; default cloud)"
+      },
+      {
+        "name": "events",
+        "type_ui": "multiOptions",
+        "required_ui": true,
+        "default": [],
+        "verified": "Jira/JiraTrigger.node.ts:170-341 (block1 hide jiraVersion cloudOAuth2; nilai jira:issue_created/deleted/updated dll; blok2 :345-438)"
+      },
+      {
+        "name": "additionalFields",
+        "type_ui": "collection",
+        "required_ui": false,
+        "default": {},
+        "verified": "Jira/JiraTrigger.node.ts:444-... (excludeBody bool false :451-453; filter string ''; includeFields multiOptions [] :462-464)"
+      }
+    ]
+  },
+  {
+    "type_full": "n8n-nodes-base.lemlist",
+    "typeVersion": "1",
+    "n": 1,
+    "anchor": "n8n 2.38.5 fcf21f5e",
+    "provenance": "upstream-verified (INodeProperties @ n8n 2.38.5 fcf21f5e)",
+    "provisional": true,
+    "operation_context": "tv=1 -> LemlistV1 (Lemlist.node.ts:14-19). Korpus tpl-1891 {email:ekspresi, resource:'lead', campaignId:'Hiring Signal Lonescale', additionalFields:{lastName,firstName,companyName,linkedinUrl}}: resource lead != default activity -> sinyal; operation absen = default lead/create; campaignId non-default; 4 inner key valid. Credential lemlistApi required (:42-43).",
+    "fields": [
+      {
+        "name": "resource",
+        "type_ui": "options",
+        "required_ui": false,
+        "default": "activity",
+        "verified": "Lemlist/v1/LemlistV1.node.ts:48-74 (activity/campaign/lead/team/unsubscribe; korpus lead -> sinyal)"
+      },
+      {
+        "name": "operation",
+        "type_ui": "options",
+        "required_ui": false,
+        "default": "create",
+        "verified": "Lemlist/v1/descriptions/LeadDescription.ts:5-33 (lead: create default/delete/get/unsubscribe; korpus absen = default)"
+      },
+      {
+        "name": "campaignId",
+        "type_ui": "options",
+        "required_ui": true,
+        "default": [],
+        "verified": "Lemlist/v1/descriptions/LeadDescription.ts:45-58 (loadOptions getCampaigns; lead+create)"
+      },
+      {
+        "name": "email",
+        "type_ui": "string",
+        "required_ui": false,
+        "default": "",
+        "verified": "Lemlist/v1/descriptions/LeadDescription.ts:63-76 (lead+create; TIDAK required di UI)"
+      },
+      {
+        "name": "additionalFields",
+        "type_ui": "collection",
+        "required_ui": false,
+        "default": {},
+        "verified": "Lemlist/v1/descriptions/LeadDescription.ts:77-150 (inner default ''/false: companyName, deduplicate false, firstName, lastName, icebreaker, phone, picture, linkedinUrl :141-143)"
+      }
+    ]
+  },
+  {
+    "type_full": "n8n-nodes-base.onfleet",
+    "typeVersion": "1",
+    "n": 1,
+    "anchor": "n8n 2.38.5 fcf21f5e",
+    "provenance": "upstream-verified (INodeProperties @ n8n 2.38.5 fcf21f5e)",
+    "provisional": true,
+    "operation_context": "Korpus tpl-1531 {operation:'create', additionalFields:{}}: resource absen = default task; task ops default get jadi create serialized -> sinyal. ANOMALI: task:create mewajibkan destination (required, default {}) yang ABSEN di korpus -> lihat field destination corpus-legacy. Credential onfleetApi required (:Onfleet.node.ts:34-35).",
+    "fields": [
+      {
+        "name": "resource",
+        "type_ui": "options",
+        "required_ui": false,
+        "default": "task",
+        "verified": "Onfleet/Onfleet.node.ts:26-73 (admin/container/destination/hub/organization/recipient/task/team/worker; default task)"
+      },
+      {
+        "name": "operation",
+        "type_ui": "options",
+        "required_ui": false,
+        "default": "get",
+        "verified": "Onfleet/descriptions/TaskDescription.ts:6-61 (clone/complete/create/delete/get/getAll/update; default get; korpus create != default)"
+      },
+      {
+        "name": "destination",
+        "type_ui": "fixedCollection",
+        "required_ui": true,
+        "default": {},
+        "verified": "Onfleet/descriptions/TaskDescription.ts:179-188 (spread destinationExternalField: name destination, type fixedCollection, DestinationDescription.ts:119-127; inner unparsed/address; ANOMALI: absen di korpus)"
+      },
+      {
+        "name": "additionalFields",
+        "type_ui": "collection",
+        "required_ui": false,
+        "default": {},
+        "verified": "Onfleet/descriptions/TaskDescription.ts:361-412 (task+create; inner completeAfter/completeBefore/executor/merchant/notes/pickupTask/quantity/recipient; korpus {} artefak)"
+      }
+    ]
+  },
+  {
+    "type_full": "n8n-nodes-base.pipedrive",
+    "typeVersion": "1",
+    "n": 1,
+    "anchor": "n8n 2.38.5 fcf21f5e",
+    "provenance": "upstream-verified (INodeProperties @ n8n 2.38.5 fcf21f5e)",
+    "provisional": true,
+    "operation_context": "tv=1 -> PipedriveV1 (Pipedrive.node.ts:14-19). Korpus tpl-1221 {type:'call', subject:ekspresi, resource:'activity', additionalFields:{}}: resource activity != default deal -> sinyal; operation absen = activity/create (default :213); type/subject required terisi; done absen = default '0'. Credential pipedriveApi.",
+    "fields": [
+      {
+        "name": "resource",
+        "type_ui": "options",
+        "required_ui": false,
+        "default": "deal",
+        "verified": "Pipedrive/v1/PipedriveV1.node.ts:116-169 (activity/deal/dealActivity/dealProduct/file/lead/note/organization/...; default deal)"
+      },
+      {
+        "name": "operation",
+        "type_ui": "options",
+        "required_ui": false,
+        "default": "create",
+        "verified": "Pipedrive/v1/PipedriveV1.node.ts:170-214 (resource activity: create/delete/get/getAll/update; default create :213)"
+      },
+      {
+        "name": "subject",
+        "type_ui": "string",
+        "required_ui": true,
+        "default": "",
+        "verified": "Pipedrive/v1/PipedriveV1.node.ts:604-618 (activity+create)"
+      },
+      {
+        "name": "done",
+        "type_ui": "options",
+        "required_ui": false,
+        "default": "0",
+        "verified": "Pipedrive/v1/PipedriveV1.node.ts:620-639 (0/1)"
+      },
+      {
+        "name": "type",
+        "type_ui": "string",
+        "required_ui": true,
+        "default": "",
+        "verified": "Pipedrive/v1/PipedriveV1.node.ts:641-655 (placeholder call; korpus call)"
+      },
+      {
+        "name": "additionalFields",
+        "type_ui": "collection",
+        "required_ui": false,
+        "default": {},
+        "verified": "Pipedrive/v1/PipedriveV1.node.ts:657-... (activity+create; korpus {} artefak)"
+      }
+    ]
+  },
+  {
+    "type_full": "n8n-nodes-base.googleAds",
+    "typeVersion": "1",
+    "n": 1,
+    "anchor": "n8n 2.38.5 fcf21f5e",
+    "provenance": "upstream-verified (INodeProperties @ n8n 2.38.5 fcf21f5e)",
+    "provisional": true,
+    "operation_context": "Korpus tpl-10174 tv=1 {requestOptions:{}, additionalOptions:{}}: resource/operation absen = default campaign/getAll; additionalOptions {} artefak VALID (show getAll :185); campaignId tersembunyi (show get :171). ANOMALI: requestOptions 0-hit di UI 2.38.5 -> lihat field corpus-legacy. Credential googleAdsOAuth2Api required (GoogleAds.node.ts:33-40).",
+    "fields": [
+      {
+        "name": "resource",
+        "type_ui": "options",
+        "required_ui": false,
+        "default": "campaign",
+        "verified": "Google/Ads/GoogleAds.node.ts:42-53 (hanya Campaign)"
+      },
+      {
+        "name": "operation",
+        "type_ui": "options",
+        "required_ui": false,
+        "default": "getAll",
+        "verified": "Google/Ads/CampaignDescription.ts:27-133 (getAll :38-39, get :86-87; default getAll :133)"
+      },
+      {
+        "name": "managerCustomerId",
+        "type_ui": "string",
+        "required_ui": false,
+        "default": "",
+        "verified": "Google/Ads/CampaignDescription.ts:139-149"
+      },
+      {
+        "name": "clientCustomerId",
+        "type_ui": "string",
+        "required_ui": false,
+        "default": "",
+        "verified": "Google/Ads/CampaignDescription.ts:152-162"
+      },
+      {
+        "name": "campaignId",
+        "type_ui": "string",
+        "required_ui": false,
+        "default": "",
+        "verified": "Google/Ads/CampaignDescription.ts:165-176 (show operation get)"
+      },
+      {
+        "name": "additionalOptions",
+        "type_ui": "collection",
+        "required_ui": false,
+        "default": {},
+        "verified": "Google/Ads/CampaignDescription.ts:179-192 (show operation getAll; inner dateRange dll; korpus {} artefak)"
+      },
+      {
+        "name": "requestOptions",
+        "type_ui": "?",
+        "provenance": "corpus-legacy",
+        "legacy_reason": "0 hit di UI n8n 2.38.5 (fcf21f5e) GoogleAds — permukaan: resource campaign + operation + managerCustomerId/clientCustomerId/campaignId/additionalOptions; korpus tpl-10174 menyimpan requestOptions {} (sisa era lain)",
+        "legacy_detected": "2026-09-09T17:20:00Z"
+      }
+    ]
+  },
+  {
+    "type_full": "n8n-nodes-base.n8nTrainingCustomerDatastore",
+    "typeVersion": "1",
+    "n": 1,
+    "anchor": "n8n 2.38.5 fcf21f5e",
+    "provenance": "upstream-verified (INodeProperties @ n8n 2.38.5 fcf21f5e)",
+    "provisional": true,
+    "operation_context": "Korpus tpl-1751 tv=1 {operation:'getAllPeople'}: getAllPeople != default getOnePerson -> sinyal. Tanpa resource/credential (node latihan internal). Node berisi data statis nama tokoh (:1-52).",
+    "fields": [
+      {
+        "name": "operation",
+        "type_ui": "options",
+        "required_ui": false,
+        "default": "getOnePerson",
+        "verified": "N8nTrainingCustomerDatastore/N8nTrainingCustomerDatastore.node.ts:71-85 (getOnePerson/getAllPeople; default getOnePerson :85)"
+      },
+      {
+        "name": "returnAll",
+        "type_ui": "boolean",
+        "required_ui": false,
+        "default": false,
+        "verified": "N8nTrainingCustomerDatastore/N8nTrainingCustomerDatastore.node.ts:88-96 (show getAllPeople)"
+      },
+      {
+        "name": "limit",
+        "type_ui": "number",
+        "required_ui": false,
+        "default": 5,
+        "verified": "N8nTrainingCustomerDatastore/N8nTrainingCustomerDatastore.node.ts:100-113 (show getAllPeople)"
+      }
+    ]
+  },
+  {
+    "type_full": "n8n-nodes-base.twilioTrigger",
+    "typeVersion": "1",
+    "n": 1,
+    "anchor": "n8n 2.38.5 fcf21f5e",
+    "provenance": "upstream-verified (INodeProperties @ n8n 2.38.5 fcf21f5e)",
+    "provisional": true,
+    "operation_context": "Korpus tpl-15000 tv=1 {updates:['com.twilio.messaging.inbound-message.received']}: nilai ada di opsi (New SMS :50); updates required. Credential twilioApi required (:30-31).",
+    "fields": [
+      {
+        "name": "updates",
+        "type_ui": "multiOptions",
+        "required_ui": true,
+        "default": [],
+        "verified": "Twilio/TwilioTrigger.node.ts:44-60 (nilai: New SMS com.twilio.messaging.inbound-message.received :49-50; New Call com.twilio.voice.insights.call-summary.complete :54-55; required :59 default [] :60)"
+      }
+    ]
+  },
+  {
+    "type_full": "n8n-nodes-base.wooCommerce",
+    "typeVersion": "1",
+    "n": 1,
+    "anchor": "n8n 2.38.5 fcf21f5e",
+    "provenance": "upstream-verified (INodeProperties @ n8n 2.38.5 fcf21f5e)",
+    "provisional": true,
+    "operation_context": "Korpus tpl-2161 tv=1 {limit:1, filters:{email}, resource:'customer', operation:'getAll'}: customer != default product -> sinyal; getAll != default create -> sinyal; limit 1 != 50; filters {email} valid inner; returnAll absen = false (default). Credential wooCommerceApi.",
+    "fields": [
+      {
+        "name": "resource",
+        "type_ui": "options",
+        "required_ui": false,
+        "default": "product",
+        "verified": "WooCommerce/WooCommerce.node.ts:74-88 (customer/order/product; default product)"
+      },
+      {
+        "name": "operation",
+        "type_ui": "options",
+        "required_ui": false,
+        "default": "create",
+        "verified": "WooCommerce/descriptions/CustomerDescription.ts:7-48 (create/delete/get/getAll/update; default create :48; korpus getAll -> sinyal)"
+      },
+      {
+        "name": "returnAll",
+        "type_ui": "boolean",
+        "required_ui": false,
+        "default": false,
+        "verified": "WooCommerce/descriptions/CustomerDescription.ts:112-121 (show getAll)"
+      },
+      {
+        "name": "limit",
+        "type_ui": "number",
+        "required_ui": false,
+        "default": 50,
+        "verified": "WooCommerce/descriptions/CustomerDescription.ts:125-135 (show getAll + returnAll false; korpus 1 -> sinyal)"
+      },
+      {
+        "name": "filters",
+        "type_ui": "collection",
+        "required_ui": false,
+        "default": {},
+        "verified": "WooCommerce/descriptions/CustomerDescription.ts:142-150 (show getAll; inner email string dll :155+; korpus {email} non-artefak)"
+      }
+    ]
+  },
+  {
+    "type_full": "n8n-nodes-base.sendInBlue",
+    "typeVersion": "1",
+    "n": 1,
+    "anchor": "n8n@1.0.0 (tag git; sendInBlue pra-rename Brevo; node dihapus dari 2.x)",
+    "provenance": "upstream-verified (INodeProperties @ n8n 1.0.0 tag n8n@1.0.0)",
+    "provisional": true,
+    "operation_context": "ANCHOR KHUSUS: n8n@1.0.0 — node sendInBlue tidak ada lagi di 2.38.5 (diganti Brevo); sumber dari tag n8n@1.0.0 (fetch terverifikasi). Korpus tpl-2291 tv=1 {email, resource:'contact', createContactAttributes:{attributesValues:[{fieldName,fieldValue}x3]}}: contact != default email -> sinyal; operation absen = contact/create (default :ContactDescription 1.0.0:103); email & createContactAttributes TIDAK required di UI; TIDAK ADA param listId di create (0 hit) -> korpus valid penuh, 0 anomali. Credential sendInBlueApi required (SendInBlue.node.ts:24-25).",
+    "fields": [
+      {
+        "name": "resource",
+        "type_ui": "options",
+        "required_ui": false,
+        "default": "email",
+        "verified": "SendInBlue/SendInBlue.node.ts:33-55 @n8n 1.0.0 (contact/attribute/email/sender; default email)"
+      },
+      {
+        "name": "operation",
+        "type_ui": "options",
+        "required_ui": false,
+        "default": "create",
+        "verified": "SendInBlue/ContactDescription.ts:11-103 @n8n 1.0.0 (create default :103; upsert/delete/get/getAll/update)"
+      },
+      {
+        "name": "email",
+        "type_ui": "string",
+        "required_ui": false,
+        "default": "",
+        "verified": "SendInBlue/ContactDescription.ts:109-126 @n8n 1.0.0 (contact+create; TIDAK required)"
+      },
+      {
+        "name": "createContactAttributes",
+        "type_ui": "fixedCollection",
+        "required_ui": false,
+        "default": {},
+        "verified": "SendInBlue/ContactDescription.ts:128-206 @n8n 1.0.0 (options attributesValues -> fieldName options default '' :144-180, fieldValue string default '' :183-191; korpus cocok)"
+      }
+    ]
+  },
+  {
+    "type_full": "n8n-nodes-base.cryptoTool",
+    "typeVersion": "1",
+    "n": 1,
+    "anchor": "n8n 2.38.5 fcf21f5e",
+    "provenance": "upstream-tool-generated (base @ n8n 2.38.5 fcf21f5e + aturan injeksi tool: packages/cli/src/node-types.ts + tool-generation/ai-tools.ts)",
+    "provisional": true,
+    "operation_context": "varian Tool SINTETIS (node-types.ts resolveBaseName + convertNodeToAiTool ai-tools.ts) dari node base crypto v1 (usableAsTool Crypto/v1/CryptoV1.node.ts:42; action=bukan resource/operation => tanpa descriptionType); corpus tpl-5819 action=generate, encodingType=base64, stringLength=ekspresi, dataPropertyName=password",
+    "fields": [
+      {
+        "name": "action",
+        "type_ui": "options",
+        "required_ui": false,
+        "default": "hash",
+        "verified": "Crypto/v1/CryptoV1.node.ts:46-77"
+      },
+      {
+        "name": "encodingType",
+        "type_ui": "options",
+        "required_ui": true,
+        "default": "uuid",
+        "verified": "Crypto/v1/CryptoV1.node.ts:402-431"
+      },
+      {
+        "name": "stringLength",
+        "type_ui": "number",
+        "required_ui": false,
+        "default": 32,
+        "verified": "Crypto/v1/CryptoV1.node.ts:432-445"
+      },
+      {
+        "name": "dataPropertyName",
+        "type_ui": "string",
+        "required_ui": true,
+        "default": "data",
+        "verified": "Crypto/v1/CryptoV1.node.ts:388-401"
+      },
+      {
+        "name": "toolDescription",
+        "type_ui": "string",
+        "required_ui": true,
+        "default": "Provide cryptographic utilities",
+        "verified": "packages/cli/src/tool-generation/ai-tools.ts:63-79"
+      }
+    ]
+  },
+  {
+    "type_full": "n8n-nodes-base.dateTimeTool",
+    "typeVersion": "2",
+    "n": 1,
+    "anchor": "n8n 2.38.5 fcf21f5e",
+    "provenance": "upstream-tool-generated (base @ n8n 2.38.5 fcf21f5e + aturan injeksi tool: packages/cli/src/node-types.ts + tool-generation/ai-tools.ts)",
+    "provisional": true,
+    "operation_context": "varian Tool SINTETIS dari node base DateTime v2 (usableAsTool DateTime/V2/DateTimeV2.node.ts:32); base punya operation => descriptionType disisip konverter; corpus tpl-5819 operation=getTimeBetweenDates, descriptionType=manual, outputFieldName=now_day_difference, startDate={{$now}}",
+    "fields": [
+      {
+        "name": "operation",
+        "type_ui": "options",
+        "required_ui": false,
+        "verified": "DateTime/V2/DateTimeV2.node.ts:37-120"
+      },
+      {
+        "name": "startDate",
+        "type_ui": "string",
+        "required_ui": false,
+        "default": "",
+        "verified": "DateTime/V2/GetTimeBetweenDates.ts:6-16"
+      },
+      {
+        "name": "endDate",
+        "type_ui": "string",
+        "required_ui": false,
+        "default": "",
+        "verified": "DateTime/V2/GetTimeBetweenDates.ts:17-31"
+      },
+      {
+        "name": "outputFieldName",
+        "type_ui": "string",
+        "required_ui": false,
+        "default": "timeDifference",
+        "verified": "DateTime/V2/GetTimeBetweenDates.ts:74-85"
+      },
+      {
+        "name": "options",
+        "type_ui": "collection",
+        "required_ui": false,
+        "default": {},
+        "verified": "DateTime/V2/GetTimeBetweenDates.ts:86-113"
+      },
+      {
+        "displayName": "Tool Description",
+        "name": "descriptionType",
+        "type_ui": "options",
+        "required_ui": false,
+        "default": "auto",
+        "verified": "packages/cli/src/tool-generation/ai-tools.ts:44-61"
+      },
+      {
+        "name": "toolDescription",
+        "type_ui": "string",
+        "required_ui": true,
+        "default": "Manipulate date and time values",
+        "verified": "packages/cli/src/tool-generation/ai-tools.ts:63-79"
+      }
+    ]
+  },
+  {
+    "type_full": "n8n-nodes-base.googleSheetsTool",
+    "typeVersion": "4.7",
+    "n": 1,
+    "anchor": "n8n 2.38.5 fcf21f5e",
+    "provenance": "upstream-tool-generated (base @ n8n 2.38.5 fcf21f5e + aturan injeksi tool: packages/cli/src/node-types.ts + tool-generation/ai-tools.ts)",
+    "provisional": true,
+    "operation_context": "varian Tool SINTETIS dari node base Google Sheets v2 versi [3,4..4.7] (usableAsTool Google/Sheet/v2/actions/versionDescription.ts:39); corpus tpl-13503 resource=sheet operation=appendOrUpdate @>=4.7 (columns = cabang resourceMapper upsert dgn '@version' gte 4.7), sheetName/documentId mode list dgn gid + cachedResultName; descriptionType auto (tak terserialisasi)",
+    "fields": [
+      {
+        "name": "operation",
+        "type_ui": "options",
+        "required_ui": false,
+        "verified": "Google/Sheet/v2/actions/sheet/Sheet.resource.ts:16-76"
+      },
+      {
+        "name": "documentId",
+        "type_ui": "resourceLocator",
+        "required_ui": true,
+        "default": {
+          "mode": "list",
+          "value": ""
+        },
+        "verified": "Google/Sheet/v2/actions/sheet/Sheet.resource.ts:78-137"
+      },
+      {
+        "name": "sheetName",
+        "type_ui": "resourceLocator",
+        "required_ui": true,
+        "default": {
+          "mode": "list",
+          "value": ""
+        },
+        "verified": "Google/Sheet/v2/actions/sheet/Sheet.resource.ts:138-210"
+      },
+      {
+        "name": "columns",
+        "type_ui": "resourceMapper",
+        "required_ui": true,
+        "default": {
+          "mappingMode": "defineBelow",
+          "value": null
+        },
+        "verified": "Google/Sheet/v2/actions/sheet/appendOrUpdate.operation.ts:165-200"
+      },
+      {
+        "name": "options",
+        "type_ui": "collection",
+        "required_ui": false,
+        "default": {},
+        "verified": "Google/Sheet/v2/actions/sheet/appendOrUpdate.operation.ts:236-260"
+      },
+      {
+        "displayName": "Tool Description",
+        "name": "descriptionType",
+        "type_ui": "options",
+        "required_ui": false,
+        "default": "auto",
+        "verified": "packages/cli/src/tool-generation/ai-tools.ts:44-61"
+      },
+      {
+        "name": "toolDescription",
+        "type_ui": "string",
+        "required_ui": true,
+        "default": "Read, update and write data to Google Sheets",
+        "verified": "packages/cli/src/tool-generation/ai-tools.ts:63-79"
+      }
+    ]
+  },
+  {
+    "type_full": "n8n-nodes-base.httpRequestTool",
+    "typeVersion": "4.2",
+    "n": 1,
+    "anchor": "n8n 2.38.5 fcf21f5e",
+    "provenance": "upstream-tool-generated (base @ n8n 2.38.5 fcf21f5e + aturan injeksi tool: packages/cli/src/node-types.ts + tool-generation/ai-tools.ts)",
+    "provisional": true,
+    "operation_context": "varian Tool SINTETIS dari node base HttpRequest versi [3,4,4.1..4.5] (usableAsTool objek + replacements codex, HttpRequest/V3/HttpRequestV3.node.ts:78-96); blok @tool (optimizeResponse/fieldsToInclude/fields) disisip Description.ts :1264-1271 dgn displayOptions '@tool':[true] => hanya tampil di mode tool; tanpa resource/operation => tanpa descriptionType; corpus tpl-5819 (url jokeapi, optimizeResponse=true, fieldsToInclude=selected)",
+    "fields": [
+      {
+        "name": "url",
+        "type_ui": "string",
+        "required_ui": true,
+        "default": "",
+        "verified": "HttpRequest/V3/Description.ts:78-87"
+      },
+      {
+        "name": "options",
+        "type_ui": "collection",
+        "required_ui": false,
+        "default": {},
+        "verified": "HttpRequest/V3/Description.ts:721-740"
+      },
+      {
+        "name": "optimizeResponse",
+        "type_ui": "boolean",
+        "required_ui": false,
+        "default": false,
+        "verified": "HttpRequest/shared/optimizeResponse.ts:259-267"
+      },
+      {
+        "name": "fieldsToInclude",
+        "type_ui": "options",
+        "required_ui": false,
+        "default": "all",
+        "verified": "HttpRequest/shared/optimizeResponse.ts:309-334"
+      },
+      {
+        "name": "fields",
+        "type_ui": "string",
+        "required_ui": false,
+        "default": "",
+        "verified": "HttpRequest/shared/optimizeResponse.ts:339-365"
+      },
+      {
+        "name": "toolDescription",
+        "type_ui": "string",
+        "required_ui": true,
+        "default": "Makes an HTTP request and returns the response data",
+        "verified": "packages/cli/src/tool-generation/ai-tools.ts:63-79"
+      }
+    ]
+  },
+  {
+    "type_full": "n8n-nodes-base.rssFeedReadTool",
+    "typeVersion": "1.2",
+    "n": 1,
+    "anchor": "n8n 2.38.5 fcf21f5e",
+    "provenance": "upstream-tool-generated (base @ n8n 2.38.5 fcf21f5e + aturan injeksi tool: packages/cli/src/node-types.ts + tool-generation/ai-tools.ts)",
+    "provisional": true,
+    "operation_context": "varian Tool SINTETIS dari node base RssFeedRead versi [1,1.1,1.2] (usableAsTool RssFeedRead/RssFeedRead.node.ts:39); tanpa resource/operation => tanpa descriptionType; corpus tpl-5819 (url blog n8n, toolDescription kustom)",
+    "fields": [
+      {
+        "name": "url",
+        "type_ui": "string",
+        "required_ui": true,
+        "default": "",
+        "verified": "RssFeedRead/RssFeedRead.node.ts:43-51"
+      },
+      {
+        "name": "options",
+        "type_ui": "collection",
+        "required_ui": false,
+        "default": {},
+        "verified": "RssFeedRead/RssFeedRead.node.ts:52-88"
+      },
+      {
+        "name": "toolDescription",
+        "type_ui": "string",
+        "required_ui": true,
+        "default": "Reads data from an RSS Feed",
+        "verified": "packages/cli/src/tool-generation/ai-tools.ts:63-79"
+      }
+    ]
+  },
+  {
+    "type_full": "n8n-nodes-base.telegramTool",
+    "typeVersion": "1.2",
+    "n": 1,
+    "anchor": "n8n 2.38.5 fcf21f5e",
+    "provenance": "upstream-tool-generated (base @ n8n 2.38.5 fcf21f5e + aturan injeksi tool: packages/cli/src/node-types.ts + tool-generation/ai-tools.ts)",
+    "provisional": true,
+    "operation_context": "varian Tool SINTETIS dari node base Telegram versi [1,1.1,1.2] (usableAsTool Telegram/Telegram.node.ts); base punya resource+operation => descriptionType disisip konverter (default auto, tak terserialisasi di corpus); chatId+text = deklarasi resource message operation sendMessage (default op tak terserialisasi); corpus tpl-13526 (text ekspresi, chatId dari $json.message.chat.id, additionalFields kosong)",
+    "fields": [
+      {
+        "name": "chatId",
+        "type_ui": "string",
+        "required_ui": true,
+        "default": "",
+        "verified": "Telegram/Telegram.node.ts:347-382"
+      },
+      {
+        "name": "text",
+        "type_ui": "string",
+        "required_ui": true,
+        "default": "",
+        "verified": "Telegram/Telegram.node.ts:1130-1145"
+      },
+      {
+        "name": "additionalFields",
+        "type_ui": "collection",
+        "required_ui": false,
+        "default": {},
+        "verified": "Telegram/Telegram.node.ts:1611-1635"
+      },
+      {
+        "displayName": "Tool Description",
+        "name": "descriptionType",
+        "type_ui": "options",
+        "required_ui": false,
+        "default": "auto",
+        "verified": "packages/cli/src/tool-generation/ai-tools.ts:44-61"
+      },
+      {
+        "name": "toolDescription",
+        "type_ui": "string",
+        "required_ui": true,
+        "default": "Sends data to Telegram",
+        "verified": "packages/cli/src/tool-generation/ai-tools.ts:63-79"
+      }
+    ]
+  }
+]

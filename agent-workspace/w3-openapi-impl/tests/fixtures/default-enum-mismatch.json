@@ -1,0 +1,4 @@
+{"openapi": "3.0.0", "info": {"title": "x", "version": "1"},
+ "paths": {"/h": {"get": {"operationId": "listH",
+   "parameters": [{"name": "e", "in": "query", "schema": {"type": "string", "enum": ["a", "b"], "default": "z"}}],
+   "responses": {"200": {"description": "ok"}}}}}}

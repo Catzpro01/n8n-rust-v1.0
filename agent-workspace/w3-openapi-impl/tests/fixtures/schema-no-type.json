@@ -1,0 +1,4 @@
+{"openapi": "3.0.0", "info": {"title": "x", "version": "1"},
+ "paths": {"/d": {"get": {"operationId": "listD",
+   "parameters": [{"name": "free", "in": "query", "schema": {"description": "tanpa type"}}],
+   "responses": {"200": {"description": "ok"}}}}}}

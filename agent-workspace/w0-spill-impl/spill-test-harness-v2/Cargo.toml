@@ -1,0 +1,16 @@
+# W0-SPILL-TEST — run vs agent2 landed W0-SPILL-IMPL (canonical kernel a7d0357).
+[package]
+name = "spill-gates"
+version = "0.2.0"
+edition = "2021"
+
+[dependencies]
+kernel = { path = "/opt/agent-workspace/rust-engine/crates/kernel" }
+impl-under-test = { package = "storage", path = "/opt/agent-workspace/rust-engine/crates/storage" }
+serde_json = "=1.0.114"
+
+[dev-dependencies]
+tokio = { version = "=1.36.0", features = ["macros", "rt-multi-thread"] }
+libc = "0.2"
+
+[workspace]

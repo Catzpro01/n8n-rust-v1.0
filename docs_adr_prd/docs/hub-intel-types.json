@@ -1,0 +1,252 @@
+{
+  "schema": "hub-intel-types-catalog",
+  "schema_version": 3,
+  "namespace": "hub://intel-types",
+  "owner": "agent9 (ROLE_INTEGRATION)",
+  "generated": "2026-09-09 (v1.2: enum kind + profil scrape pertama per manifest v0.6 §13.1 (OPEN-SCRAPE-1 agent4 #832) + pin_change_log per agent10 #814/#713)",
+  "position": "SINGLE SOURCE OF TRUTH profil sumber utk sources[] manifest (AGENT4-WORKFLOW-HUB-MANIFEST v0.5 §2; keputusan-2 W2-PLAN) — manifest TIDAK membawa pin (jangkar eksternal = katalog ini, pihak berbeda dari penulis manifest)",
+  "method": "uji live HTTP dari VPS master, zero-key, read-only; reproduksi: curl -sL -m 12 -D - -o /dev/null <url>",
+  "sanitize_global": "tainted-external",
+  "kind_enum": ["rss", "http_json", "sse", "scrape"],
+  "governance": {
+    "scrape_sources": "HANYA pemilik katalog (agent9) menambah sumber kind=scrape; override kind ke scrape di manifest TIDAK diizinkan (manifest v0.6 §13.1 aturan-1)",
+    "live_gate": "template live mensyaratkan terms.status ok + SCRAP-E1 lolos utk sumber scrape/anti-detect (agent5+agent10); verified-tofu BUKAN izin live",
+    "pin_change_log_policy": "entri set/ubah/lepas pin WAJIB authorized_by manusia/pemilik katalog; mesin hanya USUL + alarm (agent10 #713 syarat-6, W4 §4a)",
+    "failover_ladder_zero_key": "sumber zero-key: ladder berhenti di engine-internal [scrapling, camofox]; firecrawl (BYOK/berbayar) HANYA utk template BYOK — usulan amendemen §13.1 (OPEN-SCRAPE-5)"
+  },
+  "pin_change_log": [],
+  "pin_policy": {
+    "field": "pin.expected_sha256 per sumber (null = belum dipasang — BUKAN klaim terverifikasi-anchored)",
+    "verify_status_enum": ["verified-tofu (teruji live, belum ada pin/jangkar eksternal)", "verified-anchored (live + pin terpasang, bisa diverifikasi pihak ketiga)", "failed"],
+    "policy_note": "utk sumber volatil (harga/feed berubah per menit), pin menargetkan SKEMA respons / artefak stabil — BUKAN nilai (OPEN-INTEG-11, agent4+agent10)"
+  },
+  "sources": [
+    {
+      "source_id": "coingecko-simple-price", "kind": "http_json", "category": ["crypto"],
+      "endpoints": [{"url": "https://api.coingecko.com/api/v3/simple/price", "method": "GET", "params": {"ids": "string", "vs_currencies": "string"}}],
+      "auth": "none",
+      "terms": {"label": "CoinGecko Public API ToS (free, no key)", "status": "review-agent5"},
+      "rate_limit": {"observed": "tanpa header eksplisit (Cloudflare)", "documented": "~10-30 req/min free-tier (docs CoinGecko)"},
+      "cache": {"etag": true, "max_age_s": null},
+      "volatility": "per-minute",
+      "pin": {"expected_sha256": null, "target": "response-schema"},
+      "verify": {"status": "verified-tofu", "date": "2026-09-09", "from": "VPS master", "evidence": "GET /ping -> 200, 34B, t=1.37s, etag W/\"...\" + cache-control private,must-revalidate"}
+    },
+    {
+      "source_id": "binance-ticker-24hr", "kind": "http_json", "category": ["crypto"],
+      "endpoints": [{"url": "https://api.binance.com/api/v3/ticker/24hr", "method": "GET", "params": {"symbol": "string"}}],
+      "auth": "none",
+      "terms": {"label": "Binance API Terms — public market data", "status": "ok"},
+      "rate_limit": {"observed": "header x-mbx-used-weight-1m terbaca per-response (bukti: nilai 2)", "documented": "weight-based per-IP, 6000 weight/mnt (docs Binance)"},
+      "cache": {"etag": false, "max_age_s": null},
+      "volatility": "seconds",
+      "pin": {"expected_sha256": null, "target": "response-schema"},
+      "verify": {"status": "verified-tofu", "date": "2026-09-09", "from": "VPS master", "evidence": "200, 556B, t=0.17s, x-mbx-used-weight-1m: 2"},
+      "notes": "punya OpenAPI spec resmi (spot API) -> kandidat golden INTEG-01 openapi-codegen"
+    },
+    {
+      "source_id": "defillama-prices-current", "kind": "http_json", "category": ["crypto", "defi"],
+      "endpoints": [{"url": "https://coins.llama.fi/prices/current/{coins}", "method": "GET", "params": {"coins": "path, format coingecko:bitcoin"}}],
+      "auth": "none",
+      "terms": {"label": "DefiLlama open source (MIT)", "status": "ok"},
+      "rate_limit": {"observed": "tanpa header rate", "documented": "tidak terdokumentasi ketat [catatan: fair use]"},
+      "cache": {"etag": false, "max_age_s": null},
+      "volatility": "hourly",
+      "pin": {"expected_sha256": null, "target": "response-schema"},
+      "verify": {"status": "verified-tofu", "date": "2026-09-09", "from": "VPS master", "evidence": "200, 115B, t=1.14s"}
+    },
+    {
+      "source_id": "dexscreener-search", "kind": "http_json", "category": ["crypto", "dex"],
+      "endpoints": [{"url": "https://api.dexscreener.com/latest/dex/search", "method": "GET", "params": {"q": "string"}}],
+      "auth": "none",
+      "terms": {"label": "DexScreener public API docs", "status": "ok"},
+      "rate_limit": {"observed": "cache-control public max-age=60", "documented": "300 req/mnt (docs DexScreener)"},
+      "cache": {"etag": true, "max_age_s": 60},
+      "volatility": "seconds",
+      "pin": {"expected_sha256": null, "target": "response-schema"},
+      "verify": {"status": "verified-tofu", "date": "2026-09-09", "from": "VPS master", "evidence": "200, 25386B, t=1.14s, etag W/\"...\" + max-age=60"}
+    },
+    {
+      "source_id": "frankfurter-latest", "kind": "http_json", "category": ["finance"],
+      "endpoints": [{"url": "https://api.frankfurter.app/latest", "method": "GET", "params": {"from": "string", "to": "string"}}],
+      "auth": "none",
+      "terms": {"label": "Frankfurter MIT (open source, data ECB)", "status": "ok"},
+      "rate_limit": {"observed": "cache-control public max-age=86400", "documented": "fair use"},
+      "cache": {"etag": "strong", "max_age_s": 86400},
+      "volatility": "daily",
+      "pin": {"expected_sha256": null, "target": "response-schema"},
+      "verify": {"status": "verified-tofu", "date": "2026-09-09", "from": "VPS master", "evidence": "200, 433B, t=2.26s, etag kuat \"cf0f8a6d...\" + max-age=86400"},
+      "notes": "punya OpenAPI spec resmi (frankfurter.app) -> kandidat golden INTEG-01"
+    },
+    {
+      "source_id": "bbc-news-world-rss", "kind": "rss", "category": ["news", "politik"],
+      "endpoints": [{"url": "https://feeds.bbci.co.uk/news/world/rss.xml", "method": "GET", "params": {}}],
+      "auth": "none",
+      "terms": {"label": "BBC Terms of Use (feeds)", "status": "review-agent5"},
+      "rate_limit": {"observed": "cache-control public max-age=4", "documented": "fair use; hormati max-age"},
+      "cache": {"etag": false, "max_age_s": 4},
+      "volatility": "minutes",
+      "pin": {"expected_sha256": null, "target": "feed-structure"},
+      "verify": {"status": "verified-tofu", "date": "2026-09-09", "from": "VPS master", "evidence": "200, 23188B, t=1.25s"}
+    },
+    {
+      "source_id": "guardian-world-rss", "kind": "rss", "category": ["news", "politik"],
+      "endpoints": [{"url": "https://www.theguardian.com/world/rss", "method": "GET", "params": {}}],
+      "auth": "none",
+      "terms": {"label": "Guardian T&Cs (RSS)", "status": "review-agent5"},
+      "rate_limit": {"observed": "etag W/ + max-age=60 + stale-while-revalidate=6 + stale-if-error=864000", "documented": "fair use"},
+      "cache": {"etag": true, "max_age_s": 60},
+      "volatility": "minutes",
+      "pin": {"expected_sha256": null, "target": "feed-structure"},
+      "verify": {"status": "verified-tofu", "date": "2026-09-09", "from": "VPS master", "evidence": "200, 158658B, t=1.16s"}
+    },
+    {
+      "source_id": "aljazeera-all-rss", "kind": "rss", "category": ["news", "politik"],
+      "endpoints": [{"url": "https://www.aljazeera.com/xml/rss/all.xml", "method": "GET", "params": {}}],
+      "auth": "none",
+      "terms": {"label": "Al Jazeera Terms of Use", "status": "review-agent5"},
+      "rate_limit": {"observed": "etag W/", "documented": "fair use"},
+      "cache": {"etag": true, "max_age_s": null},
+      "volatility": "minutes",
+      "pin": {"expected_sha256": null, "target": "feed-structure"},
+      "verify": {"status": "verified-tofu", "date": "2026-09-09", "from": "VPS master", "evidence": "200, 17273B, t=1.18s"}
+    },
+    {
+      "source_id": "npr-news-rss", "kind": "rss", "category": ["news"],
+      "endpoints": [{"url": "https://feeds.npr.org/1001/rss.xml", "method": "GET", "params": {}}],
+      "auth": "none",
+      "terms": {"label": "NPR RSS terms", "status": "review-agent5"},
+      "rate_limit": {"observed": "cache-control max-age=216", "documented": "fair use"},
+      "cache": {"etag": false, "max_age_s": 216},
+      "volatility": "minutes",
+      "pin": {"expected_sha256": null, "target": "feed-structure"},
+      "verify": {"status": "verified-tofu", "date": "2026-09-09", "from": "VPS master", "evidence": "200, 14678B, t=1.18s"}
+    },
+    {
+      "source_id": "wikimedia-recentchange-sse", "kind": "sse", "category": ["news", "stream"],
+      "endpoints": [{"url": "https://stream.wikimedia.org/v2/stream/recentchange", "method": "GET", "params": {}}],
+      "auth": "none",
+      "terms": {"label": "Wikimedia ToS + UA policy (WAJIB User-Agent teridentifikasi)", "status": "review-agent5"},
+      "rate_limit": {"observed": "cache-control no-cache (stream)", "documented": "batas durasi, bukan rate"},
+      "cache": {"etag": false, "max_age_s": 0},
+      "volatility": "streaming",
+      "pin": {"expected_sha256": null, "target": "event-schema"},
+      "verify": {"status": "verified-tofu", "date": "2026-09-09", "from": "VPS master", "evidence": "200 SSE, ~391KB per 8s jendela uji"},
+      "notes": "jendela waktu terbatas wajib; ResourceHint.buffering=Streaming; UA jujur"
+    },
+    {
+      "source_id": "worldbank-indicator", "kind": "http_json", "category": ["opendata", "pemerintahan"],
+      "endpoints": [{"url": "https://api.worldbank.org/v2/country/{country}/indicator/{indicator}", "method": "GET", "params": {"format": "json", "per_page": "int"}}],
+      "auth": "none",
+      "terms": {"label": "World Bank Open Data Terms of Use", "status": "ok"},
+      "rate_limit": {"observed": "cache-control public max-age=86400", "documented": "fair use"},
+      "cache": {"etag": false, "max_age_s": 86400},
+      "volatility": "daily",
+      "pin": {"expected_sha256": null, "target": "response-schema"},
+      "verify": {"status": "verified-tofu", "date": "2026-09-09", "from": "VPS master", "evidence": "PULIH: 3x 200 (t=0.08-0.11s) setelah 2x timeout transien sejam sebelumnya — flakiness tercatat jujur"}
+    },
+    {
+      "source_id": "open-meteo-forecast", "kind": "http_json", "category": ["weather"],
+      "endpoints": [{"url": "https://api.open-meteo.com/v1/forecast", "method": "GET", "params": {"latitude": "float", "longitude": "float", "current_weather": "bool"}}],
+      "auth": "none",
+      "terms": {"label": "Open-Meteo Terms (gratis utk non-komersial, attribution)", "status": "review-agent5"},
+      "rate_limit": {"observed": "tanpa header rate", "documented": "10.000 panggilan/hari free (docs Open-Meteo)"},
+      "cache": {"etag": false, "max_age_s": null},
+      "volatility": "minutes",
+      "pin": {"expected_sha256": null, "target": "response-schema"},
+      "verify": {"status": "verified-tofu", "date": "2026-09-09", "from": "VPS master", "evidence": "200, 477B, t=2.09s (koordinat Surabaya -7.25,112.75)"}
+    },
+    {
+      "source_id": "met-norway-locationforecast", "kind": "http_json", "category": ["weather"],
+      "endpoints": [{"url": "https://api.met.no/weatherapi/locationforecast/2.0/compact", "method": "GET", "params": {"lat": "float", "lon": "float"}}],
+      "auth": "none",
+      "terms": {"label": "MET Norway ToS (data gratis; WAJIB User-Agent teridentifikasi)", "status": "ok"},
+      "rate_limit": {"observed": "expires terjadwal (proxy-cache)", "documented": "fair use w/ UA jujur (guidelines MET)"},
+      "cache": {"etag": false, "max_age_s": null, "expires": true},
+      "volatility": "minutes",
+      "pin": {"expected_sha256": null, "target": "response-schema"},
+      "verify": {"status": "verified-tofu", "date": "2026-09-09", "from": "VPS master", "evidence": "batch-3: 200, 41243B, t=2.04s DENGAN UA jujur '8n-workflow-hub-connector/0.1 (...)' — patuh ToS UA"}
+    },
+    {
+      "source_id": "mempool-space-tip-height", "kind": "http_json", "category": ["onchain"],
+      "endpoints": [{"url": "https://mempool.space/api/blocks/tip/height", "method": "GET", "params": {}}],
+      "auth": "none",
+      "terms": {"label": "mempool.space open source (MIT)", "status": "ok"},
+      "rate_limit": {"observed": "cache-control max-age=1", "documented": "fair use"},
+      "cache": {"etag": false, "max_age_s": 1},
+      "volatility": "seconds",
+      "pin": {"expected_sha256": null, "target": "response-schema"},
+      "verify": {"status": "verified-tofu", "date": "2026-09-09", "from": "VPS master", "evidence": "200, 6B, t=1.30s"}
+    },
+    {
+      "source_id": "blockchain-info-ticker", "kind": "http_json", "category": ["crypto"],
+      "endpoints": [{"url": "https://blockchain.info/ticker", "method": "GET", "params": {}}],
+      "auth": "none",
+      "terms": {"label": "Blockchain.com public ticker", "status": "ok"},
+      "rate_limit": {"observed": "cache-control public max-age=60", "documented": "fair use"},
+      "cache": {"etag": false, "max_age_s": 60},
+      "volatility": "seconds",
+      "pin": {"expected_sha256": null, "target": "response-schema"},
+      "verify": {"status": "verified-tofu", "date": "2026-09-09", "from": "VPS master", "evidence": "200, 2787B, t=0.09s"}
+    },
+    {
+      "source_id": "googlenews-search-rss", "kind": "rss", "category": ["news", "agregator"],
+      "endpoints": [{"url": "https://news.google.com/rss/search", "method": "GET", "params": {"q": "string", "hl": "locale", "gl": "region", "ceid": "region:lang"}}],
+      "auth": "none",
+      "terms": {"label": "Google ToS — ABU-ABU", "status": "grey-BLOCKED-agent5"},
+      "ethics_gate": "blocked-agent5 (OPEN-INTEG-10) — DILARANG masuk katalog live sebelum putusan etika",
+      "rate_limit": {"observed": "cache-control no-cache", "documented": "tidak resmi"},
+      "cache": {"etag": false, "max_age_s": 0},
+      "volatility": "minutes",
+      "pin": {"expected_sha256": null, "target": "feed-structure"},
+      "verify": {"status": "verified-tofu", "date": "2026-09-09", "from": "VPS master", "evidence": "200, 129823B, t=1.10s (query politik indonesia, hl=id) — teruji teknis; etika TERPISAH dari verifikasi (lihat ethics_gate)"}
+    },
+    {
+      "source_id": "ethereum-publicnode-rpc", "kind": "http_json", "category": ["onchain"],
+      "endpoints": [{"url": "https://ethereum.publicnode.com", "method": "POST", "params": {"jsonrpc": "2.0", "method": "eth_blockNumber", "params": "[]", "id": "int"}}],
+      "auth": "none",
+      "terms": {"label": "PublicNode free public RPC (no key)", "status": "ok"},
+      "rate_limit": {"observed": "tanpa header rate", "documented": "fair use RPC publik"},
+      "cache": {"etag": false, "max_age_s": null},
+      "volatility": "per-block",
+      "pin": {"expected_sha256": null, "target": "response-schema"},
+      "verify": {"status": "verified-tofu", "date": "2026-09-09", "from": "VPS master", "evidence": "POST eth_blockNumber -> 200, 46B, result 0x18bc943"},
+      "notes": "POST JSON-RPC (bukan GET) — tetap zero-key; SideEffect=Idempotent (query read-only)"
+    },
+    {
+      "source_id": "usgs-earthquakes-hourly", "kind": "http_json", "category": ["news", "bencana", "sains"],
+      "endpoints": [{"url": "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_hour.geojson", "method": "GET", "params": {}}],
+      "auth": "none",
+      "terms": {"label": "USGS (public domain, US government)", "status": "ok"},
+      "rate_limit": {"observed": "cache-control public max-age=60 + expires + last-modified", "documented": "fair use; feed resmi"},
+      "cache": {"etag": false, "max_age_s": 60, "last_modified": true},
+      "volatility": "minutes",
+      "pin": {"expected_sha256": null, "target": "response-schema"},
+      "verify": {"status": "verified-tofu", "date": "2026-09-09", "from": "VPS master", "evidence": "batch-3: 200, 6117B, t=2.16s, max-age=60 + last-modified teramati"},
+      "notes": "sinyal peristiwa (gempa) jam-by-jam — cocok kategori 'berita dunia' Hub; public domain = lisensi paling bersih di katalog"
+    },
+    {
+      "source_id": "wikipedia-article-extract", "kind": "scrape", "category": ["news", "politik", "referensi"],
+      "endpoints": [{"url": "https://{lang}.wikipedia.org/wiki/{title}", "method": "GET", "params": {"lang": "locale", "title": "path"}}],
+      "auth": "none",
+      "terms": {"label": "CC-BY-SA 4.0 (teks) + WMF User-Agent policy (WAJIB UA teridentifikasi) + robots.txt policy polite-crawl", "status": "ok", "attribution_required": true},
+      "rate_limit": {"observed": "cache-control private/must-revalidate; robots: larangan spider cepat (paksa polite delay)", "documented": "WMF UA policy + robots.txt; rate-policy katalog: token-bucket per-domain aktif WAJIB"},
+      "cache": {"etag": false, "max_age_s": 0, "last_modified": true},
+      "volatility": "volatile",
+      "pin": {"expected_sha256": null, "target": "article-schema (title/sections/last_modified)"},
+      "scrape_profile": {
+        "detector": "TIDAK-DIBUTUHKAN (robots.txt mengizinkan bot ber-UA-jujur; challenge markers kosong) — target ToS-aman sbg profil contoh §13.1",
+        "shield": "minimal: UA jujur + polite delay + token-bucket; TANPA fingerprint masking (situs tanpa anti-bot — inilah kelas sumber scrape yang IDEAL)",
+        "failover_ladder": ["scrapling", "camofox"],
+        "cache": "CASD stale-while-revalidate + Last-Modified kondisional (server kirim last-modified teramati)",
+        "schema_normalization_gate": "output kanonik {title, sections[{heading, text}], last_modified, lang} — structural_guard W4; raw 1,8MB/artikel WAJIB ke disk (F-7), ekstraksi streaming",
+        "etika": "SCRAP-E1: sumber ToS-izinkan-programatik (CC-BY-SA + UA policy) — lolos prasyarat etika kelas-aman; atribusi WAJIB (H-03)"
+      },
+      "verify": {"status": "verified-tofu", "date": "2026-09-09", "from": "VPS master", "evidence": "GET /wiki/Indonesia dgn UA jujur -> 200, 1813096B, t=1.24s, last-modified teramati; robots.txt terbaca (policy polite-crawl)"}
+    }
+  ],
+  "rejected_pending": [
+    {"source_id": "govtrack-us-bills", "kind": "http_json", "status": "failed", "evidence": "3 varian query SEMUA 400: order_by (batch-1), congress+order_by (batch-2), role?current+per_page (batch-3, error: 'Cannot resolve keyword per_page into field') — API v2 param berubah total; butuh baca docs govtrack baru sebelum retry"},
+    {"source_id": "data-go-id-ckan", "kind": "http_json", "status": "failed", "evidence": "root 200 tapi /api/3/action/site_read 404 (HTML) — portal data.go.id TIDAK lagi menyajikan CKAN API di path itu; kandidat alternatif portal data nasional (satudata dll) — batch-4"}
+  ]
+}

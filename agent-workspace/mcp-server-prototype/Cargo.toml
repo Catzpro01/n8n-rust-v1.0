@@ -1,0 +1,13 @@
+[package]
+name = "mcp-server-prototype"
+version = "0.1.0"
+edition = "2021"
+description = "MCP native server prototype (W1-MCP-TOOLS/TRANS code phase, agent7) — stdio-first, dual binding 2025/2026, authoring-only"
+
+[dependencies]
+serde = { version = "=1.0.197", features = ["derive"] }
+serde_json = "=1.0.114"
+thiserror = "=1.0.57"
+
+[profile.release]
+opt-level = 3

@@ -1,0 +1,11 @@
+sudo bash -c '
+set -e
+AK=/home/matt/.ssh/authorized_keys
+NEW="ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILWuSW262J77lYQmPr6u/+CbeowRtcA1zjkCyhr8gDAE matt@n8n-rust-vps-rotasi-20260909"
+mkdir -p /home/matt/.ssh && chmod 700 /home/matt/.ssh
+touch "$AK" && chmod 600 "$AK" && chown -R matt:matt /home/matt/.ssh
+cp -a "$AK" "$AK.bak-$(date +%Y%m%d-%H%M%S)"
+if grep -qF "$NEW" "$AK"; then echo "SUDAH-ADA (idempoten)"; else printf "%s\n" "$NEW" >> "$AK"; echo "DITAMBAHKAN"; fi
+echo "kunci sekarang: $(grep -c . "$AK")"
+ssh-keygen -lf "$AK"
+'

@@ -1,0 +1,446 @@
+[
+  {
+    "type_full": "n8n-nodes-base.awsSes",
+    "majors": [
+      1
+    ],
+    "n": 2,
+    "fields": [
+      {
+        "name": "additionalFields",
+        "kinds": [
+          "object"
+        ],
+        "required_corpus": true
+      },
+      {
+        "name": "body",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": true
+      },
+      {
+        "name": "fromEmail",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": true
+      },
+      {
+        "name": "subject",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": true
+      },
+      {
+        "name": "toAddresses",
+        "kinds": [
+          "array"
+        ],
+        "required_corpus": true
+      }
+    ],
+    "provenance": "corpus-induced (n=2, majors=[1])"
+  },
+  {
+    "type_full": "n8n-nodes-base.convertToFile",
+    "majors": [
+      1
+    ],
+    "n": 5,
+    "fields": [
+      {
+        "name": "operation",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": true
+      },
+      {
+        "name": "options",
+        "kinds": [
+          "object"
+        ],
+        "required_corpus": true
+      },
+      {
+        "name": "sourceProperty",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": true
+      }
+    ],
+    "provenance": "corpus-induced (n=5, majors=[1])"
+  },
+  {
+    "type_full": "n8n-nodes-base.cron",
+    "majors": [
+      1
+    ],
+    "n": 13,
+    "fields": [
+      {
+        "name": "triggerTimes",
+        "kinds": [
+          "object"
+        ],
+        "required_corpus": true
+      }
+    ],
+    "provenance": "corpus-induced (n=13, majors=[1])"
+  },
+  {
+    "type_full": "n8n-nodes-base.errorTrigger",
+    "majors": [
+      1
+    ],
+    "n": 2,
+    "fields": [],
+    "provenance": "corpus-induced (n=2, majors=[1])"
+  },
+  {
+    "type_full": "n8n-nodes-base.executeCommand",
+    "majors": [
+      1
+    ],
+    "n": 7,
+    "fields": [
+      {
+        "name": "command",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": true
+      }
+    ],
+    "provenance": "corpus-induced (n=7, majors=[1])"
+  },
+  {
+    "type_full": "n8n-nodes-base.executeWorkflowTrigger",
+    "majors": [
+      1
+    ],
+    "n": 4,
+    "fields": [],
+    "provenance": "corpus-induced (n=4, majors=[1])"
+  },
+  {
+    "type_full": "n8n-nodes-base.function",
+    "majors": [
+      1
+    ],
+    "n": 22,
+    "fields": [
+      {
+        "name": "functionCode",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": true
+      }
+    ],
+    "provenance": "corpus-induced (n=22, majors=[1])"
+  },
+  {
+    "type_full": "n8n-nodes-base.functionItem",
+    "majors": [
+      1
+    ],
+    "n": 11,
+    "fields": [
+      {
+        "name": "functionCode",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": true
+      }
+    ],
+    "provenance": "corpus-induced (n=11, majors=[1])"
+  },
+  {
+    "type_full": "n8n-nodes-base.googleCalendar",
+    "majors": [
+      1
+    ],
+    "n": 9,
+    "fields": [],
+    "provenance": "corpus-induced (n=9, majors=[1])"
+  },
+  {
+    "type_full": "n8n-nodes-base.googleCalendarTrigger",
+    "majors": [
+      1
+    ],
+    "n": 6,
+    "fields": [],
+    "provenance": "corpus-induced (n=6, majors=[1])"
+  },
+  {
+    "type_full": "n8n-nodes-base.highLevel",
+    "majors": [
+      1
+    ],
+    "n": 2,
+    "fields": [
+      {
+        "name": "additionalFields",
+        "kinds": [
+          "object"
+        ],
+        "required_corpus": true
+      },
+      {
+        "name": "email",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": true
+      },
+      {
+        "name": "phone",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": true
+      }
+    ],
+    "provenance": "corpus-induced (n=2, majors=[1])"
+  },
+  {
+    "type_full": "n8n-nodes-base.html",
+    "majors": [
+      1
+    ],
+    "n": 6,
+    "fields": [
+      {
+        "name": "extractionValues",
+        "kinds": [
+          "object"
+        ],
+        "required_corpus": true
+      },
+      {
+        "name": "operation",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": true
+      },
+      {
+        "name": "options",
+        "kinds": [
+          "object"
+        ],
+        "required_corpus": true
+      }
+    ],
+    "provenance": "corpus-induced (n=6, majors=[1])"
+  },
+  {
+    "type_full": "n8n-nodes-base.hubspotTrigger",
+    "majors": [
+      1
+    ],
+    "n": 2,
+    "fields": [
+      {
+        "name": "additionalFields",
+        "kinds": [
+          "object"
+        ],
+        "required_corpus": true
+      },
+      {
+        "name": "eventsUi",
+        "kinds": [
+          "object"
+        ],
+        "required_corpus": true
+      }
+    ],
+    "provenance": "corpus-induced (n=2, majors=[1])"
+  },
+  {
+    "type_full": "n8n-nodes-base.interval",
+    "majors": [
+      1
+    ],
+    "n": 2,
+    "fields": [
+      {
+        "name": "interval",
+        "kinds": [
+          "number"
+        ],
+        "required_corpus": true
+      },
+      {
+        "name": "unit",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": true
+      }
+    ],
+    "provenance": "corpus-induced (n=2, majors=[1])"
+  },
+  {
+    "type_full": "n8n-nodes-base.keap",
+    "majors": [
+      1
+    ],
+    "n": 2,
+    "fields": [
+      {
+        "name": "contactId",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": true
+      },
+      {
+        "name": "resource",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": true
+      },
+      {
+        "name": "tagIds",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": true
+      }
+    ],
+    "provenance": "corpus-induced (n=2, majors=[1])"
+  },
+  {
+    "type_full": "n8n-nodes-base.manualTrigger",
+    "majors": [
+      1
+    ],
+    "n": 64,
+    "fields": [],
+    "provenance": "corpus-induced (n=64, majors=[1])"
+  },
+  {
+    "type_full": "n8n-nodes-base.mattermost",
+    "majors": [
+      1
+    ],
+    "n": 2,
+    "fields": [
+      {
+        "name": "attachments",
+        "kinds": [
+          "array"
+        ],
+        "required_corpus": true
+      },
+      {
+        "name": "channelId",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": true
+      },
+      {
+        "name": "message",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": true
+      },
+      {
+        "name": "otherOptions",
+        "kinds": [
+          "object"
+        ],
+        "required_corpus": true
+      }
+    ],
+    "provenance": "corpus-induced (n=2, majors=[1])"
+  },
+  {
+    "type_full": "n8n-nodes-base.noOp",
+    "majors": [
+      1
+    ],
+    "n": 21,
+    "fields": [],
+    "provenance": "corpus-induced (n=21, majors=[1])"
+  },
+  {
+    "type_full": "n8n-nodes-base.notionTrigger",
+    "majors": [
+      1
+    ],
+    "n": 2,
+    "fields": [],
+    "provenance": "corpus-induced (n=2, majors=[1])"
+  },
+  {
+    "type_full": "n8n-nodes-base.readBinaryFile",
+    "majors": [
+      1
+    ],
+    "n": 7,
+    "fields": [
+      {
+        "name": "filePath",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": true
+      }
+    ],
+    "provenance": "corpus-induced (n=7, majors=[1])"
+  },
+  {
+    "type_full": "n8n-nodes-base.whatsAppTrigger",
+    "majors": [
+      1
+    ],
+    "n": 3,
+    "fields": [
+      {
+        "name": "options",
+        "kinds": [
+          "object"
+        ],
+        "required_corpus": true
+      },
+      {
+        "name": "updates",
+        "kinds": [
+          "array"
+        ],
+        "required_corpus": true
+      }
+    ],
+    "provenance": "corpus-induced (n=3, majors=[1])"
+  },
+  {
+    "type_full": "n8n-nodes-base.writeBinaryFile",
+    "majors": [
+      1
+    ],
+    "n": 7,
+    "fields": [
+      {
+        "name": "fileName",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": true
+      }
+    ],
+    "provenance": "corpus-induced (n=7, majors=[1])"
+  }
+]

@@ -1,0 +1,4 @@
+{"openapi": "3.0.0", "info": {"title": "x", "version": "1"},
+ "components": {"securitySchemes": {"oauth": {"type": "oauth2", "flows": {}}}},
+ "paths": {"/me": {"get": {"operationId": "getMe", "security": [{"oauth": []}],
+   "responses": {"200": {"description": "ok"}}}}}}

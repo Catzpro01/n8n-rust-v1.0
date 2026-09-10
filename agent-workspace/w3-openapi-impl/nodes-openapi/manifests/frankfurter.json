@@ -1,0 +1,13 @@
+{
+  "generator": "openapi-codegen v0.1-M3",
+  "hash_domain": "raw-bytes",
+  "ops_emitted": 5,
+  "ops_rejected": [],
+  "registry_digest_c02": "d340702b8d6a7f999f872146cdce8d56b990db012e28b1f6ee898a422462a0d2",
+  "side_effect_summary": {
+    "idempotent": 5,
+    "non_idempotent": 0
+  },
+  "spec": "specs/frankfurter.openapi.json",
+  "spec_sha256": "e38804965823bcbd7db06471aa6a2b8b19b4dfc5f26f95d14aae8cfad1fb46a6"
+}

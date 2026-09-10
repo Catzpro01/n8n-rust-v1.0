@@ -1,0 +1,119 @@
+#!/usr/bin/env python3
+"""gen_determinism_inventory.py — agent5 (QA).
+Memindai korpus n8n untuk sumber nondeterminisme, menulis DETERMINISM-SOURCE-INVENTORY.md.
+Deterministik, tanpa network, stdlib saja. Jawaban atas seruan agent4 #343."""
+import json, glob, collections, re, hashlib, datetime, sys
+
+C = "/opt/agent-workspace/docs/corpus"
+OUT = "/opt/agent-workspace/docs/DETERMINISM-SOURCE-INVENTORY.md"
+
+files = sorted(glob.glob(C + "/tpl-*.json"))
+
+POLA = collections.OrderedDict([
+    ("jam/tanggal (Date/$now/luxon)",   r"\$now|\$today|Date\.now|new Date|DateTime|\.toDate\(|luxon"),
+    ("Math.random/$random",             r"Math\.random|\$random"),
+    ("UUID/nanoid",                      r"\$uuid|randomUUID|uuidv4|nanoid"),
+    ("cron triggerTimes (detik acak)",  r"cronExpression|triggerTimes|toCronExpression"),
+    ("$execution.id (bukan $itemIndex)", r"\$execution\.id|executionId"),
+    ("webhookUrl/$resumeWebhook",        r"\$webhook|webhookUrl|resumeWebhookUrl"),
+    ("$env/process.env",                 r"\$env\b|process\.env"),
+])
+EXT = ("httpRequest", "gmail", "slack", "openAi", "googleSheets", "telegram", "googleDrive",
+       "webhook", "agent", "lmChat", "rssFeedRead", "ftp", "mongoDb", "airtable", "github", "youTube")
+EKSTERNAL = "PANGGILAN EKSTERNAL (node pihak ke-3)"
+
+hf = collections.Counter()
+hi = collections.Counter()
+for fp in files:
+    try:
+        d = json.load(open(fp, encoding="utf-8"))
+    except Exception:
+        continue
+    seen = set()
+    for n in (d.get("nodes") or []):
+        t = (n.get("type") or "")
+        text = json.dumps(n.get("parameters", {}), ensure_ascii=False)
+        for lab, rx in POLA.items():
+            if re.search(rx, text, re.I):
+                hi[lab] += 1
+                seen.add(lab)
+        if any(e.lower() in t.lower() for e in EXT):
+            hi[EKSTERNAL] += 1
+            seen.add(EKSTERNAL)
+    for s in seen:
+        hf[s] += 1
+
+MEK = {
+    EKSTERNAL: "**record-replay** (Layer 1a) — sudah dibutuhkan utk differential testing",
+}
+for k in POLA:
+    if "cron" in k:
+        MEK[k] = "registri alias + **aturan detik** (DEV-A4; n8n sendiri nondeterministik)"
+    elif "UUID" in k or "random" in k.lower():
+        MEK[k] = "**PRNG ter-seed** dari execution_id (proxy global QuickJS)"
+    elif "jam" in k:
+        MEK[k] = "**jam beku** ke timestamp eksekusi (proxy global QuickJS)"
+    else:
+        MEK[k] = "**injeksi dari record** (nilai logis direkam saat run asli)"
+
+man = hashlib.sha256()
+for fp in files:
+    man.update(hashlib.sha256(open(fp, "rb").read()).hexdigest().encode())
+versi = man.hexdigest()
+
+L = []
+L.append("# DETERMINISM-SOURCE-INVENTORY.md")
+L.append("## Inventaris sumber nondeterminisme per korpus — agent5 (QA)")
+L.append("")
+L.append(f"**Tanggal:** {datetime.datetime.now(datetime.timezone.utc):%Y-%m-%d %H:%M} UTC  ")
+L.append(f"**Korpus:** {len(files)} file `tpl-*.json` di root `{C}`  ")
+L.append(f"**Versi korpus (sha256 gabungan):** `{versi}`  ")
+L.append("**Cara reproduksi:** `python3 /opt/agent-workspace/qa/gen_determinism_inventory.py` "
+         "— deterministik, tanpa network, stdlib saja.")
+L.append("")
+L.append("Ini jawaban atas seruan agent4 (#343): *\"sumber nondeterminisme diinventarisir per node\"*.")
+L.append("Angka di bawah = berapa **FILE** yang tersentuh dan berapa **INSTANCE** node, diukur dari")
+L.append("korpus nyata, bukan asumsi. Ia menentukan mekanisme determinisme mana yang menutup")
+L.append("berapa persen korpus — jadi urutan fase bisa diputuskan dari data, bukan dari selera.")
+L.append("")
+L.append("| Sumber nondeterminisme | File | Instance | Ditangani oleh |")
+L.append("|---|---|---|---|")
+for k in sorted(hi, key=lambda x: -hf[x]):
+    L.append(f"| {k} | {hf[k]} | {hi[k]} | {MEK.get(k,'—')} |")
+L.append("")
+L.append("## Cara membaca")
+L.append("")
+ekst_pct = 100 * hf[EKSTERNAL] // len(files)
+L.append(f"- **{hf[EKSTERNAL]}/{len(files)} file ({ekst_pct}%)** punya panggilan eksternal. Ini sumber")
+L.append("  nondeterminisme **DOMINAN**, dan ia ditangani lapisan record-replay yang **wajib kita")
+L.append("  bangun anyway** untuk differential testing (PRD-2 §10.2). Jadi bukan biaya baru —")
+L.append("  ia biaya yang sudah kita tanggung, dan determinisme eksekusi menumpang gratis di atasnya.")
+L.append("- Sisanya (jam, random, UUID, cron, execution.id, webhookUrl, env) butuh **proxy global")
+L.append("  deterministik** di crate `expr-quickjs`: jam beku + PRNG ter-seed. agent3 mengusulkan")
+L.append("  ini di #307/#340; tabel di atas memberi **prioritasnya berdasarkan frekuensi korpus**.")
+L.append("")
+L.append("## Catatan kejujuran — batasan inventaris ini")
+L.append("")
+L.append("1. Ini memindai **string parameter**, bukan mengeksekusi expression. `$itemIndex` dan")
+L.append("   `$runIndex` **sengaja dikeluarkan** dari kategori `$execution.id` karena keduanya")
+L.append("   **deterministik** (posisi item dalam run), sedangkan `$execution.id` tidak. Regex awal")
+L.append("   saya mencampur keduanya; saya pisahkan. Kalau tidak, angkanya melebih-lebihkan.")
+L.append("2. Node `Code`/`function` bisa memanggil `Date.now()`/`Math.random()` di dalam string JS")
+L.append("   yang tidak selalu tertangkap pola di atas. Inventaris ini **batas bawah**, bukan lengkap.")
+L.append("3. Urutan iterasi object (K3 di DEVIATION-CATALOG) dan presisi float (K2) adalah sumber")
+L.append("   nondeterminisme **antar-runtime** (V8 vs QuickJS), bukan antar-run di runtime yang sama.")
+L.append("   Keduanya tidak muncul di tabel ini karena bukan properti korpus — tapi justru keduanya")
+L.append("   yang paling mungkin membuat gate L3 gagal. Lihat DEVIATION-CATALOG §6.")
+L.append("4. `cron triggerTimes` adalah kasus khusus: **n8n sendiri nondeterministik** di sini")
+L.append("   (`toCronExpression` menyuntik detik acak — agent4 #264, DEV-A4). Jadi 'rekam dari run")
+L.append("   asli' tidak cukup; konversinya harus menetapkan aturan detik yang eksplisit. Ini butuh")
+L.append("   keputusan, bukan sekadar perekaman.")
+L.append("")
+L.append("_Ditulis oleh agent5 (QA & Security Auditor). Koreksi dipersilakan — inventaris ini_")
+L.append("_batas bawah dan saya nyatakan sendiri di mana ia tidak lengkap._")
+
+open(OUT, "w", encoding="utf-8").write("\n".join(L))
+print("ditulis:", OUT)
+print("versi korpus:", versi[:16], "| file:", len(files))
+for k in sorted(hi, key=lambda x: -hf[x]):
+    print(f"  {hf[k]:3d} file  {hi[k]:4d} inst  {k}")

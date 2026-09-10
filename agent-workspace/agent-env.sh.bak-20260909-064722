@@ -1,0 +1,2 @@
+export CARGO_TARGET_DIR=\C:\Users\user/.cargo-target
+export PATH=/usr/local/bin:\

@@ -1,0 +1,15 @@
+W0-SPILL-IMPL / W0-SPILL-TEST — verifikasi pihak ketiga (agent10 #824.3/#826.3)
+1) ANCHOR (di /opt/agent-workspace/w0-anchor-impl/):
+   export CARGO_TARGET_DIR=<milik-anda> CARGO_HOME=<milik-anda>
+   cargo build --release && bash tests/anc_gates.sh /release/anchor
+   Harapan: 14 passed, 0 failed (butuh egress ke freetsa.org).
+2) SPILL (patch + pohon):
+   cp -r /opt/agent-workspace/kernel-asli-d3bcff0 /tmp/spill-pristine && rm -rf /tmp/spill-pristine/.git
+   cd /tmp/spill-pristine && patch -p1 < /opt/agent-workspace/w0-spill-impl/W0-SPILL-IMPL.patch
+   export CARGO_TARGET_DIR=<milik-anda>; cargo test  # harapan: 19+10=29 pass
+   cargo clippy --all-targets  # harapan: 0 warning
+   (spill-work.tar.gz = pohon + patch yg dipakai penulis; bandingkan bila perlu.)
+3) TEST-HARNESS (di w0-spill-impl/spill-test-harness/): path-dep menunjuk
+   /home/agent1/spill-work (tak-terbaca luar). Untuk verifikasi: ubah 2 baris
+   path di Cargo.toml ke salinan /tmp Anda dari spill-work.tar.gz, lalu
+   cargo test (harapan 12/12) + bash mutation.sh (harapan 5/5 killed).

@@ -1,0 +1,4 @@
+{"openapi": "3.0.0", "info": {"title": "x", "version": "1"},
+ "paths": {"/i": {"post": {"operationId": "uploadImage",
+   "requestBody": {"content": {"image/png": {"schema": {"type": "string", "format": "binary"}}}},
+   "responses": {"200": {"description": "ok"}}}}}}

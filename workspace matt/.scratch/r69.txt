@@ -1,0 +1,31 @@
+[RULING 69 — KEPUTUSAN EXIT CODE: MENYIMPANG SENGAJA. TB-02 LANGKAH 3 TERBUKA]
+
+Pemilik Produk memutuskan pertanyaan paritas di Ruling 68 bagian 3.
+
+KEPUTUSAN: n8n-rust execute MENGEMBALIKAN KODE KELUAR TIDAK-NOL saat sebuah node gagal.
+Kita menyimpang dari n8n asli, dengan sengaja.
+
+Alasan yang beliau terima: pemakai menjalankan ini lewat skrip dan cron. n8n asli menelan error di catch
+(execute.ts 144-151, tanpa rethrow tanpa exit) sehingga proses berakhir normal — artinya kegagalan tidak
+terdeteksi oleh apa pun di luar teks keluaran. Paritas di titik itu berarti menyalin cacat.
+
+Ini dicatat sebagai DIVERGENSI SADAR, bukan dibiarkan jadi drift. Ada bagian baru di CLI-PARITY-SPEC.md:
+  §DIVERGENSI SADAR -> D-1 Kode keluar saat node gagal
+berisi: perilaku n8n asli dengan baris sumbernya, perilaku kita, alasan, bukti fakta (agent9 #1723, diverifikasi
+agent1 #1724, anchor fcf21f5e), dan konsekuensinya.
+
+ATURAN BARU YANG MENEMPEL DI BAGIAN ITU: divergensi hanya boleh ditambahkan oleh Pemilik Produk atau atas
+keputusan yang beliau setujui. Agen tidak boleh menambahkannya sendiri. Kalau sebuah perbedaan tidak terdaftar
+di bagian itu, ia adalah CACAT PARITAS, bukan pilihan. Ini pagar supaya drift tidak menyamar jadi kebijakan.
+
+Dokumen diperbarui dan sudah di VPS:
+  /opt/agent-workspace/docs/spec/CLI-PARITY-SPEC.md        sha 0a11309b1e07  289 baris
+  /opt/agent-workspace/docs/spec/TICKETS-TRACER-BULLET.md  sha f17a7da977d4  385 baris
+
+agent1: langkah 3 TB-02 TIDAK lagi terblokir. Kerjakan. Kriteria exit-code di tiket sekarang punya dasar yang
+benar, bukan dasar palsu yang saya tulis di Ruling 66.
+agent9: fakta Anda yang mengubah keputusan ini. Ditolaknya EXEC-PREP-TRACER-MAP bukan berarti kerja Anda kurang
+berharga — justru sebaliknya, dan ini buktinya.
+agent10: masih empat klaim REPORTED-DONE plus code-review TB-01 menunggu Anda.
+
+— matt (Lead Architect)

@@ -1,0 +1,3987 @@
+[
+  {
+    "type_full": "n8n-nodes-base.aggregate",
+    "majors": [
+      1
+    ],
+    "n": 8,
+    "n_shapes": 4,
+    "fields": [
+      {
+        "name": "aggregate",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "destinationFieldName",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "fieldsToAggregate",
+        "kinds": [
+          "object"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "fieldsToInclude",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "include",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "options",
+        "kinds": [
+          "object"
+        ],
+        "required_corpus": true
+      }
+    ],
+    "provenance": "corpus-induced-union (n=8, majors=[1], shapes=4)"
+  },
+  {
+    "type_full": "n8n-nodes-base.airtable",
+    "majors": [
+      1,
+      2
+    ],
+    "n": 14,
+    "n_shapes": 7,
+    "fields": [
+      {
+        "name": "application",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "authentication",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "base",
+        "kinds": [
+          "object"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "columns",
+        "kinds": [
+          "object"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "filterByFormula",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "id",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "limit",
+        "kinds": [
+          "number"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "operation",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "options",
+        "kinds": [
+          "object"
+        ],
+        "required_corpus": true
+      },
+      {
+        "name": "resource",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "returnAll",
+        "kinds": [
+          "boolean"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "sort",
+        "kinds": [
+          "object"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "table",
+        "kinds": [
+          "object",
+          "string"
+        ],
+        "required_corpus": false
+      }
+    ],
+    "provenance": "corpus-induced-union (n=14, majors=[1, 2], shapes=7)"
+  },
+  {
+    "type_full": "n8n-nodes-base.asana",
+    "majors": [
+      1
+    ],
+    "n": 2,
+    "n_shapes": 2,
+    "fields": [
+      {
+        "name": "additionalFields",
+        "kinds": [
+          "object"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "id",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "isTextHtml",
+        "kinds": [
+          "boolean"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "name",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "otherProperties",
+        "kinds": [
+          "object"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "resource",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "text",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "workspace",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      }
+    ],
+    "provenance": "corpus-induced-union (n=2, majors=[1], shapes=2)"
+  },
+  {
+    "type_full": "n8n-nodes-base.awsS3",
+    "majors": [
+      1,
+      2
+    ],
+    "n": 3,
+    "n_shapes": 2,
+    "fields": [
+      {
+        "name": "bucketName",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": true
+      },
+      {
+        "name": "fileKey",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "operation",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "options",
+        "kinds": [
+          "object"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "returnAll",
+        "kinds": [
+          "boolean"
+        ],
+        "required_corpus": false
+      }
+    ],
+    "provenance": "corpus-induced-union (n=3, majors=[1, 2], shapes=2)"
+  },
+  {
+    "type_full": "n8n-nodes-base.bitwarden",
+    "majors": [
+      1
+    ],
+    "n": 4,
+    "n_shapes": 4,
+    "fields": [
+      {
+        "name": "additionalFields",
+        "kinds": [
+          "object"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "groupId",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "memberIds",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "name",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "operation",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": true
+      },
+      {
+        "name": "resource",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": true
+      },
+      {
+        "name": "returnAll",
+        "kinds": [
+          "boolean"
+        ],
+        "required_corpus": false
+      }
+    ],
+    "provenance": "corpus-induced-union (n=4, majors=[1], shapes=4)"
+  },
+  {
+    "type_full": "n8n-nodes-base.bubble",
+    "majors": [
+      1
+    ],
+    "n": 3,
+    "n_shapes": 3,
+    "fields": [
+      {
+        "name": "objectId",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "operation",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "properties",
+        "kinds": [
+          "object"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "typeName",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": true
+      }
+    ],
+    "provenance": "corpus-induced-union (n=3, majors=[1], shapes=3)"
+  },
+  {
+    "type_full": "n8n-nodes-base.clockify",
+    "majors": [
+      1
+    ],
+    "n": 4,
+    "n_shapes": 4,
+    "fields": [
+      {
+        "name": "additionalFields",
+        "kinds": [
+          "object"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "name",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "operation",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "resource",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "start",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "timeEntryId",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "updateFields",
+        "kinds": [
+          "object"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "workspaceId",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": true
+      }
+    ],
+    "provenance": "corpus-induced-union (n=4, majors=[1], shapes=4)"
+  },
+  {
+    "type_full": "n8n-nodes-base.code",
+    "majors": [
+      1,
+      2
+    ],
+    "n": 92,
+    "n_shapes": 3,
+    "fields": [
+      {
+        "name": "jsCode",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "mode",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      }
+    ],
+    "provenance": "corpus-induced-union (n=92, majors=[1, 2], shapes=3)"
+  },
+  {
+    "type_full": "n8n-nodes-base.compression",
+    "majors": [
+      1
+    ],
+    "n": 4,
+    "n_shapes": 2,
+    "fields": [
+      {
+        "name": "binaryPropertyName",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "fileName",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "operation",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      }
+    ],
+    "provenance": "corpus-induced-union (n=4, majors=[1], shapes=2)"
+  },
+  {
+    "type_full": "n8n-nodes-base.copper",
+    "majors": [
+      1
+    ],
+    "n": 3,
+    "n_shapes": 3,
+    "fields": [
+      {
+        "name": "additionalFields",
+        "kinds": [
+          "object"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "name",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "operation",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "personId",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "resource",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": true
+      },
+      {
+        "name": "updateFields",
+        "kinds": [
+          "object"
+        ],
+        "required_corpus": false
+      }
+    ],
+    "provenance": "corpus-induced-union (n=3, majors=[1], shapes=3)"
+  },
+  {
+    "type_full": "n8n-nodes-base.dateTime",
+    "majors": [
+      1,
+      2
+    ],
+    "n": 13,
+    "n_shapes": 4,
+    "fields": [
+      {
+        "name": "action",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "dataPropertyName",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "duration",
+        "kinds": [
+          "number"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "options",
+        "kinds": [
+          "object"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "timeUnit",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "value",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      }
+    ],
+    "provenance": "corpus-induced-union (n=13, majors=[1, 2], shapes=4)"
+  },
+  {
+    "type_full": "n8n-nodes-base.discord",
+    "majors": [
+      1,
+      2
+    ],
+    "n": 2,
+    "n_shapes": 2,
+    "fields": [
+      {
+        "name": "channelId",
+        "kinds": [
+          "object"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "content",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "guildId",
+        "kinds": [
+          "object"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "options",
+        "kinds": [
+          "object"
+        ],
+        "required_corpus": true
+      },
+      {
+        "name": "resource",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "text",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "webhookUri",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      }
+    ],
+    "provenance": "corpus-induced-union (n=2, majors=[1, 2], shapes=2)"
+  },
+  {
+    "type_full": "n8n-nodes-base.dropbox",
+    "majors": [
+      1
+    ],
+    "n": 3,
+    "n_shapes": 3,
+    "fields": [
+      {
+        "name": "authentication",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "binaryData",
+        "kinds": [
+          "boolean"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "fileContent",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "path",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": true
+      }
+    ],
+    "provenance": "corpus-induced-union (n=3, majors=[1], shapes=3)"
+  },
+  {
+    "type_full": "n8n-nodes-base.editImage",
+    "majors": [
+      1
+    ],
+    "n": 12,
+    "n_shapes": 8,
+    "fields": [
+      {
+        "name": "fontSize",
+        "kinds": [
+          "number",
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "height",
+        "kinds": [
+          "number",
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "lineLength",
+        "kinds": [
+          "number"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "operation",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": true
+      },
+      {
+        "name": "options",
+        "kinds": [
+          "object"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "positionX",
+        "kinds": [
+          "number",
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "positionY",
+        "kinds": [
+          "number",
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "resizeOption",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "text",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "width",
+        "kinds": [
+          "number",
+          "string"
+        ],
+        "required_corpus": false
+      }
+    ],
+    "provenance": "corpus-induced-union (n=12, majors=[1], shapes=8)"
+  },
+  {
+    "type_full": "n8n-nodes-base.emailReadImap",
+    "majors": [
+      1,
+      2
+    ],
+    "n": 3,
+    "n_shapes": 3,
+    "fields": [
+      {
+        "name": "downloadAttachments",
+        "kinds": [
+          "boolean"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "options",
+        "kinds": [
+          "object"
+        ],
+        "required_corpus": true
+      },
+      {
+        "name": "postProcessAction",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      }
+    ],
+    "provenance": "corpus-induced-union (n=3, majors=[1, 2], shapes=3)"
+  },
+  {
+    "type_full": "n8n-nodes-base.emailSend",
+    "majors": [
+      1,
+      2
+    ],
+    "n": 6,
+    "n_shapes": 4,
+    "fields": [
+      {
+        "name": "emailFormat",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "fromEmail",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "options",
+        "kinds": [
+          "object"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "subject",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": true
+      },
+      {
+        "name": "text",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "toEmail",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      }
+    ],
+    "provenance": "corpus-induced-union (n=6, majors=[1, 2], shapes=4)"
+  },
+  {
+    "type_full": "n8n-nodes-base.emelia",
+    "majors": [
+      1
+    ],
+    "n": 3,
+    "n_shapes": 3,
+    "fields": [
+      {
+        "name": "additionalFields",
+        "kinds": [
+          "object"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "campaignId",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "campaignName",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "contactEmail",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "operation",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      }
+    ],
+    "provenance": "corpus-induced-union (n=3, majors=[1], shapes=3)"
+  },
+  {
+    "type_full": "n8n-nodes-base.executeWorkflow",
+    "majors": [
+      1
+    ],
+    "n": 2,
+    "n_shapes": 2,
+    "fields": [
+      {
+        "name": "workflowId",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      }
+    ],
+    "provenance": "corpus-induced-union (n=2, majors=[1], shapes=2)"
+  },
+  {
+    "type_full": "n8n-nodes-base.extractFromFile",
+    "majors": [
+      1
+    ],
+    "n": 5,
+    "n_shapes": 2,
+    "fields": [
+      {
+        "name": "binaryPropertyName",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "operation",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": true
+      },
+      {
+        "name": "options",
+        "kinds": [
+          "object"
+        ],
+        "required_corpus": true
+      }
+    ],
+    "provenance": "corpus-induced-union (n=5, majors=[1], shapes=2)"
+  },
+  {
+    "type_full": "n8n-nodes-base.filter",
+    "majors": [
+      1,
+      2
+    ],
+    "n": 15,
+    "n_shapes": 3,
+    "fields": [
+      {
+        "name": "conditions",
+        "kinds": [
+          "object"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "options",
+        "kinds": [
+          "object"
+        ],
+        "required_corpus": false
+      }
+    ],
+    "provenance": "corpus-induced-union (n=15, majors=[1, 2], shapes=3)"
+  },
+  {
+    "type_full": "n8n-nodes-base.formTrigger",
+    "majors": [
+      2
+    ],
+    "n": 9,
+    "n_shapes": 4,
+    "fields": [
+      {
+        "name": "formDescription",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "formFields",
+        "kinds": [
+          "object"
+        ],
+        "required_corpus": true
+      },
+      {
+        "name": "formTitle",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": true
+      },
+      {
+        "name": "options",
+        "kinds": [
+          "object"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "path",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "responseMode",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      }
+    ],
+    "provenance": "corpus-induced-union (n=9, majors=[2], shapes=4)"
+  },
+  {
+    "type_full": "n8n-nodes-base.ftp",
+    "majors": [
+      1
+    ],
+    "n": 3,
+    "n_shapes": 2,
+    "fields": [
+      {
+        "name": "operation",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": true
+      },
+      {
+        "name": "path",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": true
+      },
+      {
+        "name": "protocol",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      }
+    ],
+    "provenance": "corpus-induced-union (n=3, majors=[1], shapes=2)"
+  },
+  {
+    "type_full": "n8n-nodes-base.gmail",
+    "majors": [
+      2
+    ],
+    "n": 16,
+    "n_shapes": 10,
+    "fields": [
+      {
+        "name": "approvalOptions",
+        "kinds": [
+          "object"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "emailType",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "labelIds",
+        "kinds": [
+          "array",
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "message",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "messageId",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "operation",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "options",
+        "kinds": [
+          "object"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "resource",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "returnAll",
+        "kinds": [
+          "boolean"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "sendTo",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "simple",
+        "kinds": [
+          "boolean"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "subject",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "threadId",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      }
+    ],
+    "provenance": "corpus-induced-union (n=16, majors=[2], shapes=10)"
+  },
+  {
+    "type_full": "n8n-nodes-base.gmailTool",
+    "majors": [
+      2
+    ],
+    "n": 4,
+    "n_shapes": 4,
+    "fields": [
+      {
+        "name": "filters",
+        "kinds": [
+          "object"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "message",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "operation",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "options",
+        "kinds": [
+          "object"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "resource",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "returnAll",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "sendTo",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "simple",
+        "kinds": [
+          "boolean"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "subject",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "threadId",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      }
+    ],
+    "provenance": "corpus-induced-union (n=4, majors=[2], shapes=4)"
+  },
+  {
+    "type_full": "n8n-nodes-base.gmailTrigger",
+    "majors": [
+      1
+    ],
+    "n": 5,
+    "n_shapes": 2,
+    "fields": [
+      {
+        "name": "filters",
+        "kinds": [
+          "object"
+        ],
+        "required_corpus": true
+      },
+      {
+        "name": "options",
+        "kinds": [
+          "object"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "pollTimes",
+        "kinds": [
+          "object"
+        ],
+        "required_corpus": true
+      },
+      {
+        "name": "simple",
+        "kinds": [
+          "boolean"
+        ],
+        "required_corpus": false
+      }
+    ],
+    "provenance": "corpus-induced-union (n=5, majors=[1], shapes=2)"
+  },
+  {
+    "type_full": "n8n-nodes-base.googleBooks",
+    "majors": [
+      1
+    ],
+    "n": 3,
+    "n_shapes": 3,
+    "fields": [
+      {
+        "name": "authentication",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": true
+      },
+      {
+        "name": "myLibrary",
+        "kinds": [
+          "boolean"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "operation",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "resource",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": true
+      },
+      {
+        "name": "shelfId",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "volumeId",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      }
+    ],
+    "provenance": "corpus-induced-union (n=3, majors=[1], shapes=3)"
+  },
+  {
+    "type_full": "n8n-nodes-base.googleCalendarTool",
+    "majors": [
+      1
+    ],
+    "n": 5,
+    "n_shapes": 5,
+    "fields": [
+      {
+        "name": "additionalFields",
+        "kinds": [
+          "object"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "calendar",
+        "kinds": [
+          "object"
+        ],
+        "required_corpus": true
+      },
+      {
+        "name": "end",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "eventId",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "operation",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "options",
+        "kinds": [
+          "object"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "returnAll",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "start",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "updateFields",
+        "kinds": [
+          "object"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "useDefaultReminders",
+        "kinds": [
+          "boolean"
+        ],
+        "required_corpus": false
+      }
+    ],
+    "provenance": "corpus-induced-union (n=5, majors=[1], shapes=5)"
+  },
+  {
+    "type_full": "n8n-nodes-base.googleDocs",
+    "majors": [
+      2
+    ],
+    "n": 7,
+    "n_shapes": 3,
+    "fields": [
+      {
+        "name": "actionsUi",
+        "kinds": [
+          "object"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "documentURL",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "folderId",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "operation",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "title",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      }
+    ],
+    "provenance": "corpus-induced-union (n=7, majors=[2], shapes=3)"
+  },
+  {
+    "type_full": "n8n-nodes-base.googleDrive",
+    "majors": [
+      1,
+      3
+    ],
+    "n": 18,
+    "n_shapes": 5,
+    "fields": [
+      {
+        "name": "driveId",
+        "kinds": [
+          "object"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "fileId",
+        "kinds": [
+          "object",
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "folderId",
+        "kinds": [
+          "object"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "inputDataFieldName",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "name",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "operation",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "options",
+        "kinds": [
+          "object"
+        ],
+        "required_corpus": true
+      },
+      {
+        "name": "resource",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      }
+    ],
+    "provenance": "corpus-induced-union (n=18, majors=[1, 3], shapes=5)"
+  },
+  {
+    "type_full": "n8n-nodes-base.googleSheets",
+    "majors": [
+      1,
+      4
+    ],
+    "n": 68,
+    "n_shapes": 17,
+    "fields": [
+      {
+        "name": "authentication",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "columns",
+        "kinds": [
+          "object"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "documentId",
+        "kinds": [
+          "object"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "filtersUI",
+        "kinds": [
+          "object"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "key",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "operation",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "options",
+        "kinds": [
+          "object"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "range",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "rawData",
+        "kinds": [
+          "boolean"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "sheetId",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "sheetName",
+        "kinds": [
+          "object"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "value",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      }
+    ],
+    "provenance": "corpus-induced-union (n=68, majors=[1, 4], shapes=17)"
+  },
+  {
+    "type_full": "n8n-nodes-base.googleSheetsTrigger",
+    "majors": [
+      1
+    ],
+    "n": 3,
+    "n_shapes": 2,
+    "fields": [
+      {
+        "name": "documentId",
+        "kinds": [
+          "object"
+        ],
+        "required_corpus": true
+      },
+      {
+        "name": "event",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "options",
+        "kinds": [
+          "object"
+        ],
+        "required_corpus": true
+      },
+      {
+        "name": "pollTimes",
+        "kinds": [
+          "object"
+        ],
+        "required_corpus": true
+      },
+      {
+        "name": "sheetName",
+        "kinds": [
+          "object"
+        ],
+        "required_corpus": true
+      }
+    ],
+    "provenance": "corpus-induced-union (n=3, majors=[1], shapes=2)"
+  },
+  {
+    "type_full": "n8n-nodes-base.htmlExtract",
+    "majors": [
+      1
+    ],
+    "n": 2,
+    "n_shapes": 2,
+    "fields": [
+      {
+        "name": "dataPropertyName",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "extractionValues",
+        "kinds": [
+          "object"
+        ],
+        "required_corpus": true
+      },
+      {
+        "name": "options",
+        "kinds": [
+          "object"
+        ],
+        "required_corpus": true
+      }
+    ],
+    "provenance": "corpus-induced-union (n=2, majors=[1], shapes=2)"
+  },
+  {
+    "type_full": "n8n-nodes-base.hubspot",
+    "majors": [
+      1,
+      2
+    ],
+    "n": 15,
+    "n_shapes": 12,
+    "fields": [
+      {
+        "name": "additionalFields",
+        "kinds": [
+          "object"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "authentication",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "companyId",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "contactId",
+        "kinds": [
+          "object",
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "domain",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "email",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "filterGroupsUi",
+        "kinds": [
+          "object"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "limit",
+        "kinds": [
+          "number"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "metadata",
+        "kinds": [
+          "object"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "name",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "operation",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "options",
+        "kinds": [
+          "object"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "pipelineId",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "resource",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "returnAll",
+        "kinds": [
+          "boolean"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "stageId",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "ticketId",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "ticketName",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "type",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "updateFields",
+        "kinds": [
+          "object"
+        ],
+        "required_corpus": false
+      }
+    ],
+    "provenance": "corpus-induced-union (n=15, majors=[1, 2], shapes=12)"
+  },
+  {
+    "type_full": "n8n-nodes-base.if",
+    "majors": [
+      1,
+      2
+    ],
+    "n": 116,
+    "n_shapes": 5,
+    "fields": [
+      {
+        "name": "combineOperation",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "conditions",
+        "kinds": [
+          "object"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "looseTypeValidation",
+        "kinds": [
+          "boolean"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "options",
+        "kinds": [
+          "object"
+        ],
+        "required_corpus": false
+      }
+    ],
+    "provenance": "corpus-induced-union (n=116, majors=[1, 2], shapes=5)"
+  },
+  {
+    "type_full": "n8n-nodes-base.itemLists",
+    "majors": [
+      2,
+      3
+    ],
+    "n": 6,
+    "n_shapes": 3,
+    "fields": [
+      {
+        "name": "aggregate",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "destinationFieldName",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "fieldToSplitOut",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "fieldsToSummarize",
+        "kinds": [
+          "object"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "operation",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "options",
+        "kinds": [
+          "object"
+        ],
+        "required_corpus": true
+      }
+    ],
+    "provenance": "corpus-induced-union (n=6, majors=[2, 3], shapes=3)"
+  },
+  {
+    "type_full": "n8n-nodes-base.limit",
+    "majors": [
+      1
+    ],
+    "n": 3,
+    "n_shapes": 2,
+    "fields": [
+      {
+        "name": "maxItems",
+        "kinds": [
+          "number"
+        ],
+        "required_corpus": false
+      }
+    ],
+    "provenance": "corpus-induced-union (n=3, majors=[1], shapes=2)"
+  },
+  {
+    "type_full": "n8n-nodes-base.linkedIn",
+    "majors": [
+      1
+    ],
+    "n": 3,
+    "n_shapes": 3,
+    "fields": [
+      {
+        "name": "additionalFields",
+        "kinds": [
+          "object"
+        ],
+        "required_corpus": true
+      },
+      {
+        "name": "person",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "postAs",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "shareMediaCategory",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "text",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      }
+    ],
+    "provenance": "corpus-induced-union (n=3, majors=[1], shapes=3)"
+  },
+  {
+    "type_full": "n8n-nodes-base.mailerLite",
+    "majors": [
+      1
+    ],
+    "n": 3,
+    "n_shapes": 3,
+    "fields": [
+      {
+        "name": "additionalFields",
+        "kinds": [
+          "object"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "email",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "operation",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "subscriberId",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "updateFields",
+        "kinds": [
+          "object"
+        ],
+        "required_corpus": false
+      }
+    ],
+    "provenance": "corpus-induced-union (n=3, majors=[1], shapes=3)"
+  },
+  {
+    "type_full": "n8n-nodes-base.mailgun",
+    "majors": [
+      1
+    ],
+    "n": 3,
+    "n_shapes": 2,
+    "fields": [
+      {
+        "name": "ccEmail",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "fromEmail",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": true
+      },
+      {
+        "name": "subject",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": true
+      },
+      {
+        "name": "text",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": true
+      },
+      {
+        "name": "toEmail",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": true
+      }
+    ],
+    "provenance": "corpus-induced-union (n=3, majors=[1], shapes=2)"
+  },
+  {
+    "type_full": "n8n-nodes-base.mautic",
+    "majors": [
+      1
+    ],
+    "n": 4,
+    "n_shapes": 4,
+    "fields": [
+      {
+        "name": "additionalFields",
+        "kinds": [
+          "object"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "authentication",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": true
+      },
+      {
+        "name": "contactId",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "limit",
+        "kinds": [
+          "number"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "operation",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "options",
+        "kinds": [
+          "object"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "resource",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "segmentId",
+        "kinds": [
+          "number"
+        ],
+        "required_corpus": false
+      }
+    ],
+    "provenance": "corpus-induced-union (n=4, majors=[1], shapes=4)"
+  },
+  {
+    "type_full": "n8n-nodes-base.merge",
+    "majors": [
+      1,
+      2,
+      3
+    ],
+    "n": 36,
+    "n_shapes": 10,
+    "fields": [
+      {
+        "name": "combinationMode",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "combineBy",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "fieldsToMatchString",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "joinMode",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "mergeByFields",
+        "kinds": [
+          "object"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "mode",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "numberInputs",
+        "kinds": [
+          "number"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "options",
+        "kinds": [
+          "object"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "outputDataFrom",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "propertyName1",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "propertyName2",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      }
+    ],
+    "provenance": "corpus-induced-union (n=36, majors=[1, 2, 3], shapes=10)"
+  },
+  {
+    "type_full": "n8n-nodes-base.microsoftExcel",
+    "majors": [
+      2
+    ],
+    "n": 3,
+    "n_shapes": 3,
+    "fields": [
+      {
+        "name": "columnToMatchOn",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "fieldsUi",
+        "kinds": [
+          "object"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "filters",
+        "kinds": [
+          "object"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "operation",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "options",
+        "kinds": [
+          "object"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "resource",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": true
+      },
+      {
+        "name": "returnAll",
+        "kinds": [
+          "boolean"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "table",
+        "kinds": [
+          "object"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "valueToMatchOn",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "workbook",
+        "kinds": [
+          "object"
+        ],
+        "required_corpus": true
+      },
+      {
+        "name": "worksheet",
+        "kinds": [
+          "object"
+        ],
+        "required_corpus": true
+      }
+    ],
+    "provenance": "corpus-induced-union (n=3, majors=[2], shapes=3)"
+  },
+  {
+    "type_full": "n8n-nodes-base.mongoDb",
+    "majors": [
+      1
+    ],
+    "n": 5,
+    "n_shapes": 2,
+    "fields": [
+      {
+        "name": "collection",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": true
+      },
+      {
+        "name": "fields",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "operation",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "query",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      }
+    ],
+    "provenance": "corpus-induced-union (n=5, majors=[1], shapes=2)"
+  },
+  {
+    "type_full": "n8n-nodes-base.moveBinaryData",
+    "majors": [
+      1
+    ],
+    "n": 5,
+    "n_shapes": 3,
+    "fields": [
+      {
+        "name": "destinationKey",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "mode",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "options",
+        "kinds": [
+          "object"
+        ],
+        "required_corpus": true
+      },
+      {
+        "name": "setAllData",
+        "kinds": [
+          "boolean"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "sourceKey",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      }
+    ],
+    "provenance": "corpus-induced-union (n=5, majors=[1], shapes=3)"
+  },
+  {
+    "type_full": "n8n-nodes-base.n8n",
+    "majors": [
+      1
+    ],
+    "n": 3,
+    "n_shapes": 3,
+    "fields": [
+      {
+        "name": "filters",
+        "kinds": [
+          "object"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "operation",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "requestOptions",
+        "kinds": [
+          "object"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "workflowId",
+        "kinds": [
+          "object"
+        ],
+        "required_corpus": false
+      }
+    ],
+    "provenance": "corpus-induced-union (n=3, majors=[1], shapes=3)"
+  },
+  {
+    "type_full": "n8n-nodes-base.nextCloud",
+    "majors": [
+      1
+    ],
+    "n": 3,
+    "n_shapes": 2,
+    "fields": [
+      {
+        "name": "binaryDataUpload",
+        "kinds": [
+          "boolean"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "operation",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "path",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": true
+      }
+    ],
+    "provenance": "corpus-induced-union (n=3, majors=[1], shapes=2)"
+  },
+  {
+    "type_full": "n8n-nodes-base.nocoDb",
+    "majors": [
+      3
+    ],
+    "n": 7,
+    "n_shapes": 4,
+    "fields": [
+      {
+        "name": "authentication",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": true
+      },
+      {
+        "name": "fieldsUi",
+        "kinds": [
+          "object"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "operation",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": true
+      },
+      {
+        "name": "options",
+        "kinds": [
+          "object"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "projectId",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "returnAll",
+        "kinds": [
+          "boolean"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "table",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      }
+    ],
+    "provenance": "corpus-induced-union (n=7, majors=[3], shapes=4)"
+  },
+  {
+    "type_full": "n8n-nodes-base.notion",
+    "majors": [
+      2
+    ],
+    "n": 23,
+    "n_shapes": 6,
+    "fields": [
+      {
+        "name": "databaseId",
+        "kinds": [
+          "object",
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "filterJson",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "filterType",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "filters",
+        "kinds": [
+          "object"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "matchType",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "operation",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "options",
+        "kinds": [
+          "object"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "pageId",
+        "kinds": [
+          "object",
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "propertiesUi",
+        "kinds": [
+          "object"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "resource",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "returnAll",
+        "kinds": [
+          "boolean"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "title",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      }
+    ],
+    "provenance": "corpus-induced-union (n=23, majors=[2], shapes=6)"
+  },
+  {
+    "type_full": "n8n-nodes-base.postgres",
+    "majors": [
+      1,
+      2
+    ],
+    "n": 7,
+    "n_shapes": 6,
+    "fields": [
+      {
+        "name": "columns",
+        "kinds": [
+          "object",
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "operation",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "options",
+        "kinds": [
+          "object"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "query",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "returnAll",
+        "kinds": [
+          "boolean"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "schema",
+        "kinds": [
+          "object"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "table",
+        "kinds": [
+          "object",
+          "string"
+        ],
+        "required_corpus": false
+      }
+    ],
+    "provenance": "corpus-induced-union (n=7, majors=[1, 2], shapes=6)"
+  },
+  {
+    "type_full": "n8n-nodes-base.removeDuplicates",
+    "majors": [
+      1,
+      2
+    ],
+    "n": 2,
+    "n_shapes": 2,
+    "fields": [
+      {
+        "name": "compare",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "dedupeValue",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "fieldsToCompare",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "operation",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "options",
+        "kinds": [
+          "object"
+        ],
+        "required_corpus": true
+      }
+    ],
+    "provenance": "corpus-induced-union (n=2, majors=[1, 2], shapes=2)"
+  },
+  {
+    "type_full": "n8n-nodes-base.respondToWebhook",
+    "majors": [
+      1
+    ],
+    "n": 20,
+    "n_shapes": 2,
+    "fields": [
+      {
+        "name": "options",
+        "kinds": [
+          "object"
+        ],
+        "required_corpus": true
+      },
+      {
+        "name": "respondWith",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "responseBody",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      }
+    ],
+    "provenance": "corpus-induced-union (n=20, majors=[1], shapes=2)"
+  },
+  {
+    "type_full": "n8n-nodes-base.rssFeedRead",
+    "majors": [
+      1
+    ],
+    "n": 6,
+    "n_shapes": 2,
+    "fields": [
+      {
+        "name": "options",
+        "kinds": [
+          "object"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "url",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": true
+      }
+    ],
+    "provenance": "corpus-induced-union (n=6, majors=[1], shapes=2)"
+  },
+  {
+    "type_full": "n8n-nodes-base.scheduleTrigger",
+    "majors": [
+      1
+    ],
+    "n": 25,
+    "n_shapes": 2,
+    "fields": [
+      {
+        "name": "rule",
+        "kinds": [
+          "object"
+        ],
+        "required_corpus": false
+      }
+    ],
+    "provenance": "corpus-induced-union (n=25, majors=[1], shapes=2)"
+  },
+  {
+    "type_full": "n8n-nodes-base.sendGrid",
+    "majors": [
+      1
+    ],
+    "n": 3,
+    "n_shapes": 2,
+    "fields": [
+      {
+        "name": "additionalFields",
+        "kinds": [
+          "object"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "by",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "email",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": true
+      },
+      {
+        "name": "operation",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "resource",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": true
+      }
+    ],
+    "provenance": "corpus-induced-union (n=3, majors=[1], shapes=2)"
+  },
+  {
+    "type_full": "n8n-nodes-base.set",
+    "majors": [
+      1,
+      2,
+      3
+    ],
+    "n": 169,
+    "n_shapes": 10,
+    "fields": [
+      {
+        "name": "assignments",
+        "kinds": [
+          "object"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "fields",
+        "kinds": [
+          "object"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "include",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "includeOtherFields",
+        "kinds": [
+          "boolean",
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "jsonOutput",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "keepOnlySet",
+        "kinds": [
+          "boolean"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "mode",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "options",
+        "kinds": [
+          "object"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "values",
+        "kinds": [
+          "object"
+        ],
+        "required_corpus": false
+      }
+    ],
+    "provenance": "corpus-induced-union (n=169, majors=[1, 2, 3], shapes=10)"
+  },
+  {
+    "type_full": "n8n-nodes-base.slack",
+    "majors": [
+      1,
+      2
+    ],
+    "n": 24,
+    "n_shapes": 13,
+    "fields": [
+      {
+        "name": "additionalFields",
+        "kinds": [
+          "object"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "as_user",
+        "kinds": [
+          "boolean"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "attachments",
+        "kinds": [
+          "array"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "authentication",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "binaryData",
+        "kinds": [
+          "boolean"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "blocksUi",
+        "kinds": [
+          "object"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "channel",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "channelId",
+        "kinds": [
+          "object",
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "operation",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "options",
+        "kinds": [
+          "object"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "otherOptions",
+        "kinds": [
+          "object"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "resource",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "select",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "text",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "user",
+        "kinds": [
+          "object"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "userIds",
+        "kinds": [
+          "array"
+        ],
+        "required_corpus": false
+      }
+    ],
+    "provenance": "corpus-induced-union (n=24, majors=[1, 2], shapes=13)"
+  },
+  {
+    "type_full": "n8n-nodes-base.splitInBatches",
+    "majors": [
+      1,
+      3
+    ],
+    "n": 20,
+    "n_shapes": 4,
+    "fields": [
+      {
+        "name": "batchSize",
+        "kinds": [
+          "number",
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "options",
+        "kinds": [
+          "object"
+        ],
+        "required_corpus": false
+      }
+    ],
+    "provenance": "corpus-induced-union (n=20, majors=[1, 3], shapes=4)"
+  },
+  {
+    "type_full": "n8n-nodes-base.splitOut",
+    "majors": [
+      1
+    ],
+    "n": 18,
+    "n_shapes": 4,
+    "fields": [
+      {
+        "name": "fieldToSplitOut",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "fieldsToInclude",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "include",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "options",
+        "kinds": [
+          "object"
+        ],
+        "required_corpus": false
+      }
+    ],
+    "provenance": "corpus-induced-union (n=18, majors=[1], shapes=4)"
+  },
+  {
+    "type_full": "n8n-nodes-base.spreadsheetFile",
+    "majors": [
+      1,
+      2
+    ],
+    "n": 11,
+    "n_shapes": 6,
+    "fields": [
+      {
+        "name": "binaryPropertyName",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "fileFormat",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "operation",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "options",
+        "kinds": [
+          "object"
+        ],
+        "required_corpus": false
+      }
+    ],
+    "provenance": "corpus-induced-union (n=11, majors=[1, 2], shapes=6)"
+  },
+  {
+    "type_full": "n8n-nodes-base.stickyNote",
+    "majors": [
+      1
+    ],
+    "n": 450,
+    "n_shapes": 7,
+    "fields": [
+      {
+        "name": "color",
+        "kinds": [
+          "number",
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "content",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "height",
+        "kinds": [
+          "number"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "width",
+        "kinds": [
+          "number"
+        ],
+        "required_corpus": false
+      }
+    ],
+    "provenance": "corpus-induced-union (n=450, majors=[1], shapes=7)"
+  },
+  {
+    "type_full": "n8n-nodes-base.switch",
+    "majors": [
+      1,
+      2,
+      3
+    ],
+    "n": 16,
+    "n_shapes": 5,
+    "fields": [
+      {
+        "name": "dataType",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "fallbackOutput",
+        "kinds": [
+          "number"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "options",
+        "kinds": [
+          "object"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "rules",
+        "kinds": [
+          "object"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "value1",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      }
+    ],
+    "provenance": "corpus-induced-union (n=16, majors=[1, 2, 3], shapes=5)"
+  },
+  {
+    "type_full": "n8n-nodes-base.telegram",
+    "majors": [
+      1
+    ],
+    "n": 24,
+    "n_shapes": 6,
+    "fields": [
+      {
+        "name": "additionalFields",
+        "kinds": [
+          "object"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "binaryData",
+        "kinds": [
+          "boolean"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "chatId",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "file",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "fileId",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "operation",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "resource",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "text",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      }
+    ],
+    "provenance": "corpus-induced-union (n=24, majors=[1], shapes=6)"
+  },
+  {
+    "type_full": "n8n-nodes-base.telegramTrigger",
+    "majors": [
+      1
+    ],
+    "n": 7,
+    "n_shapes": 3,
+    "fields": [
+      {
+        "name": "additionalFields",
+        "kinds": [
+          "object"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "updates",
+        "kinds": [
+          "array"
+        ],
+        "required_corpus": false
+      }
+    ],
+    "provenance": "corpus-induced-union (n=7, majors=[1], shapes=3)"
+  },
+  {
+    "type_full": "n8n-nodes-base.twilio",
+    "majors": [
+      1
+    ],
+    "n": 4,
+    "n_shapes": 2,
+    "fields": [
+      {
+        "name": "from",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": true
+      },
+      {
+        "name": "message",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": true
+      },
+      {
+        "name": "options",
+        "kinds": [
+          "object"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "to",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": true
+      }
+    ],
+    "provenance": "corpus-induced-union (n=4, majors=[1], shapes=2)"
+  },
+  {
+    "type_full": "n8n-nodes-base.typeformTrigger",
+    "majors": [
+      1
+    ],
+    "n": 6,
+    "n_shapes": 3,
+    "fields": [
+      {
+        "name": "authentication",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "formId",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": true
+      },
+      {
+        "name": "onlyAnswers",
+        "kinds": [
+          "boolean"
+        ],
+        "required_corpus": false
+      }
+    ],
+    "provenance": "corpus-induced-union (n=6, majors=[1], shapes=3)"
+  },
+  {
+    "type_full": "n8n-nodes-base.uproc",
+    "majors": [
+      1
+    ],
+    "n": 2,
+    "n_shapes": 2,
+    "fields": [
+      {
+        "name": "additionalOptions",
+        "kinds": [
+          "object"
+        ],
+        "required_corpus": true
+      },
+      {
+        "name": "domain",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "group",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": true
+      },
+      {
+        "name": "ip",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "tool",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": true
+      }
+    ],
+    "provenance": "corpus-induced-union (n=2, majors=[1], shapes=2)"
+  },
+  {
+    "type_full": "n8n-nodes-base.wait",
+    "majors": [
+      1
+    ],
+    "n": 32,
+    "n_shapes": 4,
+    "fields": [
+      {
+        "name": "amount",
+        "kinds": [
+          "number"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "dateTime",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "resume",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "unit",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      }
+    ],
+    "provenance": "corpus-induced-union (n=32, majors=[1], shapes=4)"
+  },
+  {
+    "type_full": "n8n-nodes-base.webhook",
+    "majors": [
+      1,
+      2
+    ],
+    "n": 27,
+    "n_shapes": 11,
+    "fields": [
+      {
+        "name": "authentication",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "httpMethod",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "options",
+        "kinds": [
+          "object"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "path",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": true
+      },
+      {
+        "name": "responseData",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "responseMode",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      }
+    ],
+    "provenance": "corpus-induced-union (n=27, majors=[1, 2], shapes=11)"
+  },
+  {
+    "type_full": "n8n-nodes-base.whatsApp",
+    "majors": [
+      1
+    ],
+    "n": 8,
+    "n_shapes": 3,
+    "fields": [
+      {
+        "name": "additionalFields",
+        "kinds": [
+          "object"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "mediaGetId",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "operation",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "phoneNumberId",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "recipientPhoneNumber",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "resource",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "template",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "textBody",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      }
+    ],
+    "provenance": "corpus-induced-union (n=8, majors=[1], shapes=3)"
+  },
+  {
+    "type_full": "n8n-nodes-base.wooCommerceTool",
+    "majors": [
+      1
+    ],
+    "n": 3,
+    "n_shapes": 3,
+    "fields": [
+      {
+        "name": "descriptionType",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "dimensionsUi",
+        "kinds": [
+          "object"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "imagesUi",
+        "kinds": [
+          "object"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "metadataUi",
+        "kinds": [
+          "object"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "operation",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": true
+      },
+      {
+        "name": "options",
+        "kinds": [
+          "object"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "productId",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "resource",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "returnAll",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "updateFields",
+        "kinds": [
+          "object"
+        ],
+        "required_corpus": false
+      }
+    ],
+    "provenance": "corpus-induced-union (n=3, majors=[1], shapes=3)"
+  },
+  {
+    "type_full": "n8n-nodes-base.wordpress",
+    "majors": [
+      1
+    ],
+    "n": 2,
+    "n_shapes": 2,
+    "fields": [
+      {
+        "name": "additionalFields",
+        "kinds": [
+          "object"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "operation",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "options",
+        "kinds": [
+          "object"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "returnAll",
+        "kinds": [
+          "boolean"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "title",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      }
+    ],
+    "provenance": "corpus-induced-union (n=2, majors=[1], shapes=2)"
+  },
+  {
+    "type_full": "n8n-nodes-base.xml",
+    "majors": [
+      1
+    ],
+    "n": 5,
+    "n_shapes": 3,
+    "fields": [
+      {
+        "name": "dataPropertyName",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "mode",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "options",
+        "kinds": [
+          "object"
+        ],
+        "required_corpus": true
+      }
+    ],
+    "provenance": "corpus-induced-union (n=5, majors=[1], shapes=3)"
+  },
+  {
+    "type_full": "n8n-nodes-base.youTube",
+    "majors": [
+      1
+    ],
+    "n": 4,
+    "n_shapes": 4,
+    "fields": [
+      {
+        "name": "categoryId",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "filters",
+        "kinds": [
+          "object"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "operation",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "options",
+        "kinds": [
+          "object"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "regionCode",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "resource",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": true
+      },
+      {
+        "name": "title",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "updateFields",
+        "kinds": [
+          "object"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "videoId",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      }
+    ],
+    "provenance": "corpus-induced-union (n=4, majors=[1], shapes=4)"
+  },
+  {
+    "type_full": "n8n-nodes-base.zendesk",
+    "majors": [
+      1
+    ],
+    "n": 7,
+    "n_shapes": 6,
+    "fields": [
+      {
+        "name": "additionalFieldsJson",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "description",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "id",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "jsonParameters",
+        "kinds": [
+          "boolean"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "operation",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "options",
+        "kinds": [
+          "object"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "resource",
+        "kinds": [
+          "string"
+        ],
+        "required_corpus": false
+      },
+      {
+        "name": "updateFields",
+        "kinds": [
+          "object"
+        ],
+        "required_corpus": false
+      }
+    ],
+    "provenance": "corpus-induced-union (n=7, majors=[1], shapes=6)"
+  }
+]

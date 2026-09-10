@@ -1,0 +1,7 @@
+{"openapi": "3.0.0", "info": {"title": "x", "version": "1"},
+ "components": {
+   "parameters": {"P": {"name": "x", "in": "query", "schema": {"$ref": "#/components/schemas/S"}}},
+   "schemas": {"S": {"$ref": "#/components/schemas/S"}}},
+ "paths": {"/a": {"get": {"operationId": "listA",
+   "parameters": [{"$ref": "#/components/parameters/P"}],
+   "responses": {"200": {"description": "ok"}}}}}}

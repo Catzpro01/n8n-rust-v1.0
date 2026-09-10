@@ -1,0 +1,202 @@
+{
+  "templates": [
+    {
+      "id": "global-data-feed-aggregator",
+      "version": "1.0.0",
+      "name": "Global Real-time Data Feed Aggregator with CASD Caching",
+      "type": "passive",
+      "category": "data_aggregation",
+      "author": "agent2",
+      "file": "/opt/agent-workspace/hub-templates/passive/global-data-feed-aggregator-v1.0.0.hub.json"
+    },
+    {
+      "id": "bloomberg-macro-health",
+      "version": "1.0.0",
+      "name": "Bloomberg Macro Health and Liquidity Scanner",
+      "type": "passive",
+      "category": "finance_macro",
+      "author": "agent3",
+      "file": "/opt/agent-workspace/hub-templates/passive/bloomberg-macro-health-v1.0.0.hub.json"
+    },
+    {
+      "id": "trading-portfolio-rebalancer",
+      "version": "1.0.0",
+      "name": "Algorithmic Portfolio Rebalancer",
+      "type": "active",
+      "category": "trading_automation",
+      "author": "agent3",
+      "file": "/opt/agent-workspace/hub-templates/active/trading-portfolio-rebalancer-v1.0.0.hub.json"
+    },
+    {
+      "id": "supply-chain-risk-monitor",
+      "version": "1.0.0",
+      "name": "Global Supply Chain Risk Monitor with Predictive Scoring",
+      "type": "passive",
+      "category": "logistics_risk",
+      "author": "agent2",
+      "file": "/opt/agent-workspace/hub-templates/passive/supply-chain-risk-monitor-v1.0.0.hub.json"
+    },
+    {
+      "id": "wcb-scrapling-selfheal-intel",
+      "version": "1.0.0",
+      "name": "WCB Scrapling Self-Healing Web Intel Capsule",
+      "type": "passive",
+      "category": "scraping_osint",
+      "author": "agent6",
+      "file": "/opt/agent-workspace/hub-templates/passive/wcb-scrapling-selfheal-intel-v1.0.0.hub.json"
+    },
+    {
+      "id": "osint-anti-ban-news-radar",
+      "version": "1.0.0",
+      "name": "OSINT Anti-Ban News Radar (2 Sumber, Digest Bersih)",
+      "type": "active",
+      "category": "scraping_osint",
+      "author": "agent6",
+      "file": "/opt/agent-workspace/hub-templates/active/osint-anti-ban-news-radar-v1.0.0.hub.json"
+    },
+    {
+      "id": "realtime-crypto-exchange-arbitrage",
+      "version": "1.0.0",
+      "name": "Real-time Crypto Exchange Arbitrage Detector",
+      "type": "passive",
+      "category": "crypto_trading",
+      "author": "agent2",
+      "file": "/opt/agent-workspace/hub-templates/passive/realtime-crypto-exchange-arbitrage-v1.0.0.hub.json"
+    },
+    {
+      "id": "compliance-evidence-vault",
+      "version": "1.0.0",
+      "name": "Compliance Evidence Vault - Hash-Pinned Audit Trail with Drift Alert",
+      "type": "active",
+      "category": "business_compliance",
+      "author": "agent10",
+      "file": "/opt/agent-workspace/hub-templates/active/compliance-evidence-vault-v1.0.0.hub.json"
+    },
+    {
+      "id": "integrity-digest-capsule",
+      "version": "1.0.0",
+      "name": "Integrity Digest Capsule - 1-Node Hash-Pin for Any JSON Stream",
+      "type": "passive",
+      "category": "data_integrity",
+      "author": "agent10",
+      "file": "/opt/agent-workspace/hub-templates/passive/integrity-digest-capsule-v1.0.0.hub.json"
+    },
+    {
+      "id": "real-estate-analyzer",
+      "version": "1.0.0",
+      "name": "Real Estate Investment Analyzer",
+      "type": "active",
+      "category": "real_estate",
+      "author": "agent3",
+      "file": "/opt/agent-workspace/hub-templates/active/real-estate-analyzer-v1.0.0.hub.json"
+    },
+    {
+      "id": "global-news-sentiment-tracker",
+      "version": "1.0.0",
+      "name": "Global News Sentiment Tracker with Geopolitical Risk Scoring",
+      "type": "passive",
+      "category": "geopolitical_intelligence",
+      "author": "agent2",
+      "file": "/opt/agent-workspace/hub-templates/passive/global-news-sentiment-tracker-v1.0.0.hub.json"
+    },
+    {
+      "id": "bloomberg-sec-edgar-sentiment",
+      "version": "1.0.0",
+      "name": "SEC EDGAR 10-K Risk and News Sentiment Pipeline",
+      "type": "active",
+      "category": "finance_equities",
+      "author": "agent4",
+      "file": "/opt/agent-workspace/hub-templates/active/bloomberg-sec-edgar-sentiment-v1.0.0.hub.json"
+    },
+    {
+      "id": "bloomberg-multi-asset-radar",
+      "version": "1.0.0",
+      "name": "Bloomberg Multi-Asset Morning Radar (Active)",
+      "type": "active",
+      "category": "finance_macro",
+      "author": "agent4",
+      "file": "/opt/agent-workspace/hub-templates/active/bloomberg-multi-asset-radar-v1.0.0.hub.json"
+    },
+    {
+      "id": "bloomberg-multi-asset-radar-capsule",
+      "version": "1.0.0",
+      "name": "Multi-Asset Radar Capsule (Passive 1-Node)",
+      "type": "passive",
+      "category": "finance_macro",
+      "author": "agent4",
+      "file": "/opt/agent-workspace/hub-templates/passive/bloomberg-multi-asset-radar-capsule-v1.0.0.hub.json"
+    },
+    {
+      "id": "bloomberg-sec-edgar-capsule",
+      "version": "1.0.0",
+      "name": "SEC EDGAR 10-K Risk Capsule (Passive 1-Node)",
+      "type": "passive",
+      "category": "finance_equities",
+      "author": "agent4",
+      "file": "/opt/agent-workspace/hub-templates/passive/bloomberg-sec-edgar-capsule-v1.0.0.hub.json"
+    },
+    {
+      "id": "node-error-taxonomy-router",
+      "version": "1.0.0",
+      "name": "Node Error Taxonomy Router - Retry vs Dead-Letter Classifier",
+      "type": "active",
+      "category": "operations_reliability",
+      "author": "agent1",
+      "file": "/opt/agent-workspace/hub-templates/active/node-error-taxonomy-router-v1.0.0.hub.json"
+    },
+    {
+      "id": "osint-news-sentiment",
+      "version": "1.0.0",
+      "name": "OSINT Global News Sentiment Analyzer",
+      "type": "passive",
+      "category": "osint_intelligence",
+      "author": "agent3",
+      "file": "/opt/agent-workspace/hub-templates/passive/osint-news-sentiment-v1.0.0.hub.json"
+    },
+    {
+      "id": "deterministic-idempotency-key",
+      "version": "1.0.0",
+      "name": "Deterministic Idempotency Key - Canonical Dedup Capsule",
+      "type": "passive",
+      "category": "operations_reliability",
+      "author": "agent1",
+      "file": "/opt/agent-workspace/hub-templates/passive/deterministic-idempotency-key-v1.0.0.hub.json"
+    },
+    {
+      "id": "business-market-intel",
+      "version": "1.0.0",
+      "name": "Competitive Market Intelligence Dashboard",
+      "type": "passive",
+      "category": "business_intelligence",
+      "author": "agent3",
+      "file": "/opt/agent-workspace/hub-templates/passive/business-market-intel-v1.0.0.hub.json"
+    },
+    {
+      "id": "crypto-portfolio-tracker",
+      "version": "1.0.0",
+      "name": "Crypto Portfolio Performance Tracker",
+      "type": "passive",
+      "category": "crypto_finance",
+      "author": "agent3",
+      "file": "/opt/agent-workspace/hub-templates/passive/crypto-portfolio-tracker-v1.0.0.hub.json"
+    },
+    {
+      "id": "supply-chain-risk",
+      "version": "1.0.0",
+      "name": "Global Supply Chain Risk Monitor",
+      "type": "passive",
+      "category": "operations_intelligence",
+      "author": "agent3",
+      "file": "/opt/agent-workspace/hub-templates/passive/supply-chain-risk-v1.0.0.hub.json"
+    },
+    {
+      "id": "esg-sustainability",
+      "version": "1.0.0",
+      "name": "ESG Sustainability Score Tracker",
+      "type": "passive",
+      "category": "esg_finance",
+      "author": "agent3",
+      "file": "/opt/agent-workspace/hub-templates/passive/esg-sustainability-v1.0.0.hub.json"
+    }
+  ]
+}

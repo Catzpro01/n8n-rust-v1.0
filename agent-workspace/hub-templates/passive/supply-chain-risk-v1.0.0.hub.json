@@ -1,0 +1,97 @@
+{
+  "id": "supply-chain-risk",
+  "version": "1.0.0",
+  "name": "Global Supply Chain Risk Monitor",
+  "type": "passive",
+  "category": "operations_intelligence",
+  "author": "agent3",
+  "license": "MIT",
+  "engine_compatibility": ">=0.1.0",
+  "documentation": {
+    "cara_kerja": "Monitor multi-source data: (1) Shipping port congestion (AIS data), (2) Weather disruptions (NOAA), (3) Geopolitical events (GDELT), (4) Supplier financial health (SEC filings). Aggregate ke unified risk score per supply chain node.",
+    "fungsi": "Early warning system untuk supply chain disruptions: Risk Heatmap per region/supplier, Disruption Probability Index, dan Recommended Actions (diversify, stockpile, reroute).",
+    "tujuan": "Proactive risk management untuk supply chain managers yang perlu anticipate disruptions sebelum impact ke operations."
+  },
+  "pinning": {
+    "type": "schema-pin",
+    "schema_hash": "blake3:supply_chain_v1",
+    "expected_keys": [
+      "risk_heatmap",
+      "disruption_probability",
+      "affected_suppliers",
+      "recommended_actions",
+      "timestamp"
+    ]
+  },
+  "inputs": {
+    "supplier_list": {
+      "type": "array",
+      "required": true,
+      "description": "List of supplier names/IDs"
+    },
+    "regions": {
+      "type": "array",
+      "default": [
+        "asia",
+        "europe",
+        "americas"
+      ]
+    },
+    "risk_threshold": {
+      "type": "number",
+      "default": 0.7,
+      "description": "Minimum risk score untuk alert"
+    }
+  },
+  "outputs": {
+    "risk_heatmap": {
+      "type": "object"
+    },
+    "disruption_probability": {
+      "type": "number"
+    },
+    "affected_suppliers": {
+      "type": "array"
+    },
+    "recommended_actions": {
+      "type": "array"
+    }
+  },
+  "dag": {
+    "nodes": [
+      {
+        "id": "fetch_risk_signals",
+        "type": "n8n-nodes-base.httpRequest",
+        "parameters": {
+          "url": "https://api.risk.example.com/signals?regions={{$json.regions.join(',')}}",
+          "method": "GET"
+        }
+      },
+      {
+        "id": "assess_risk",
+        "type": "n8n-nodes-base.code",
+        "parameters": {
+          "jsCode": "\n// Deterministic PRNG: mulberry32 (seeded with workflow execution ID)\nfunction mulberry32(seed) {\n  return function() {\n    seed |= 0; seed = seed + 0x6D2B79F5 | 0;\n    var t = Math.imul(seed ^ seed >>> 15, 1 | seed);\n    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;\n    return ((t ^ t >>> 14) >>> 0) / 4294967296;\n  }\n}\nconst rng = mulberry32($json._execution_seed || 12345);\nconst signals = $input.first().json;\nconst regions = ['asia', 'europe', 'americas'];\nconst heatmap = {};\nregions.forEach(r => { heatmap[r] = rng(); });\nconst avgRisk = Object.values(heatmap).reduce((a, b) => a + b, 0) / regions.length;\nconst affected = ['Supplier_A', 'Supplier_C'].filter(() => rng() > 0.5);\nconst actions = avgRisk > 0.7 ? [{type: 'DIVERSIFY', priority: 'HIGH'}, {type: 'STOCKPILE', priority: 'MEDIUM'}] : [{type: 'MONITOR', priority: 'LOW'}];\nreturn [{json: {risk_heatmap: heatmap, disruption_probability: avgRisk, affected_suppliers: affected, recommended_actions: actions, timestamp: new Date().toISOString()}}];"
+        }
+      }
+    ],
+    "connections": {
+      "fetch_risk_signals": {
+        "main": [
+          [
+            {
+              "node": "assess_risk",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    }
+  },
+  "metadata": {
+    "data_source": "simulated",
+    "deterministic": true,
+    "prng": "mulberry32 (seeded with execution ID)"
+  }
+}

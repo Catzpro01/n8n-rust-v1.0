@@ -1,0 +1,34 @@
+{
+  "nodes": [
+    {
+      "id": "trigger-1",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "parameters": {}
+    },
+    {
+      "id": "set-1",
+      "name": "Set",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "manual",
+        "fields": {
+          "values": [
+            { "name": "greeting", "type": "stringValue", "stringValue": "hello" }
+          ]
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [
+          { "node": "Set", "type": "main", "index": 0 }
+        ]
+      ]
+    }
+  }
+}

@@ -1,0 +1,1741 @@
+diff -ruN spill-orig/Cargo.lock spill-work/Cargo.lock
+--- spill-orig/Cargo.lock	2026-09-09 08:29:29.625572224 +0000
++++ spill-work/Cargo.lock	2026-09-09 08:27:22.811769382 +0000
+@@ -3,6 +3,12 @@
+ version = 3
+ 
+ [[package]]
++name = "arrayvec"
++version = "0.7.8"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "d3fb67a6e08acf24fdeccbac2cb6ac4305825bd1f117462e0e6f2f193345ad56"
++
++[[package]]
+ name = "async-trait"
+ version = "0.1.92"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+@@ -14,6 +20,118 @@
+ ]
+ 
+ [[package]]
++name = "blake3"
++version = "1.8.7"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "6d9e454fc11f76977dc803893aff6304ed33d6a26efae8696573bea74baa27ae"
++dependencies = [
++ "arrayvec",
++ "cc",
++ "cfg-if",
++ "constant_time_eq",
++ "cpufeatures 0.3.1",
++]
++
++[[package]]
++name = "block-buffer"
++version = "0.10.4"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "3078c7629b62d3f0439517fa394996acacc5cbc91c5a20d8c658e77abd503a71"
++dependencies = [
++ "generic-array",
++]
++
++[[package]]
++name = "cc"
++version = "1.4.5"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "005ec2760ca554fae18df7a11195552ec576cd665632a881bc011d5bb2fd4d80"
++dependencies = [
++ "find-msvc-tools",
++ "shlex",
++]
++
++[[package]]
++name = "cfg-if"
++version = "1.0.4"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "9330f8b2ff13f34540b44e946ef35111825727b38d33286ef986142615121801"
++
++[[package]]
++name = "constant_time_eq"
++version = "0.4.2"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "3d52eff69cd5e647efe296129160853a42795992097e8af39800e1060caeea9b"
++
++[[package]]
++name = "cpufeatures"
++version = "0.2.17"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "59ed5838eebb26a2bb2e58f6d5b5316989ae9d08bab10e0e6d103e656d1b0280"
++dependencies = [
++ "libc",
++]
++
++[[package]]
++name = "cpufeatures"
++version = "0.3.1"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "5ca28b0ae3115b884660db4118d803791fd6756b6e88f39c0f3f7859060d7566"
++dependencies = [
++ "libc",
++]
++
++[[package]]
++name = "crypto-common"
++version = "0.1.7"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "78c8292055d1c1df0cce5d180393dc8cce0abec0a7102adb6c7b1eef6016d60a"
++dependencies = [
++ "generic-array",
++ "typenum",
++]
++
++[[package]]
++name = "data-plane"
++version = "0.1.0"
++dependencies = [
++ "async-trait",
++ "blake3",
++ "kernel",
++ "libc",
++ "serde",
++ "serde_json",
++ "sha2",
++ "thiserror",
++]
++
++[[package]]
++name = "digest"
++version = "0.10.7"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "9ed9a281f7bc9b7576e61468ba615a66a5c8cfdff42420a70aa82701a3b1e292"
++dependencies = [
++ "block-buffer",
++ "crypto-common",
++]
++
++[[package]]
++name = "find-msvc-tools"
++version = "0.1.12"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "3e0f1c7c3a72c66fd80abe965175f7523475c0489a87d3ff9d6e8c87d87a9d2d"
++
++[[package]]
++name = "generic-array"
++version = "0.14.7"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "85649ca51fd72272d7821adaf274ad91c288277713d9c18820d8499a7ff69e9a"
++dependencies = [
++ "typenum",
++ "version_check",
++]
++
++[[package]]
+ name = "itoa"
+ version = "1.0.18"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+@@ -24,12 +142,19 @@
+ version = "0.1.0"
+ dependencies = [
+  "async-trait",
++ "data-plane",
+  "serde",
+  "serde_json",
+  "thiserror",
+ ]
+ 
+ [[package]]
++name = "libc"
++version = "0.2.189"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "3eaf3ede3fee6db1a4c2ee091bf8a8b4dccdc6d17f656fb07896ee72867612f2"
++
++[[package]]
+ name = "memchr"
+ version = "2.8.3"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+@@ -97,6 +222,23 @@
+ ]
+ 
+ [[package]]
++name = "sha2"
++version = "0.10.9"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "a7507d819769d01a365ab707794a4084392c824f54a7a6a7862f8c3d0892b283"
++dependencies = [
++ "cfg-if",
++ "cpufeatures 0.2.17",
++ "digest",
++]
++
++[[package]]
++name = "shlex"
++version = "2.0.1"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "f8fadd59c855ef2080decdef8ff161eb6661b86933c9d82e5ba29dc602a55aba"
++
++[[package]]
+ name = "syn"
+ version = "3.0.5"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+@@ -128,12 +270,24 @@
+ ]
+ 
+ [[package]]
++name = "typenum"
++version = "1.20.1"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "b6f5e870be6c3b371b77fe0ee0bafb859fa4964b4404c27de1d380043c4dda20"
++
++[[package]]
+ name = "unicode-ident"
+ version = "1.0.24"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+ checksum = "e6e4313cd5fcd3dad5cafa179702e2b244f760991f45397d14d4ebf38247da75"
+ 
+ [[package]]
++name = "version_check"
++version = "0.9.5"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "0b928f33d975fc6ad9f86c8f283853ad26bdd5b10b7f1542aa2fa15e2289105a"
++
++[[package]]
+ name = "zmij"
+ version = "1.0.23"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+diff -ruN spill-orig/Cargo.toml spill-work/Cargo.toml
+--- spill-orig/Cargo.toml	2026-09-09 08:29:29.622572295 +0000
++++ spill-work/Cargo.toml	2026-09-09 08:27:17.103923235 +0000
+@@ -10,6 +10,7 @@
+ # Member dikembalikan lagi begitu crate-nya benar-benar punya src/lib.rs.
+ members = [
+     "crates/kernel",
++    "crates/data-plane",
+ ]
+ 
+ [workspace.package]
+diff -ruN spill-orig/crates/data-plane/Cargo.toml spill-work/crates/data-plane/Cargo.toml
+--- spill-orig/crates/data-plane/Cargo.toml	2026-09-09 08:29:29.626572200 +0000
++++ spill-work/crates/data-plane/Cargo.toml	2026-09-09 08:27:17.103923235 +0000
+@@ -15,3 +15,8 @@
+ serde_json.workspace = true
+ async-trait.workspace = true
+ thiserror.workspace = true
++sha2 = "0.10"
++blake3 = "1"
++
++[dev-dependencies]
++libc = "0.2"
+diff -ruN spill-orig/crates/data-plane/src/lib.rs spill-work/crates/data-plane/src/lib.rs
+--- spill-orig/crates/data-plane/src/lib.rs	1970-01-01 00:00:00.000000000 +0000
++++ spill-work/crates/data-plane/src/lib.rs	2026-09-09 08:27:06.170220577 +0000
+@@ -0,0 +1,15 @@
++//! Disk-backed `SpillStore` and blob storage. Implements kernel data contracts.
++//!
++//! Production home of `FileSpillStore`, moved here from
++//! `crates/kernel/examples/spill_bench.rs` per SINTESIS-SPILLSTORE §6.1 step 2.
++//! The benchmark keeps existing but calls this implementation — never a copy.
++//!
++//! Edge rule (audit A-05): this crate depends on `kernel` ONLY (plus external
++//! hash crates). It stays runtime-agnostic like the kernel: synchronous
++//! `std::fs` I/O inside `async fn` (callers drive it with any executor).
++
++#![forbid(unsafe_code)]
++
++pub mod spill;
++
++pub use spill::FileSpillStore;
+diff -ruN spill-orig/crates/data-plane/src/spill.rs spill-work/crates/data-plane/src/spill.rs
+--- spill-orig/crates/data-plane/src/spill.rs	1970-01-01 00:00:00.000000000 +0000
++++ spill-work/crates/data-plane/src/spill.rs	2026-09-09 08:30:02.925795675 +0000
+@@ -0,0 +1,510 @@
++//! `FileSpillStore` — real disk I/O with a real offset index.
++//!
++//! # On-disk format v1
++//!
++//! ```text
++//! offset 0:  magic[4] = "SPL1" | version[1] = 0x01 | reserved[3] = 0
++//! offset 8:  record 0: len[8 LE] payload[len]   (payload = JSON item bytes)
++//!            record 1: len[8 LE] payload[len]
++//!            ...
++//! ```
++//!
++//! * `magic` is checked on **every** read entry point (`InvalidMagic`).
++//! * `layer0_checksum` (SHA-256 over **all** file bytes, header included) is
++//!   verified only by explicit `verify_integrity` (`ChecksumMismatch`).
++//!   Reads detect truncation (`OffsetOutOfRange`) and undecodable records
++//!   (`Codec`), but a corruption that still decodes as valid JSON is silent
++//!   until the next explicit verify — a documented W0 limitation; the engine
++//!   must schedule periodic/audit verification (later wave).
++//! * `casd_hash` (BLAKE3 over the same bytes) is identity for CASD
++//!   deduplication, never an integrity signal.
++//! * Both hashes stream per item during write: transient peak ≈ 2 KB
++//!   (112 B SHA-256 + 1920 B BLAKE3, agent10-measured) — O(1) in spill size,
++//!   inside the locked 4 KB hash budget. The 256 KB `BufWriter` is pre-existing
++//!   I/O buffering (Governor D72 domain), not hash transient.
++//! * Files are created mode `0600` via `OpenOptions::mode` (constructor
++//!   enforcement, umask-independent) per SEC-07.
++
++use async_trait::async_trait;
++use blake3::Hasher as Blake3Hasher;
++use kernel::error::KernelError;
++use kernel::id::SpillPath;
++use kernel::item::{Item, SpillCodec, SpillStore, SpillWriter, SpilledList};
++use sha2::{Digest, Sha256};
++use std::collections::HashMap;
++use std::fs::{File, OpenOptions};
++use std::io::{BufWriter, Read, Seek, SeekFrom, Write};
++use std::path::PathBuf;
++use std::sync::{Arc, Mutex};
++
++/// File magic (agent2 #256, approved agent5). Wrong magic = `InvalidMagic`.
++pub const SPILL_MAGIC: [u8; 4] = *b"SPL1";
++/// Format version. Only v1 is readable; anything else is fail-closed.
++pub const SPILL_VERSION: u8 = 1;
++/// Header length: magic[4] + version[1] + reserved[3].
++pub const HEADER_LEN: u64 = 8;
++/// Streaming read buffer for `verify_integrity` (2 KB + 112 B hasher < 4 KB).
++const VERIFY_BUF: usize = 2048;
++
++fn hex(bytes: &[u8]) -> String {
++    const H: &[u8; 16] = b"0123456789abcdef";
++    let mut s = String::with_capacity(bytes.len() * 2);
++    for &b in bytes {
++        s.push(H[(b >> 4) as usize] as char);
++        s.push(H[(b & 15) as usize] as char);
++    }
++    s
++}
++
++struct Entry {
++    /// Byte offset of each item in the spill file (8 bytes per item in RAM,
++    /// payload stays on disk).
++    offsets: Vec<u64>,
++    file: File,
++}
++
++type Entries = Arc<Mutex<HashMap<String, Entry>>>;
++
++pub struct FileSpillStore {
++    dir: PathBuf,
++    next_id: Mutex<u64>,
++    entries: Entries,
++}
++
++impl FileSpillStore {
++    /// Open (creating) a spill root. Flat layout: `spill-<N>.bin` directly
++    /// under `dir`. For per-execution GC use [`FileSpillStore::for_execution`].
++    pub fn new(dir: impl Into<PathBuf>) -> std::io::Result<Self> {
++        let dir = dir.into();
++        std::fs::create_dir_all(&dir)?;
++        Ok(Self {
++            dir,
++            next_id: Mutex::new(0),
++            entries: Arc::new(Mutex::new(HashMap::new())),
++        })
++    }
++
++    /// Open a store scoped to one execution (`root/execution_id/`). Only an
++    /// execution-scoped store can [`FileSpillStore::gc_execution`] — the flat
++    /// layout carries no execution namespace, so GC there would be guessing.
++    pub fn for_execution(root: impl Into<PathBuf>, execution_id: &str) -> std::io::Result<Self> {
++        assert_no_traversal(execution_id)
++            .map_err(|m| std::io::Error::new(std::io::ErrorKind::InvalidInput, m))?;
++        Self::new(root.into().join(execution_id))
++    }
++
++    /// Delete every spill file owned by this execution-scoped store, drop its
++    /// index entries, and remove the directory. Returns files deleted.
++    ///
++    /// Callers must respect audit A-21: never GC an execution that is not
++    /// terminal (RUNNING / WAITING / PAUSED handles must not lose files).
++    pub fn gc_execution(&self) -> Result<u64, KernelError> {
++        let mut count = 0u64;
++        let rd = std::fs::read_dir(&self.dir).map_err(io_err)?;
++        for ent in rd {
++            let ent = ent.map_err(io_err)?;
++            let p = ent.path();
++            let is_spill = p
++                .file_name()
++                .and_then(|n| n.to_str())
++                .map(|n| n.starts_with("spill-") && n.ends_with(".bin"))
++                .unwrap_or(false);
++            if is_spill {
++                std::fs::remove_file(&p).map_err(io_err)?;
++                count += 1;
++            }
++        }
++        self.entries.lock().unwrap().clear();
++        // Best effort: dir may hold foreign files; only remove when empty.
++        let _ = std::fs::remove_dir(&self.dir);
++        Ok(count)
++    }
++
++    fn path_for(&self, name: &str) -> PathBuf {
++        self.dir.join(name)
++    }
++
++    fn alloc_name(&self) -> String {
++        let mut next = self.next_id.lock().unwrap();
++        *next += 1;
++        format!("spill-{}.bin", *next)
++    }
++
++    /// RAM held by the index for one handle.
++    pub fn index_bytes(&self, handle: &SpilledList) -> usize {
++        self.entries
++            .lock()
++            .unwrap()
++            .get(handle.path.as_str())
++            .map(|e| e.offsets.len() * std::mem::size_of::<u64>())
++            .unwrap_or(0)
++    }
++}
++
++fn assert_no_traversal(id: &str) -> Result<(), String> {
++    if id.is_empty() || id == "." || id == ".." || id.contains('/') || id.contains('\\') {
++        return Err(format!("unsafe execution_id for path scope: {id:?}"));
++    }
++    Ok(())
++}
++
++fn io_err(e: std::io::Error) -> KernelError {
++    KernelError::SpillIo {
++        message: e.to_string(),
++    }
++}
++
++/// Read-path error mapping: an unexpected EOF means the file is shorter than
++/// its index claims — corruption (`OffsetOutOfRange`), not infra noise.
++/// Anything else stays `SpillIo` (node FAILED + retry policy per E_SPILL_IO).
++fn read_err(e: std::io::Error, what: &str) -> KernelError {
++    if e.kind() == std::io::ErrorKind::UnexpectedEof {
++        KernelError::OffsetOutOfRange {
++            message: format!("{what}: unexpected EOF"),
++        }
++    } else {
++        io_err(e)
++    }
++}
++
++/// Serialize one item to the on-disk record payload.
++fn encode(it: &Item) -> Result<Vec<u8>, KernelError> {
++    serde_json::to_vec(it).map_err(|e| KernelError::Codec {
++        codec: "json",
++        reason: e.to_string(),
++    })
++}
++
++fn decode(buf: &[u8]) -> Result<Item, KernelError> {
++    serde_json::from_slice(buf).map_err(|e| KernelError::Codec {
++        codec: "json",
++        reason: e.to_string(),
++    })
++}
++
++/// Create with `0600` enforced in the constructor (SEC-07): `mode` applies at
++/// creation time, so the result is umask-independent. No create-then-chmod
++/// window where the file is world-readable.
++fn open_rw(path: &PathBuf) -> Result<File, KernelError> {
++    let mut opts = OpenOptions::new();
++    opts.create(true).write(true).read(true).truncate(true);
++    #[cfg(unix)]
++    {
++        use std::os::unix::fs::OpenOptionsExt;
++        opts.mode(0o600);
++    }
++    opts.open(path).map_err(io_err)
++}
++
++/// Verify the 8-byte header. Leaves the cursor position unspecified; callers
++/// always seek explicitly afterwards.
++fn check_magic(file: &mut File, name: &str) -> Result<(), KernelError> {
++    file.seek(SeekFrom::Start(0)).map_err(io_err)?;
++    let mut hdr = [0u8; HEADER_LEN as usize];
++    file.read_exact(&mut hdr)
++        .map_err(|e| read_err(e, &format!("spill {name}: header")))?;
++    if hdr[0..4] != SPILL_MAGIC {
++        return Err(KernelError::InvalidMagic {
++            expected: hex(&SPILL_MAGIC),
++            got: hex(&hdr[0..4]),
++        });
++    }
++    if hdr[4] != SPILL_VERSION {
++        return Err(KernelError::Invalid {
++            message: format!(
++                "spill {name}: unsupported version {}, want {}",
++                hdr[4], SPILL_VERSION
++            ),
++        });
++    }
++    Ok(())
++}
++
++fn lock_entry<'a>(
++    entries: &'a mut std::sync::MutexGuard<'_, HashMap<String, Entry>>,
++    handle: &SpilledList,
++) -> Result<&'a mut Entry, KernelError> {
++    entries
++        .get_mut(handle.path.as_str())
++        .ok_or_else(|| KernelError::SpillIo {
++            message: format!("no such spill file: {}", handle.path),
++        })
++}
++
++#[async_trait]
++impl SpillStore for FileSpillStore {
++    async fn write(&self, items: &[Item]) -> Result<SpilledList, KernelError> {
++        // Convenience path: reuse the streaming writer so there is exactly one
++        // implementation of the file format.
++        let mut w = self.writer().await?;
++        w.push(items).await?;
++        w.finish().await
++    }
++
++    async fn read_at(&self, handle: &SpilledList, index: usize) -> Result<Item, KernelError> {
++        let mut entries = self.entries.lock().unwrap();
++        let entry = lock_entry(&mut entries, handle)?;
++        check_magic(&mut entry.file, handle.path.as_str())?;
++
++        let &off = entry
++            .offsets
++            .get(index)
++            .ok_or(KernelError::IndexOutOfBounds {
++                index,
++                len: entry.offsets.len(),
++            })?;
++
++        entry.file.seek(SeekFrom::Start(off)).map_err(io_err)?;
++        let mut lenbuf = [0u8; 8];
++        entry
++            .file
++            .read_exact(&mut lenbuf)
++            .map_err(|e| read_err(e, &format!("spill {} index {index}", handle.path)))?;
++        let len = u64::from_le_bytes(lenbuf) as usize;
++
++        let mut buf = vec![0u8; len];
++        entry
++            .file
++            .read_exact(&mut buf)
++            .map_err(|e| read_err(e, &format!("spill {} index {index}", handle.path)))?;
++        decode(&buf)
++    }
++
++    async fn read_range(
++        &self,
++        handle: &SpilledList,
++        start: usize,
++        len: usize,
++    ) -> Result<Vec<Item>, KernelError> {
++        // Sequential read: one seek, then stream the whole range. This is the
++        // cursor hot path, so avoiding N seeks is what makes chunked iteration
++        // cheaper than N random gets.
++        let mut entries = self.entries.lock().unwrap();
++        let entry = lock_entry(&mut entries, handle)?;
++        check_magic(&mut entry.file, handle.path.as_str())?;
++
++        let n = entry.offsets.len();
++        if start >= n || len == 0 {
++            return Ok(Vec::new());
++        }
++        let end = (start + len).min(n);
++        let off = entry.offsets[start];
++        entry.file.seek(SeekFrom::Start(off)).map_err(io_err)?;
++
++        let file_len = entry.file.metadata().map(|m| m.len()).unwrap_or(0);
++        let span = if end < n {
++            (entry.offsets[end] - off) as usize
++        } else {
++            (file_len.saturating_sub(off)) as usize
++        };
++
++        let mut raw = vec![0u8; span];
++        entry
++            .file
++            .read_exact(&mut raw)
++            .map_err(|e| read_err(e, &format!("spill {} range", handle.path)))?;
++
++        let mut out = Vec::with_capacity(end - start);
++        let mut cur = 0usize;
++        for i in start..end {
++            if cur + 8 > raw.len() {
++                return Err(KernelError::OffsetOutOfRange {
++                    message: format!("spill {} record {i}: header past EOF", handle.path),
++                });
++            }
++            let l = u64::from_le_bytes(raw[cur..cur + 8].try_into().unwrap()) as usize;
++            cur += 8;
++            if cur + l > raw.len() {
++                return Err(KernelError::OffsetOutOfRange {
++                    message: format!("spill {} record {i}: payload past EOF", handle.path),
++                });
++            }
++            out.push(decode(&raw[cur..cur + l])?);
++            cur += l;
++        }
++        Ok(out)
++    }
++
++    async fn read_all(&self, handle: &SpilledList) -> Result<Vec<Item>, KernelError> {
++        self.read_range(handle, 0, handle.len as usize).await
++    }
++
++    async fn delete(&self, handle: &SpilledList) -> Result<(), KernelError> {
++        self.entries.lock().unwrap().remove(handle.path.as_str());
++        let p = self.path_for(handle.path.as_str());
++        if p.exists() {
++            std::fs::remove_file(p).map_err(io_err)?;
++        }
++        Ok(())
++    }
++
++    fn disk_footprint(&self, handle: &SpilledList) -> u64 {
++        handle.total_bytes
++    }
++
++    async fn verify_integrity(&self, handle: &SpilledList) -> Result<bool, KernelError> {
++        let expected = handle.layer0_checksum.ok_or_else(|| KernelError::Invalid {
++            message: "legacy spill: no layer0_checksum recorded".to_string(),
++        })?;
++        // Fresh handle: proves at-rest bytes, never disturbs the live cursor.
++        let path = self.path_for(handle.path.as_str());
++        let mut file = File::open(&path).map_err(|e| {
++            if e.kind() == std::io::ErrorKind::NotFound {
++                KernelError::SpillIo {
++                    message: format!("no such spill file: {}", handle.path),
++                }
++            } else {
++                io_err(e)
++            }
++        })?;
++        check_magic(&mut file, handle.path.as_str())?;
++        file.seek(SeekFrom::Start(0)).map_err(io_err)?;
++        let mut h = Sha256::new();
++        let mut buf = vec![0u8; VERIFY_BUF];
++        loop {
++            let n = file.read(&mut buf).map_err(io_err)?;
++            if n == 0 {
++                break;
++            }
++            h.update(&buf[..n]);
++        }
++        let actual: [u8; 32] = h.finalize().into();
++        if actual != expected {
++            return Err(KernelError::ChecksumMismatch {
++                expected: hex(&expected),
++                actual: hex(&actual),
++            });
++        }
++        Ok(true)
++    }
++
++    async fn writer(&self) -> Result<Box<dyn SpillWriter>, KernelError> {
++        let name = self.alloc_name();
++        let fs_path = self.path_for(&name);
++        let file = open_rw(&fs_path)?;
++        let mut w = BufWriter::with_capacity(256 * 1024, file);
++        // Header first; it is part of the hashed bytes.
++        let mut hdr = [0u8; HEADER_LEN as usize];
++        hdr[0..4].copy_from_slice(&SPILL_MAGIC);
++        hdr[4] = SPILL_VERSION;
++        let mut sha256 = Sha256::new();
++        let mut blake3 = Blake3Hasher::new();
++        sha256.update(hdr);
++        blake3.update(&hdr);
++        w.write_all(&hdr).map_err(io_err)?;
++        Ok(Box::new(FileSpillWriter {
++            logical: name,
++            fs_path,
++            w: Some(w),
++            sha256: Some(sha256),
++            blake3: Some(blake3),
++            offsets: Vec::new(),
++            pos: HEADER_LEN,
++            total: 0,
++            finished: false,
++            entries: Arc::clone(&self.entries),
++        }))
++    }
++}
++
++struct FileSpillWriter {
++    logical: String,
++    fs_path: PathBuf,
++    /// `Option` so `finish` can move the parts out (`Drop` forbids moving
++    /// fields out of `self` directly, E0509).
++    w: Option<BufWriter<File>>,
++    sha256: Option<Sha256>,
++    blake3: Option<Blake3Hasher>,
++    offsets: Vec<u64>,
++    pos: u64,
++    total: u64,
++    finished: bool,
++    entries: Entries,
++}
++
++#[async_trait]
++impl SpillWriter for FileSpillWriter {
++    async fn push(&mut self, items: &[Item]) -> Result<(), KernelError> {
++        if self.finished {
++            return Err(KernelError::Invalid {
++                message: "push() called after finish()".to_string(),
++            });
++        }
++        let w = self.w.as_mut().ok_or(KernelError::Invalid {
++            message: "writer already finished".to_string(),
++        })?;
++        let sha256 = self.sha256.as_mut().ok_or(KernelError::Invalid {
++            message: "writer already finished".to_string(),
++        })?;
++        let blake3 = self.blake3.as_mut().ok_or(KernelError::Invalid {
++            message: "writer already finished".to_string(),
++        })?;
++        for it in items {
++            let bytes = encode(it)?;
++            let len = bytes.len() as u64;
++            let lenbytes = len.to_le_bytes();
++            // Stream into both hashers: no extra buffer beyond the record
++            // bytes that already exist. Transient ≈ 2 KB, O(1) in spill size.
++            sha256.update(lenbytes);
++            sha256.update(&bytes);
++            blake3.update(&lenbytes);
++            blake3.update(&bytes);
++            w.write_all(&lenbytes)
++                .and_then(|_| w.write_all(&bytes))
++                .map_err(io_err)?;
++            self.offsets.push(self.pos);
++            self.pos += 8 + len;
++            self.total += len;
++        }
++        Ok(())
++    }
++
++    async fn finish(mut self: Box<Self>) -> Result<SpilledList, KernelError> {
++        let mut bw = self.w.take().ok_or(KernelError::Invalid {
++            message: "finish() called twice".to_string(),
++        })?;
++        bw.flush().map_err(io_err)?;
++        let file = bw.into_inner().map_err(|e| io_err(e.into_error()))?;
++        file.sync_all().map_err(io_err)?;
++        let sha256 = self.sha256.take().ok_or(KernelError::Invalid {
++            message: "finish() called twice".to_string(),
++        })?;
++        let blake3 = self.blake3.take().ok_or(KernelError::Invalid {
++            message: "finish() called twice".to_string(),
++        })?;
++        let layer0_checksum: [u8; 32] = sha256.finalize().into();
++        let casd_hash: [u8; 32] = *blake3.finalize().as_bytes();
++
++        let count = self.offsets.len() as u32;
++        self.entries.lock().unwrap().insert(
++            self.logical.clone(),
++            Entry {
++                offsets: std::mem::take(&mut self.offsets),
++                file,
++            },
++        );
++        self.finished = true;
++
++        Ok(SpilledList {
++            path: SpillPath::new(self.logical.clone()),
++            len: count,
++            total_bytes: self.total,
++            codec: SpillCodec::Json,
++            layer0_checksum: Some(layer0_checksum),
++            casd_hash: Some(casd_hash),
++        })
++    }
++
++    fn pushed(&self) -> u32 {
++        self.offsets.len() as u32
++    }
++}
++
++/// Honour the trait contract: an unfinished writer must not leak a partial file.
++impl Drop for FileSpillWriter {
++    fn drop(&mut self) {
++        if !self.finished {
++            let _ = std::fs::remove_file(&self.fs_path);
++        }
++    }
++}
+diff -ruN spill-orig/crates/data-plane/tests/spill_tests.rs spill-work/crates/data-plane/tests/spill_tests.rs
+--- spill-orig/crates/data-plane/tests/spill_tests.rs	1970-01-01 00:00:00.000000000 +0000
++++ spill-work/crates/data-plane/tests/spill_tests.rs	2026-09-09 08:30:02.933795492 +0000
+@@ -0,0 +1,295 @@
++//! W0-SPILL-IMPL acceptance tests: the REAL `FileSpillStore` on disk.
++//!
++//! Covers SINTESIS-SPILLSTORE §6.1 step 4 (real store, `umask 000`,
++//! 1-byte corruption → `ChecksumMismatch`) plus the G-C7 specific errors
++//! (`InvalidMagic`, `OffsetOutOfRange`) and GC/drop lifecycle.
++//!
++//! Runtime-agnostic like the kernel: plain `#[test]` + a spin `block_on`.
++
++use data_plane::spill::{HEADER_LEN, SPILL_MAGIC, SPILL_VERSION};
++use data_plane::FileSpillStore;
++use kernel::error::KernelError;
++use kernel::item::{Item, SpillCodec, SpillStore, SpilledList};
++use serde_json::json;
++use std::fs::OpenOptions;
++use std::io::{Read, Seek, SeekFrom, Write};
++use std::path::PathBuf;
++use std::sync::atomic::{AtomicU64, Ordering};
++
++fn block_on<F: std::future::Future>(fut: F) -> F::Output {
++    use std::sync::atomic::AtomicBool;
++    use std::task::{Context, Poll, Wake};
++
++    struct Spin(AtomicBool);
++    impl Wake for Spin {
++        fn wake(self: std::sync::Arc<Self>) {
++            self.0.store(true, Ordering::SeqCst);
++        }
++    }
++
++    let waker = std::sync::Arc::new(Spin(AtomicBool::new(false))).into();
++    let mut cx = Context::from_waker(&waker);
++    let mut fut = Box::pin(fut);
++    loop {
++        match fut.as_mut().poll(&mut cx) {
++            Poll::Ready(v) => return v,
++            Poll::Pending => std::thread::yield_now(),
++        }
++    }
++}
++
++static NEXT_DIR: AtomicU64 = AtomicU64::new(0);
++
++fn fresh_dir() -> PathBuf {
++    let n = NEXT_DIR.fetch_add(1, Ordering::SeqCst);
++    let d = std::env::temp_dir().join(format!(
++        "spill-test-{}-{}-{}",
++        std::process::id(),
++        n,
++        std::time::SystemTime::now()
++            .duration_since(std::time::UNIX_EPOCH)
++            .unwrap()
++            .as_nanos()
++    ));
++    std::fs::create_dir_all(&d).unwrap();
++    d
++}
++
++fn item(i: u64) -> Item {
++    Item::new(json!({"id": i, "name": format!("row-{i}"), "pad": "x".repeat(64)}))
++}
++
++fn items(n: u64) -> Vec<Item> {
++    (0..n).map(item).collect()
++}
++
++fn spill_file(dir: &std::path::Path, h: &SpilledList) -> PathBuf {
++    dir.join(h.path.as_str())
++}
++
++#[test]
++fn roundtrip_and_handle_fields() {
++    let dir = fresh_dir();
++    let store = FileSpillStore::new(&dir).unwrap();
++    let items = items(50);
++    let h = block_on(store.write(&items)).unwrap();
++
++    assert_eq!(h.len, 50);
++    assert_eq!(h.codec, SpillCodec::Json);
++    assert!(h.total_bytes > 0);
++    // Dual hash present and distinct (different algorithms).
++    let (Some(sha), Some(b3)) = (h.layer0_checksum, h.casd_hash) else {
++        panic!("both hashes must be computed");
++    };
++    assert_ne!(sha, b3);
++    // Header on disk.
++    let mut f = std::fs::File::open(spill_file(&dir, &h)).unwrap();
++    let mut hdr = [0u8; 8];
++    f.read_exact(&mut hdr).unwrap();
++    assert_eq!(&hdr[0..4], &SPILL_MAGIC);
++    assert_eq!(hdr[4], SPILL_VERSION);
++
++    assert_eq!(block_on(store.read_at(&h, 0)).unwrap().json, items[0].json);
++    assert_eq!(
++        block_on(store.read_at(&h, 49)).unwrap().json,
++        items[49].json
++    );
++    let r = block_on(store.read_range(&h, 10, 5)).unwrap();
++    assert_eq!(r.len(), 5);
++    assert_eq!(r[0].json, items[10].json);
++    assert_eq!(block_on(store.read_all(&h)).unwrap().len(), 50);
++    assert!(block_on(store.verify_integrity(&h)).unwrap());
++    assert_eq!(store.index_bytes(&h), 50 * 8);
++
++    block_on(store.delete(&h)).unwrap();
++    assert!(!spill_file(&dir, &h).exists());
++    std::fs::remove_dir_all(&dir).unwrap();
++}
++
++#[test]
++fn one_byte_corruption_detected_by_verify() {
++    let dir = fresh_dir();
++    let store = FileSpillStore::new(&dir).unwrap();
++    let h = block_on(store.write(&items(10))).unwrap();
++    assert!(block_on(store.verify_integrity(&h)).unwrap());
++
++    // Flip one byte inside record 3's JSON string payload (stays valid JSON).
++    let p = spill_file(&dir, &h);
++    let mut f = OpenOptions::new().read(true).write(true).open(&p).unwrap();
++    // Record 0 starts at HEADER_LEN; walk two records to land inside record 2+.
++    let mut off = HEADER_LEN;
++    for _ in 0..2 {
++        f.seek(SeekFrom::Start(off)).unwrap();
++        let mut lb = [0u8; 8];
++        f.read_exact(&mut lb).unwrap();
++        off += 8 + u64::from_le_bytes(lb);
++    }
++    // Inside the payload: find a ':' then flip the next byte's case bit.
++    f.seek(SeekFrom::Start(off + 8)).unwrap();
++    let mut payload = vec![0u8; 64];
++    f.read_exact(&mut payload).unwrap();
++    let pos = payload.iter().position(|&b| b == b'"').unwrap();
++    payload[pos] = b'\'';
++    f.seek(SeekFrom::Start(off + 8)).unwrap();
++    f.write_all(&payload).unwrap();
++    drop(f);
++
++    match block_on(store.verify_integrity(&h)) {
++        Err(KernelError::ChecksumMismatch { .. }) => {}
++        other => panic!("want ChecksumMismatch, got {other:?}"),
++    }
++    std::fs::remove_dir_all(&dir).unwrap();
++}
++
++#[test]
++fn bad_magic_fail_closed() {
++    let dir = fresh_dir();
++    let store = FileSpillStore::new(&dir).unwrap();
++    let h = block_on(store.write(&items(5))).unwrap();
++
++    let p = spill_file(&dir, &h);
++    let mut f = OpenOptions::new().write(true).open(&p).unwrap();
++    f.write_all(b"NOPE").unwrap();
++    drop(f);
++
++    match block_on(store.read_at(&h, 0)) {
++        Err(KernelError::InvalidMagic { .. }) => {}
++        other => panic!("want InvalidMagic, got {other:?}"),
++    }
++    match block_on(store.verify_integrity(&h)) {
++        Err(KernelError::InvalidMagic { .. }) => {}
++        other => panic!("want InvalidMagic on verify, got {other:?}"),
++    }
++    std::fs::remove_dir_all(&dir).unwrap();
++}
++
++#[test]
++fn truncation_is_offset_out_of_range() {
++    let dir = fresh_dir();
++    let store = FileSpillStore::new(&dir).unwrap();
++    let h = block_on(store.write(&items(20))).unwrap();
++
++    // Truncate mid-file: header intact, records cut.
++    let p = spill_file(&dir, &h);
++    let f = OpenOptions::new().write(true).open(&p).unwrap();
++    f.set_len(HEADER_LEN + 30).unwrap();
++    drop(f);
++
++    match block_on(store.read_at(&h, 19)) {
++        Err(KernelError::OffsetOutOfRange { .. }) => {}
++        other => panic!("want OffsetOutOfRange, got {other:?}"),
++    }
++    match block_on(store.read_range(&h, 0, 20)) {
++        Err(KernelError::OffsetOutOfRange { .. }) => {}
++        other => panic!("want OffsetOutOfRange on range, got {other:?}"),
++    }
++    std::fs::remove_dir_all(&dir).unwrap();
++}
++
++#[test]
++fn index_out_of_bounds_unchanged() {
++    let dir = fresh_dir();
++    let store = FileSpillStore::new(&dir).unwrap();
++    let h = block_on(store.write(&items(3))).unwrap();
++    match block_on(store.read_at(&h, 3)) {
++        Err(KernelError::IndexOutOfBounds { index: 3, len: 3 }) => {}
++        other => panic!("want IndexOutOfBounds, got {other:?}"),
++    }
++    std::fs::remove_dir_all(&dir).unwrap();
++}
++
++#[test]
++fn legacy_handle_verify_fails_explicit() {
++    let dir = fresh_dir();
++    let store = FileSpillStore::new(&dir).unwrap();
++    let h = block_on(store.write(&items(2))).unwrap();
++    let legacy = SpilledList {
++        path: h.path.clone(),
++        len: h.len,
++        total_bytes: h.total_bytes,
++        codec: h.codec,
++        layer0_checksum: None,
++        casd_hash: None,
++    };
++    match block_on(store.verify_integrity(&legacy)) {
++        Err(KernelError::Invalid { message }) => {
++            assert!(message.contains("legacy"), "message: {message}");
++        }
++        other => panic!("want Invalid(legacy), got {other:?}"),
++    }
++    std::fs::remove_dir_all(&dir).unwrap();
++}
++
++#[test]
++fn spill_files_are_0600_umask_independent() {
++    // SEC-07: constructor enforcement, proven under umask 000 (agent5).
++    // umask is process-global: set 000, write, restore immediately, then assert.
++    let prev = unsafe { libc::umask(0o000) };
++    let dir = fresh_dir();
++    let store = FileSpillStore::new(&dir).unwrap();
++    let h = block_on(store.write(&items(2))).unwrap();
++    unsafe {
++        libc::umask(prev);
++    }
++
++    #[cfg(unix)]
++    {
++        use std::os::unix::fs::PermissionsExt;
++        let mode = std::fs::metadata(spill_file(&dir, &h))
++            .unwrap()
++            .permissions()
++            .mode()
++            & 0o777;
++        assert_eq!(mode, 0o600, "spill file mode must be 0600 under umask 000");
++    }
++    std::fs::remove_dir_all(&dir).unwrap();
++}
++
++#[test]
++fn gc_execution_removes_only_own_files() {
++    let root = fresh_dir();
++    let store = FileSpillStore::for_execution(&root, "exec-9").unwrap();
++    let h1 = block_on(store.write(&items(3))).unwrap();
++    let _h2 = block_on(store.write(&items(4))).unwrap();
++    // A foreign file must survive GC.
++    std::fs::write(root.join("exec-9").join("keep.txt"), b"no").unwrap();
++
++    let n = store.gc_execution().unwrap();
++    assert_eq!(n, 2);
++    assert!(!spill_file(&root.join("exec-9"), &h1).exists());
++    assert!(root.join("exec-9").join("keep.txt").exists());
++    // Index dropped: reads now fail as missing.
++    assert!(block_on(store.read_at(&h1, 0)).is_err());
++    // Traversal rejected.
++    assert!(FileSpillStore::for_execution(&root, "../evil").is_err());
++    std::fs::remove_dir_all(&root).unwrap();
++}
++
++#[test]
++fn dropped_writer_leaves_no_file() {
++    let dir = fresh_dir();
++    let store = FileSpillStore::new(&dir).unwrap();
++    {
++        let mut w = block_on(store.writer()).unwrap();
++        block_on(w.push(&items(5))).unwrap();
++        assert_eq!(w.pushed(), 5);
++        // Drop without finish.
++    }
++    let leftovers: Vec<_> = std::fs::read_dir(&dir).unwrap().collect();
++    assert!(leftovers.is_empty(), "partial file leaked: {leftovers:?}");
++    std::fs::remove_dir_all(&dir).unwrap();
++}
++
++#[test]
++fn indexed_read_scales() {
++    let dir = fresh_dir();
++    let store = FileSpillStore::new(&dir).unwrap();
++    let h = block_on(store.write(&items(5000))).unwrap();
++    assert_eq!(
++        block_on(store.read_at(&h, 4999)).unwrap().json["id"],
++        json!(4999)
++    );
++    assert_eq!(store.index_bytes(&h), 5000 * 8);
++    assert!(block_on(store.verify_integrity(&h)).unwrap());
++    std::fs::remove_dir_all(&dir).unwrap();
++}
+diff -ruN spill-orig/crates/kernel/Cargo.toml spill-work/crates/kernel/Cargo.toml
+--- spill-orig/crates/kernel/Cargo.toml	2026-09-09 08:29:29.626572200 +0000
++++ spill-work/crates/kernel/Cargo.toml	2026-09-09 08:27:17.103923235 +0000
+@@ -18,3 +18,4 @@
+ 
+ [dev-dependencies]
+ serde_json.workspace = true
++data-plane = { path = "../data-plane" }
+diff -ruN spill-orig/crates/kernel/examples/spill_bench.rs spill-work/crates/kernel/examples/spill_bench.rs
+--- spill-orig/crates/kernel/examples/spill_bench.rs	2026-09-09 08:29:29.626572200 +0000
++++ spill-work/crates/kernel/examples/spill_bench.rs	2026-09-09 08:30:02.942795285 +0000
+@@ -5,9 +5,9 @@
+ //! it, and audit A-03 flagged that the blueprint asserted memory efficiency
+ //! without ever measuring it.
+ //!
+-//! Unlike the in-memory store in `tests/contract.rs`, `FileSpillStore` here does
+-//! **real disk I/O** with a real offset index — effectively a reference sketch
+-//! for the `data-plane` implementation. So this validates both the RAM claim and
++//! Unlike the in-memory store in `tests/contract.rs`, `FileSpillStore` from
++//! `data-plane` does **real disk I/O** with a real offset index — the same
++//! production implementation the engine uses, not a copy. So this validates both the RAM claim and
+ //! that `SpillStore` is actually implementable against a filesystem as designed.
+ //!
+ //! ```text
+@@ -21,304 +21,14 @@
+ //! reset, so measuring both scenarios in one process would report the inline
+ //! peak for both and quietly prove nothing.
+ 
+-use async_trait::async_trait;
+-use kernel::error::KernelError;
+-use kernel::id::SpillPath;
+-use kernel::item::{spill_from_iter, Item, ItemList, SpillCodec, SpillPolicy, SpillStore, SpillWriter, SpilledList};
++use data_plane::FileSpillStore;
++use kernel::item::{spill_from_iter, Item, ItemList, SpillPolicy, SpillStore};
+ use serde_json::json;
+-use std::collections::HashMap;
+-use std::fs::{File, OpenOptions};
+-use std::io::{BufWriter, Read, Seek, SeekFrom, Write};
+ use std::path::PathBuf;
+-use std::sync::{Arc, Mutex};
++use std::sync::Arc;
+ use std::time::Instant;
+ 
+ // ═══════════════════════════════════════════════════════════════════════════
+-// File-backed SpillStore — real disk, real offset index
+-// ═══════════════════════════════════════════════════════════════════════════
+-
+-struct Entry {
+-    /// Byte offset of each item in the spill file.
+-    ///
+-    /// This is the "index in RAM" the spec budgets for: 8 bytes per item, with
+-    /// the payload itself staying on disk.
+-    offsets: Vec<u64>,
+-    file: File,
+-}
+-
+-type Entries = Arc<Mutex<HashMap<String, Entry>>>;
+-
+-struct FileSpillStore {
+-    dir: PathBuf,
+-    next_id: Mutex<u64>,
+-    entries: Entries,
+-}
+-
+-impl FileSpillStore {
+-    fn new(dir: impl Into<PathBuf>) -> std::io::Result<Self> {
+-        let dir = dir.into();
+-        std::fs::create_dir_all(&dir)?;
+-        Ok(Self {
+-            dir,
+-            next_id: Mutex::new(0),
+-            entries: Arc::new(Mutex::new(HashMap::new())),
+-        })
+-    }
+-
+-    fn path_for(&self, name: &str) -> PathBuf {
+-        self.dir.join(name)
+-    }
+-
+-    fn alloc_name(&self) -> String {
+-        let mut next = self.next_id.lock().unwrap();
+-        *next += 1;
+-        format!("spill-{}.bin", *next)
+-    }
+-
+-    /// RAM held by the index for one handle.
+-    fn index_bytes(&self, handle: &SpilledList) -> usize {
+-        self.entries
+-            .lock()
+-            .unwrap()
+-            .get(handle.path.as_str())
+-            .map(|e| e.offsets.len() * std::mem::size_of::<u64>())
+-            .unwrap_or(0)
+-    }
+-}
+-
+-fn io_err(e: std::io::Error) -> KernelError {
+-    KernelError::SpillIo {
+-        message: e.to_string(),
+-    }
+-}
+-
+-/// Serialize one item to the on-disk record format: 8-byte LE length + payload.
+-fn encode(it: &Item) -> Result<Vec<u8>, KernelError> {
+-    serde_json::to_vec(it).map_err(|e| KernelError::Codec {
+-        codec: "json",
+-        reason: e.to_string(),
+-    })
+-}
+-
+-fn decode(buf: &[u8]) -> Result<Item, KernelError> {
+-    serde_json::from_slice(buf).map_err(|e| KernelError::Codec {
+-        codec: "json",
+-        reason: e.to_string(),
+-    })
+-}
+-
+-fn open_rw(path: &PathBuf) -> Result<File, KernelError> {
+-    OpenOptions::new()
+-        .create(true)
+-        .write(true)
+-        .read(true)
+-        .truncate(true)
+-        .open(path)
+-        .map_err(io_err)
+-}
+-
+-#[async_trait]
+-impl SpillStore for FileSpillStore {
+-    async fn write(&self, items: &[Item]) -> Result<SpilledList, KernelError> {
+-        // Convenience path: reuse the streaming writer so there is exactly one
+-        // implementation of the file format.
+-        let mut w = self.writer().await?;
+-        w.push(items).await?;
+-        w.finish().await
+-    }
+-
+-    async fn read_at(&self, handle: &SpilledList, index: usize) -> Result<Item, KernelError> {
+-        let mut entries = self.entries.lock().unwrap();
+-        let entry = entries
+-            .get_mut(handle.path.as_str())
+-            .ok_or_else(|| KernelError::SpillIo {
+-                message: format!("no such spill file: {}", handle.path),
+-            })?;
+-
+-        let &off = entry
+-            .offsets
+-            .get(index)
+-            .ok_or(KernelError::IndexOutOfBounds {
+-                index,
+-                len: entry.offsets.len(),
+-            })?;
+-
+-        entry.file.seek(SeekFrom::Start(off)).map_err(io_err)?;
+-        let mut lenbuf = [0u8; 8];
+-        entry.file.read_exact(&mut lenbuf).map_err(io_err)?;
+-        let len = u64::from_le_bytes(lenbuf) as usize;
+-
+-        let mut buf = vec![0u8; len];
+-        entry.file.read_exact(&mut buf).map_err(io_err)?;
+-        decode(&buf)
+-    }
+-
+-    async fn read_range(
+-        &self,
+-        handle: &SpilledList,
+-        start: usize,
+-        len: usize,
+-    ) -> Result<Vec<Item>, KernelError> {
+-        // Sequential read: one seek, then stream the whole range. This is the
+-        // cursor hot path, so avoiding N seeks is what makes chunked iteration
+-        // cheaper than N random gets.
+-        let mut entries = self.entries.lock().unwrap();
+-        let entry = entries
+-            .get_mut(handle.path.as_str())
+-            .ok_or_else(|| KernelError::SpillIo {
+-                message: format!("no such spill file: {}", handle.path),
+-            })?;
+-
+-        let n = entry.offsets.len();
+-        if start >= n || len == 0 {
+-            return Ok(Vec::new());
+-        }
+-        let end = (start + len).min(n);
+-        let off = entry.offsets[start];
+-        entry.file.seek(SeekFrom::Start(off)).map_err(io_err)?;
+-
+-        let file_len = entry.file.metadata().map(|m| m.len()).unwrap_or(0);
+-        let span = if end < n {
+-            (entry.offsets[end] - off) as usize
+-        } else {
+-            (file_len.saturating_sub(off)) as usize
+-        };
+-
+-        let mut raw = vec![0u8; span];
+-        entry.file.read_exact(&mut raw).map_err(io_err)?;
+-
+-        let mut out = Vec::with_capacity(end - start);
+-        let mut cur = 0usize;
+-        for _ in start..end {
+-            if cur + 8 > raw.len() {
+-                break;
+-            }
+-            let l = u64::from_le_bytes(raw[cur..cur + 8].try_into().unwrap()) as usize;
+-            cur += 8;
+-            if cur + l > raw.len() {
+-                return Err(KernelError::Codec {
+-                    codec: "json",
+-                    reason: "truncated record".into(),
+-                });
+-            }
+-            out.push(decode(&raw[cur..cur + l])?);
+-            cur += l;
+-        }
+-        Ok(out)
+-    }
+-
+-    async fn read_all(&self, handle: &SpilledList) -> Result<Vec<Item>, KernelError> {
+-        self.read_range(handle, 0, handle.len as usize).await
+-    }
+-
+-    async fn delete(&self, handle: &SpilledList) -> Result<(), KernelError> {
+-        self.entries.lock().unwrap().remove(handle.path.as_str());
+-        let p = self.path_for(handle.path.as_str());
+-        if p.exists() {
+-            std::fs::remove_file(p).map_err(io_err)?;
+-        }
+-        Ok(())
+-    }
+-
+-    fn disk_footprint(&self, handle: &SpilledList) -> u64 {
+-        handle.total_bytes
+-    }
+-
+-    async fn writer(&self) -> Result<Box<dyn SpillWriter>, KernelError> {
+-        let name = self.alloc_name();
+-        let fs_path = self.path_for(&name);
+-        let file = open_rw(&fs_path)?;
+-        Ok(Box::new(FileSpillWriter {
+-            logical: name,
+-            fs_path,
+-            w: Some(BufWriter::with_capacity(256 * 1024, file)),
+-            offsets: Vec::new(),
+-            pos: 0,
+-            total: 0,
+-            finished: false,
+-            entries: Arc::clone(&self.entries),
+-        }))
+-    }
+-}
+-
+-struct FileSpillWriter {
+-    logical: String,
+-    fs_path: PathBuf,
+-    /// `Option` so `finish` can move the file out. A type implementing `Drop`
+-    /// cannot have fields moved out of it directly (E0509).
+-    w: Option<BufWriter<File>>,
+-    offsets: Vec<u64>,
+-    pos: u64,
+-    total: u64,
+-    finished: bool,
+-    entries: Entries,
+-}
+-
+-#[async_trait]
+-impl SpillWriter for FileSpillWriter {
+-    async fn push(&mut self, items: &[Item]) -> Result<(), KernelError> {
+-        if self.finished {
+-            return Err(KernelError::Invalid {
+-                message: "push() called after finish()".into(),
+-            });
+-        }
+-        let w = self.w.as_mut().ok_or(KernelError::Invalid {
+-            message: "writer already finished".into(),
+-        })?;
+-        for it in items {
+-            let bytes = encode(it)?;
+-            let len = bytes.len() as u64;
+-            w.write_all(&len.to_le_bytes())
+-                .and_then(|_| w.write_all(&bytes))
+-                .map_err(io_err)?;
+-            self.offsets.push(self.pos);
+-            self.pos += 8 + len;
+-            self.total += len;
+-        }
+-        Ok(())
+-    }
+-
+-    async fn finish(mut self: Box<Self>) -> Result<SpilledList, KernelError> {
+-        let mut bw = self.w.take().ok_or(KernelError::Invalid {
+-            message: "finish() called twice".into(),
+-        })?;
+-        bw.flush().map_err(io_err)?;
+-        let file = bw.into_inner().map_err(|e| io_err(e.into_error()))?;
+-        file.sync_all().map_err(io_err)?;
+-
+-        let count = self.offsets.len() as u32;
+-        self.entries.lock().unwrap().insert(
+-            self.logical.clone(),
+-            Entry {
+-                offsets: std::mem::take(&mut self.offsets),
+-                file,
+-            },
+-        );
+-        self.finished = true;
+-
+-        Ok(SpilledList {
+-            path: SpillPath::new(self.logical.clone()),
+-            len: count,
+-            total_bytes: self.total,
+-            codec: SpillCodec::Json,
+-        })
+-    }
+-
+-    fn pushed(&self) -> u32 {
+-        self.offsets.len() as u32
+-    }
+-}
+-
+-/// Honour the trait contract: an unfinished writer must not leak a partial file.
+-impl Drop for FileSpillWriter {
+-    fn drop(&mut self) {
+-        if !self.finished {
+-            let _ = std::fs::remove_file(&self.fs_path);
+-        }
+-    }
+-}
+-
+-// ═══════════════════════════════════════════════════════════════════════════
+ // Minimal executor (kernel is runtime-agnostic; no tokio dependency)
+ // ═══════════════════════════════════════════════════════════════════════════
+ 
+@@ -420,12 +130,7 @@
+ 
+     let rss_before = rss();
+     let t0 = Instant::now();
+-    let list = block_on(spill_from_iter(
+-        10_000,
+-        &store,
+-        (0..n).map(make_item),
+-    ))
+-    .expect("spill");
++    let list = block_on(spill_from_iter(10_000, &store, (0..n).map(make_item))).expect("spill");
+     let build = t0.elapsed();
+ 
+     assert!(list.is_spilled(), "expected spill at n={}", n);
+@@ -565,10 +270,12 @@
+             "│ random get(last)     {:>9.3} ms",
+             self.random_access.as_secs_f64() * 1000.0
+         );
+-        println!("│ items processed      {:>9}", grouped(self.items_processed));
++        println!(
++            "│ items processed      {:>9}",
++            grouped(self.items_processed)
++        );
+         println!("└─ checksum            {:>9}", self.checksum);
+     }
+-
+ }
+ 
+ fn total_ram() -> u64 {
+@@ -590,7 +297,10 @@
+ fn main() {
+     let args: Vec<String> = std::env::args().collect();
+     let mode = args.get(1).map(|s| s.as_str()).unwrap_or("compare");
+-    let n: usize = args.get(2).and_then(|s| s.parse().ok()).unwrap_or(1_000_000);
++    let n: usize = args
++        .get(2)
++        .and_then(|s| s.parse().ok())
++        .unwrap_or(1_000_000);
+ 
+     match mode {
+         "inline" => scenario_inline(n).print(),
+@@ -601,7 +311,9 @@
+             println!(
+                 "host: {:.0} MB RAM, {} CPUs, n = {} items",
+                 mb(total_ram()),
+-                std::thread::available_parallelism().map(|v| v.get()).unwrap_or(1),
++                std::thread::available_parallelism()
++                    .map(|v| v.get())
++                    .unwrap_or(1),
+                 grouped(n)
+             );
+ 
+@@ -641,7 +353,10 @@
+                 if sp > 0.0 {
+                     println!("reduction        : {:>8.1}x", inl / sp);
+                 }
+-                println!("\nSame {} items, identical checksum, identical random", grouped(n));
++                println!(
++                    "\nSame {} items, identical checksum, identical random",
++                    grouped(n)
++                );
+                 println!("access — the only difference is where the bytes live.");
+             }
+         }
+diff -ruN spill-orig/crates/kernel/src/error.rs spill-work/crates/kernel/src/error.rs
+--- spill-orig/crates/kernel/src/error.rs	2026-09-09 08:29:29.626572200 +0000
++++ spill-work/crates/kernel/src/error.rs	2026-09-09 08:30:02.995794067 +0000
+@@ -14,10 +14,7 @@
+     SpillIo { message: String },
+ 
+     #[error("codec `{codec}` failed: {reason}")]
+-    Codec {
+-        codec: &'static str,
+-        reason: String,
+-    },
++    Codec { codec: &'static str, reason: String },
+ 
+     #[error("node `{node}` not found in prior outputs")]
+     NodeNotFound { node: String },
+@@ -27,6 +24,18 @@
+ 
+     #[error("invalid data: {message}")]
+     Invalid { message: String },
++
++    /// Spill file header magic mismatch (fail-closed corruption).
++    #[error("spill has invalid magic: expected {expected}, got {got}")]
++    InvalidMagic { expected: String, got: String },
++
++    /// SHA-256 recompute mismatch on explicit verify (fail-closed).
++    #[error("spill checksum mismatch: expected {expected}, got {actual}")]
++    ChecksumMismatch { expected: String, actual: String },
++
++    /// Offset/length points past EOF — truncated or torn spill file.
++    #[error("spill offset out of range: {message}")]
++    OffsetOutOfRange { message: String },
+ }
+ 
+ /// Why a node failed.
+diff -ruN spill-orig/crates/kernel/src/item.rs spill-work/crates/kernel/src/item.rs
+--- spill-orig/crates/kernel/src/item.rs	2026-09-09 08:29:29.627572176 +0000
++++ spill-work/crates/kernel/src/item.rs	2026-09-09 08:30:03.007793792 +0000
+@@ -216,6 +216,14 @@
+     /// Total serialized size, for Governor accounting (D72) and metrics (D64).
+     pub total_bytes: u64,
+     pub codec: SpillCodec,
++    /// Layer 0 integrity checksum (SHA-256). Computed by data-plane on write.
++    /// None for legacy spills or when integrity checking is disabled.
++    #[serde(default, skip_serializing_if = "Option::is_none")]
++    pub layer0_checksum: Option<[u8; 32]>,
++    /// CASD content hash (BLAKE3). Used for content-addressed deduplication.
++    /// None for legacy spills or when CASD is disabled.
++    #[serde(default, skip_serializing_if = "Option::is_none")]
++    pub casd_hash: Option<[u8; 32]>,
+ }
+ 
+ /// Serialization format used for spilled items.
+@@ -254,7 +262,7 @@
+     fn default() -> Self {
+         Self {
+             max_inline_items: 1_000,
+-            max_inline_bytes: 4 * 1024 * 1024, // 4 MB
++            max_inline_bytes: 4 * 1024 * 1024,   // 4 MB
+             max_inline_binary_bytes: 256 * 1024, // 256 KB
+         }
+     }
+@@ -303,7 +311,8 @@
+         store: &dyn SpillStore,
+     ) -> Result<Self, KernelError> {
+         let bytes: usize = items.iter().map(Item::estimated_bytes).sum();
+-        let should_spill = items.len() as u32 > policy.max_inline_items || bytes as u64 > policy.max_inline_bytes;
++        let should_spill =
++            items.len() as u32 > policy.max_inline_items || bytes as u64 > policy.max_inline_bytes;
+ 
+         if !should_spill {
+             return Ok(ItemList::Inline(items));
+@@ -369,13 +378,10 @@
+     /// the expression engine asks for item *i*, we read just that one.
+     pub async fn get(&self, index: usize) -> Result<Item, KernelError> {
+         match self.list {
+-            ItemList::Inline(v) => v
+-                .get(index)
+-                .cloned()
+-                .ok_or(KernelError::IndexOutOfBounds {
+-                    index,
+-                    len: v.len(),
+-                }),
++            ItemList::Inline(v) => v.get(index).cloned().ok_or(KernelError::IndexOutOfBounds {
++                index,
++                len: v.len(),
++            }),
+             ItemList::Spilled(s) => {
+                 if index >= s.len as usize {
+                     return Err(KernelError::IndexOutOfBounds {
+@@ -503,6 +509,24 @@
+     /// referenced by a non-terminal execution (RUNNING / WAITING / PAUSED).
+     async fn delete(&self, handle: &SpilledList) -> Result<(), KernelError>;
+ 
++    /// Verify spill integrity by recomputing the checksum.
++    ///
++    /// Returns `Ok(true)` if valid. Returns `Err` (never `Ok(false)`)
++    /// for legacy handles without a checksum and for stores that do not
++    /// implement verification — claiming validity without checking would
++    /// be worse than refusing. Data-plane overrides this with a real
++    /// SHA-256 recompute.
++    async fn verify_integrity(&self, handle: &SpilledList) -> Result<bool, KernelError> {
++        if handle.layer0_checksum.is_none() {
++            return Err(KernelError::Invalid {
++                message: "legacy spill: no layer0_checksum recorded".to_string(),
++            });
++        }
++        Err(KernelError::Invalid {
++            message: "verify_integrity not implemented by this store".to_string(),
++        })
++    }
++
+     /// Bytes this handle occupies on disk.
+     fn disk_footprint(&self, handle: &SpilledList) -> u64;
+ 
+diff -ruN spill-orig/crates/kernel/tests/contract.rs spill-work/crates/kernel/tests/contract.rs
+--- spill-orig/crates/kernel/tests/contract.rs	2026-09-09 08:29:29.627572176 +0000
++++ spill-work/crates/kernel/tests/contract.rs	2026-09-09 08:30:03.060792575 +0000
+@@ -1,10 +1,10 @@
+ //! In-memory `SpillStore` plus the round-trip property test that proves
+ //! the A-03 resolution: spilling must be invisible to node semantics.
+ 
++use async_trait::async_trait;
+ use kernel::error::KernelError;
+ use kernel::id::SpillPath;
+ use kernel::item::{Item, SpillCodec, SpillStore, SpillWriter, SpilledList};
+-use async_trait::async_trait;
+ use serde_json::{json, Value};
+ use std::collections::HashMap;
+ use std::sync::{Arc, Mutex};
+@@ -54,6 +54,8 @@
+             len: items.len() as u32,
+             total_bytes: total,
+             codec: SpillCodec::Json,
++            layer0_checksum: None,
++            casd_hash: None,
+         })
+     }
+ 
+@@ -92,7 +94,11 @@
+     }
+ 
+     async fn delete(&self, handle: &SpilledList) -> Result<(), KernelError> {
+-        self.state.files.lock().unwrap().remove(handle.path.as_str());
++        self.state
++            .files
++            .lock()
++            .unwrap()
++            .remove(handle.path.as_str());
+         Ok(())
+     }
+ 
+@@ -149,6 +155,8 @@
+             len,
+             total_bytes: total,
+             codec: SpillCodec::Json,
++            layer0_checksum: None,
++            casd_hash: None,
+         })
+     }
+ 
+@@ -169,8 +177,8 @@
+ // Minimal async executor so the test crate needs no tokio dependency
+ // (kernel itself is runtime-agnostic).
+ fn block_on<F: std::future::Future>(fut: F) -> F::Output {
+-    use std::task::{Context, Poll, Wake};
+     use std::sync::atomic::{AtomicBool, Ordering};
++    use std::task::{Context, Poll, Wake};
+ 
+     struct SpinWaker(AtomicBool);
+     impl Wake for SpinWaker {
+@@ -295,7 +303,11 @@
+     let inline_ram = inline.ram_footprint();
+     let spilled_ram = spilled.ram_footprint();
+ 
+-    assert!(spilled_ram < 512, "spilled metadata was {} bytes", spilled_ram);
++    assert!(
++        spilled_ram < 512,
++        "spilled metadata was {} bytes",
++        spilled_ram
++    );
+     assert!(
+         inline_ram > spilled_ram * 50,
+         "expected a large gap: inline={} spilled={}",
+@@ -327,8 +339,8 @@
+ 
+ #[test]
+ fn binary_location_ram_accounting() {
+-    use kernel::item::{BinaryData, BinaryLocation};
+     use kernel::id::ContentId;
++    use kernel::item::{BinaryData, BinaryLocation};
+ 
+     let inline = BinaryData {
+         mime_type: "image/png".into(),
+@@ -377,7 +389,9 @@
+         );
+ 
+     // Valid GET: body absent and hidden, so not required.
+-    assert!(schema.validate(&json!({"method": "GET", "url": "https://x"})).is_empty());
++    assert!(schema
++        .validate(&json!({"method": "GET", "url": "https://x"}))
++        .is_empty());
+ 
+     // Missing required field.
+     let errs = schema.validate(&json!({"method": "GET"}));
+@@ -430,9 +444,9 @@
+ 
+ #[test]
+ fn recovery_action_respects_side_effects() {
++    use kernel::id::{ExecutionId, NodeId, TaskId};
+     use kernel::node::{ResourceHint, SideEffect};
+     use kernel::task::{RecoveryAction, Task, TaskStatus};
+-    use kernel::id::{ExecutionId, NodeId, TaskId};
+ 
+     let base = Task {
+         id: TaskId::new(1),
+@@ -460,7 +474,10 @@
+     // Idempotent node: requeue, but with an idempotency key (D60).
+     let mut t = base.clone();
+     t.hints.side_effect = SideEffect::Idempotent;
+-    assert_eq!(t.recovery_action(), RecoveryAction::RequeueWithIdempotencyKey);
++    assert_eq!(
++        t.recovery_action(),
++        RecoveryAction::RequeueWithIdempotencyKey
++    );
+ 
+     // Non-idempotent node: the outcome is unknowable. Never guess.
+     let mut t = base.clone();
+@@ -609,12 +626,8 @@
+     let store = MemSpillStore::default();
+     let items: Vec<Item> = sample_items(1_000);
+ 
+-    let streamed = block_on(kernel::spill_from_iter(
+-        64,
+-        &store,
+-        items.iter().cloned(),
+-    ))
+-    .expect("stream");
++    let streamed =
++        block_on(kernel::spill_from_iter(64, &store, items.iter().cloned())).expect("stream");
+     assert!(streamed.is_spilled());
+ 
+     let policy = kernel::item::SpillPolicy {
+@@ -622,8 +635,8 @@
+         max_inline_bytes: 1,
+         max_inline_binary_bytes: 1,
+     };
+-    let batched = block_on(kernel::ItemList::from_vec(items.clone(), &policy, &store))
+-        .expect("batch");
++    let batched =
++        block_on(kernel::ItemList::from_vec(items.clone(), &policy, &store)).expect("batch");
+     assert!(batched.is_spilled());
+ 
+     // Same length, same content at every index, same full materialization.
+@@ -709,7 +722,10 @@
+ 
+     assert_eq!(list.len(), 1);
+     let v = list.view(&store);
+-    assert_eq!(block_on(v.first()).unwrap().unwrap().json, json!({"only": true}));
++    assert_eq!(
++        block_on(v.first()).unwrap().unwrap().json,
++        json!({"only": true})
++    );
+ }
+ 
+ /// Dropping a writer mid-flight must not leave a partial file registered.
+@@ -800,18 +816,8 @@
+ fn streaming_ram_is_independent_of_n() {
+     let store = MemSpillStore::default();
+ 
+-    let small = block_on(kernel::spill_from_iter(
+-        100,
+-        &store,
+-        sample_items(500),
+-    ))
+-    .unwrap();
+-    let large = block_on(kernel::spill_from_iter(
+-        100,
+-        &store,
+-        sample_items(50_000),
+-    ))
+-    .unwrap();
++    let small = block_on(kernel::spill_from_iter(100, &store, sample_items(500))).unwrap();
++    let large = block_on(kernel::spill_from_iter(100, &store, sample_items(50_000))).unwrap();
+ 
+     let rs = small.ram_footprint();
+     let rl = large.ram_footprint();

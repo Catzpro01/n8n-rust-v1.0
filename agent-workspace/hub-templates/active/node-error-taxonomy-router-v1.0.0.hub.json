@@ -1,0 +1,244 @@
+{
+  "id": "node-error-taxonomy-router",
+  "version": "1.0.0",
+  "name": "Node Error Taxonomy Router - Retry vs Dead-Letter Classifier",
+  "type": "active",
+  "category": "operations_reliability",
+  "author": "agent1",
+  "license": "MIT",
+  "engine_compatibility": ">=0.1.0",
+  "documentation": {
+    "cara_kerja": "Menerima payload error eksekusi node via webhook, mengklasifikasikan setiap error ke dalam taksonomi engine (transient/permanent/corrupt/infra) memakai tabel keputusan deterministik, menghitung backoff eksponensial deterministik dari nomor attempt, lalu merutekan item ke antrean retry atau dead-letter.",
+    "fungsi": "Mengubah error mentah yang heterogen (kode HTTP, kode engine E_*, timeout, corruption) menjadi keputusan retry terstruktur: {retryable, retry_after_ms, route, severity, reason} \u2014 konsisten dengan kebijakan retry D14/D57.",
+    "tujuan": "Mencegah retry-buta atas error permanen (menghemat biaya/kuota API), menjamin error transient tidak hilang diam-diam, dan menandai korupsi data sebagai critical-quarantine. Turn-key: POST satu payload error, terima keputusan routing dalam satu respons.",
+    "pinning_note": "schema_hash = sha256 (hex, lowercase) atas preimage kanonik JSON persis: {\"keys\":[\"attempt\",\"error_code\",\"reason\",\"retry_after_ms\",\"retryable\",\"route\",\"severity\"],\"v\":1} (key terurut, tanpa spasi). Verifikasi: echo -n '<preimage>' | sha256sum. Deterministik: kode tanpa Math.random/Date.now; output murni fungsi input."
+  },
+  "pinning": {
+    "type": "schema-pin",
+    "schema_hash": "sha256:77935f939ecf22865b5cc9257cf79b2dafd69f21e041cee8b6e6cc6b5e49c949",
+    "algorithm": "sha256",
+    "expected_keys": [
+      "attempt",
+      "error_code",
+      "reason",
+      "retry_after_ms",
+      "retryable",
+      "route",
+      "severity"
+    ]
+  },
+  "inputs": {
+    "error_code": {
+      "type": "string",
+      "required": true,
+      "description": "Kode error: E_* engine, L4_*, HTTP status, atau TIMEOUT/UNKNOWN"
+    },
+    "node": {
+      "type": "string",
+      "required": true,
+      "description": "Nama node yang gagal"
+    },
+    "attempt": {
+      "type": "integer",
+      "required": false,
+      "default": 1,
+      "description": "Nomor percobaan (basis backoff)"
+    }
+  },
+  "outputs": {
+    "route": {
+      "type": "string",
+      "description": "retry_queue | dead_letter"
+    },
+    "retry_after_ms": {
+      "type": "number",
+      "description": "Backoff deterministik; 0 bila tidak-retryable"
+    }
+  },
+  "dag": {
+    "nodes": [
+      {
+        "id": "guide",
+        "type": "n8n-nodes-base.stickyNote",
+        "name": "Panduan",
+        "parameters": {
+          "content": "[CARA KERJA] Webhook terima error -> Code klasifikasikan -> IF rute retry/dead-letter.\n[FUNGSI] Keputusan retry terstruktur {retryable, retry_after_ms, route, severity, reason}.\n[TUJUAN] NOL retry-buta permanen; NOL transient hilang; korupsi = critical-quarantine.\nUJI: POST {\"error_code\":\"E_SPILL_IO\",\"node\":\"fetch\",\"attempt\":1} -> route=retry_queue, retry_after_ms=1000."
+        }
+      },
+      {
+        "id": "ingress",
+        "type": "n8n-nodes-base.webhook",
+        "name": "ErrorIngress",
+        "parameters": {
+          "httpMethod": "POST",
+          "path": "error-taxonomy",
+          "responseMode": "responseNode"
+        }
+      },
+      {
+        "id": "classify",
+        "type": "n8n-nodes-base.code",
+        "name": "ClassifyError",
+        "parameters": {
+          "mode": "runOnceForAllItems",
+          "jsCode": "const TRANSIENT = new Set(['TIMEOUT','L4_TIMEOUT','E_SPILL_IO','E_WCB_TIMEOUT','RATE_LIMIT','HTTP_429','HTTP_500','HTTP_502','HTTP_503','HTTP_504']);\nconst CORRUPT = new Set(['E_SPILL_CORRUPT','CHECKSUM_MISMATCH','INVALID_MAGIC','OFFSET_OUT_OF_RANGE','L4_PARSE']);\nconst DENIED = new Set(['L4_EVAL_DENIED','L4_NAV_BLOCKED','AUTH_FAILED','HTTP_401','HTTP_403','HTTP_404','VALIDATION_ERROR']);\n\nfunction classify(code, attempt) {\n  const a = Math.max(1, attempt | 0);\n  if (CORRUPT.has(code)) {\n    return { retryable: false, retry_after_ms: 0, route: 'dead_letter', severity: 'critical', reason: 'corrupt-quarantine' };\n  }\n  if (DENIED.has(code)) {\n    return { retryable: false, retry_after_ms: 0, route: 'dead_letter', severity: 'high', reason: 'policy-denied' };\n  }\n  if (TRANSIENT.has(code)) {\n    const backoff = Math.min(Math.pow(2, a - 1) * 1000, 30000);\n    return { retryable: true, retry_after_ms: backoff, route: 'retry_queue', severity: 'medium', reason: 'transient-backoff' };\n  }\n  return { retryable: false, retry_after_ms: 0, route: 'dead_letter', severity: 'high', reason: 'unknown-fail-closed' };\n}\n\nconst out = [];\nfor (const item of $input.all()) {\n  const j = item.json || {};\n  const code = String(j.error_code || 'UNKNOWN');\n  const attempt = Number(j.attempt || 1);\n  const d = classify(code, attempt);\n  out.push({ json: { error_code: code, attempt: attempt, retryable: d.retryable, retry_after_ms: d.retry_after_ms, route: d.route, severity: d.severity, reason: d.reason } });\n}\nreturn out;"
+        }
+      },
+      {
+        "id": "route_if",
+        "type": "n8n-nodes-base.if",
+        "name": "RouteRetry?",
+        "parameters": {
+          "conditions": {
+            "boolean": [
+              {
+                "value1": "={{ $json.retryable }}",
+                "operation": "true"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "id": "retry_env",
+        "type": "n8n-nodes-base.set",
+        "name": "RetryEnvelope",
+        "parameters": {
+          "assignments": {
+            "assignments": [
+              {
+                "id": "a1",
+                "name": "route",
+                "type": "string",
+                "value": "retry_queue"
+              },
+              {
+                "id": "a2",
+                "name": "not_before_ms",
+                "type": "number",
+                "value": "={{ $json.retry_after_ms }}"
+              },
+              {
+                "id": "a3",
+                "name": "error_code",
+                "type": "string",
+                "value": "={{ $json.error_code }}"
+              },
+              {
+                "id": "a4",
+                "name": "attempt_next",
+                "type": "number",
+                "value": "={{ $json.attempt + 1 }}"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "id": "dead_letter",
+        "type": "n8n-nodes-base.set",
+        "name": "DeadLetter",
+        "parameters": {
+          "assignments": {
+            "assignments": [
+              {
+                "id": "b1",
+                "name": "route",
+                "type": "string",
+                "value": "dead_letter"
+              },
+              {
+                "id": "b2",
+                "name": "severity",
+                "type": "string",
+                "value": "={{ $json.severity }}"
+              },
+              {
+                "id": "b3",
+                "name": "reason",
+                "type": "string",
+                "value": "={{ $json.reason }}"
+              },
+              {
+                "id": "b4",
+                "name": "error_code",
+                "type": "string",
+                "value": "={{ $json.error_code }}"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "id": "out",
+        "type": "n8n-nodes-base.noOp",
+        "name": "Out",
+        "parameters": {}
+      }
+    ],
+    "connections": {
+      "ingress": {
+        "main": [
+          [
+            {
+              "node": "classify",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "classify": {
+        "main": [
+          [
+            {
+              "node": "route_if",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "route_if": {
+        "main": [
+          [
+            {
+              "node": "retry_env",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "dead_letter",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "retry_env": {
+        "main": [
+          [
+            {
+              "node": "out",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "dead_letter": {
+        "main": [
+          [
+            {
+              "node": "out",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    }
+  }
+}

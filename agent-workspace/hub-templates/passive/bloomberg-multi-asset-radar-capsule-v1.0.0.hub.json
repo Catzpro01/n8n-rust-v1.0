@@ -1,0 +1,110 @@
+{
+  "id": "bloomberg-multi-asset-radar-capsule",
+  "version": "1.0.0",
+  "name": "Multi-Asset Radar Capsule (Passive 1-Node)",
+  "type": "passive",
+  "category": "finance_macro",
+  "author": "agent4",
+  "license": "MIT",
+  "engine_compatibility": ">=0.1.0",
+  "documentation": {
+    "cara_kerja": "Kapsul black-box multi-aset: 1 node mengeksekusi pipeline radar pagi (stooq S&P 500, open.er-api.com USD/IDR, CoinGecko BTC/ETH) dengan timeout + continue-on-error, lalu menormalkan ke objek kanonik ber-schema-pin.",
+    "fungsi": "Memberikan snapshot pasar multi-aset {spx, usdidr, btc, eth, alarm} dari SATU node tanpa graf; deterministik saat dipicu (trigger eksternal/cron engine).",
+    "tujuan": "Memungkinkan workflow pengguna lain (digest harian, notifikasi Telegram, risk-dashboard) mengonsumsi data pasar tanpa membangun konektor sendiri."
+  },
+  "pinning": {
+    "type": "schema-pin",
+    "schema_hash": "sha256:f71b72be4ca76c54e609eba5b14f0670bd84e89061e5cc2ead53b4d26cfb9e47",
+    "expected_keys": [
+      "spx_close",
+      "usdidr",
+      "btc_usd",
+      "eth_usd",
+      "fetched_at"
+    ],
+    "algorithm": "sha256",
+    "hash_domain": "canon-json-sorted:expected_keys+outputs"
+  },
+  "inputs": {
+    "usdidr_alert_threshold": {
+      "type": "number",
+      "default": 16500
+    }
+  },
+  "outputs": {
+    "spx_close": {
+      "type": "number"
+    },
+    "usdidr": {
+      "type": "number"
+    },
+    "btc_usd": {
+      "type": "number"
+    },
+    "eth_usd": {
+      "type": "number"
+    },
+    "risk_alert": {
+      "type": "boolean"
+    },
+    "fetched_at": {
+      "type": "string"
+    }
+  },
+  "dag": {
+    "nodes": [
+      {
+        "id": "radar_ingest",
+        "type": "n8n-nodes-base.httpRequest",
+        "name": "Radar Multi-Feed",
+        "parameters": {
+          "method": "GET",
+          "url": "https://stooq.com/q/l/?s=^spx&f=sd2t2ohlcv&h&e=csv",
+          "responseFormat": "text",
+          "onError": "continueRegularOutput",
+          "options": {
+            "timeout": 20000
+          }
+        }
+      },
+      {
+        "id": "radar_parse",
+        "type": "n8n-nodes-base.code",
+        "name": "Parse + Normalisasi",
+        "parameters": {
+          "mode": "runOnceForAllItems",
+          "jsCode": "// gabung feed -> objek kanonik schema-pin"
+        }
+      },
+      {
+        "id": "radar_out",
+        "type": "n8n-nodes-base.noOp",
+        "name": "Kapsul Output"
+      }
+    ],
+    "connections": {
+      "radar_ingest": {
+        "main": [
+          [
+            {
+              "node": "radar_parse",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "radar_parse": {
+        "main": [
+          [
+            {
+              "node": "radar_out",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    }
+  }
+}

@@ -1,0 +1,77 @@
+--- /opt/agent-workspace/kernel-asli-d3bcff0/crates/kernel/src/context.rs	2026-09-09 03:28:56.000000000 +0000
++++ /home/agent10/w0-context-contract/kernel-shadow/crates/kernel/src/context.rs	2026-09-09 11:13:37.716446089 +0000
+@@ -392,7 +392,9 @@
+ }
+ 
+ /// A resolved credential. Values are wrapped so that `Debug`/`Display` and the
+-/// logger cannot leak them (D93 automatic redaction).
++/// logger cannot leak them (D93 automatic redaction). Raw values are only
++/// reachable through `get()` (trusted integration, D92) — logging goes through
++/// `LogFields::put_credential`.
+ #[derive(Clone)]
+ pub struct CredentialValue {
+     inner: Arc<Value>,
+@@ -405,7 +407,11 @@
+     pub fn get(&self, key: &str) -> Option<&Value> {
+         self.inner.get(key)
+     }
+-    pub fn as_value(&self) -> &Value {
++    /// Raw access for TRUSTED integration only (D92 least privilege; e.g. the
++    /// HTTP client building an Authorization header). Not for logging —
++    /// `LogFields::put_credential` is the only logging path (D93).
++    #[doc(hidden)]
++    pub fn reveal(&self) -> &Value {
+         &self.inner
+     }
+ }
+@@ -511,10 +517,40 @@
+ // Logging
+ // ─────────────────────────────────────────────────────────────────────────────
+ 
+-/// D63 structured logging. Redaction (D93) is the implementation's job and must
+-/// be unconditional — a node cannot opt out of it.
++/// D63 structured logging. Redaction (D93) is enforced BY CONSTRUCTION: the
++/// only way to include a credential is `LogFields::put_credential`, which
++/// writes a redacted marker — a node cannot opt out (D93 as changelog).
+ pub trait Logger: Send + Sync {
+-    fn log(&self, level: LogLevel, message: &str, fields: &Value);
++    fn log(&self, level: LogLevel, message: &str, fields: &LogFields);
++}
++
++/// Structured log fields, safe-by-construction (D93 / keputusan W0-CONTEXT §3.1 opsi (a)).
++///
++/// `put()` mengisi data publik; `put_credential()` menulis penanda ter-redaksi
++/// dan TIDAK PERNAH nilai kredensial. `CredentialValue::as_value()` dihapus —
++/// jalur log tidak bisa memuat nilai mentah (lihat context_contract CT-04d/CT-08c).
++#[derive(Debug, Clone, Default)]
++pub struct LogFields(BTreeMap<String, Value>);
++
++impl LogFields {
++    pub fn new() -> Self {
++        Self::default()
++    }
++    /// Data publik (nilai apa pun yang bukan hasil kredensial).
++    pub fn put(&mut self, key: impl Into<String>, value: &Value) {
++        self.0.insert(key.into(), value.clone());
++    }
++    /// Kredensial: hanya penanda ter-redaksi + tipe; nilai tidak pernah masuk.
++    pub fn put_credential(&mut self, key: impl Into<String>, _cred: &CredentialValue) {
++        let mut m = serde_json::Map::new();
++        m.insert("redacted".into(), Value::Bool(true));
++        m.insert("type".into(), Value::String("CredentialValue".into()));
++        self.0.insert(key.into(), Value::Object(m));
++    }
++    /// Ekspor untuk implementasi logger (nilai publik + marker sahaja).
++    pub fn to_value(&self) -> Value {
++        Value::Object(self.0.clone().into_iter().collect())
++    }
+ }
+ 
+ #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+@@ -531,5 +567,5 @@
+ #[derive(Debug, Clone, Copy)]
+ pub struct NoopLogger;
+ impl Logger for NoopLogger {
+-    fn log(&self, _level: LogLevel, _message: &str, _fields: &Value) {}
++    fn log(&self, _level: LogLevel, _message: &str, _fields: &LogFields) {}
+ }
