@@ -1,12 +1,12 @@
-# n8n-rust v1 — v0.5.0
+# n8n-rust v1 — v0.6.0
 
 Implementasi ulang [n8n](https://n8n.io) (workflow automation) dalam Rust:
 satu binary CLI + satu binary server HTTP dengan UI web embedded — tanpa
 Node.js, tanpa database, tanpa telemetri. Format workflow JSON kompatibel
 n8n (impor file n8n asli; node yang belum didukung dilaporkan eksplisit).
 
-> Status: v0.5.0 — fidelity pass terhadap n8n asli: 12 node memakai bentuk
-> parameter & perilaku n8n (conditions, mode code, responseMode webhook…).
+> Status: v0.6.0 — completion: 18 node (switch/merge/dateTime/respond/
+> wait/stopAndError baru, parameter & perilaku n8n) + responseNode webhook.
 > Personal project, dipakai sendiri. `cargo test` wajib hijau di mesin
 > dengan toolchain Rust (sandbox ini tidak punya cargo).
 
@@ -40,7 +40,7 @@ cargo build --release
 n8n-cli validate <workflow.json>   # lint: error + warning deterministik
 n8n-cli explain <workflow.json>    # rencana urutan eksekusi (dry-run)
 n8n-cli run <workflow.json> [--save <report.json>]  # eksekusi + simpan laporan
-n8n-cli nodes                      # daftar 12 tipe node terdaftar
+n8n-cli nodes                      # daftar 18 tipe node terdaftar
 ```
 
 ## Server HTTP + webhook
@@ -81,7 +81,7 @@ Respon diatur node webhook (persis nama parameter n8n):
 | Parameter | Nilai | Arti |
 |-----------|-------|------|
 | `httpMethod` | `GET` (default) \| `POST` \| `PUT` \| `PATCH` \| `DELETE` | method yang diterima |
-| `responseMode` | `onReceived` (default) \| `lastNode` | kapan & apa yang direspon |
+| `responseMode` | `onReceived` (default) \| `lastNode` \| `responseNode` | kapan & apa yang direspon |
 | `responseData` | `firstEntryJson` (default) \| `allEntries` \| `noResponseBody` | bentuk body lastNode |
 | `responseCode` | angka, default `200` | status HTTP lastNode |
 
@@ -89,6 +89,9 @@ Respon diatur node webhook (persis nama parameter n8n):
 asli mengembalikan ack "Workflow was started"; run lokal sinkron —
 laporan lebih berguna). `lastNode` menunggu workflow selesai lalu
 mengembalikan item pertama / semua item node terakhir dieksekusi.
+`responseNode` memakai node respondToWebhook pertama (`respondWith`
+json/text/redirect — `stream` ditolak; `responseBody` boleh template
+`={{ }}`, `responseCode`, `responseHeaders.values[]`).
 
 Run manual (CLI, `/api/run`, tombol Run di UI) tanpa payload membuat node
 webhook meng-emit placeholder `{"mode":"manual"}`.
@@ -109,6 +112,12 @@ webhook meng-emit placeholder `{"mode":"manual"}`.
 | `httpRequest` | fan-out 1 request/item; `options.timeout` ms (default 300000); responseFormat autodetect/json/text |
 | `code` | `mode` runOnceForAllItems/runOnceForEachItem; script rhai |
 | `function` | alias `code` |
+| `switch` | N cabang `rules.values[].conditions` + else; `fallbackOutput` extra/none |
+| `merge` | `mode` append/chooseBranch/combine (byPosition/byFields/all; SQL ditolak) |
+| `dateTime` | 7 operasi (current/add/subtract/format/round/between/extract) |
+| `respondToWebhook` | passthrough; params dibaca server saat `responseMode: responseNode` |
+| `wait` | tidur `amount`×`unit` lalu teruskan (subset) |
+| `stopAndError` | selalu gagal: `message` ‖ `description` ‖ `error` ‖ `Error: {...}` |
 
 Detail per node:
 
@@ -134,6 +143,17 @@ Detail per node:
   eksplisit (tanpa penyimpanan binary). Status ≥ 400 TIDAK error — selalu
   output `{status, headers, body, url}` (beda disengaja: engine belum
   punya error-output).
+- **switch**: tiap item masuk ke SEMUA cabang yang cocok; `renameOutput`
+  dan `numberOutputs` diabaikan (display-only di n8n). Tanpa rules →
+  semua ke else.
+- **merge**: input1/input2 = urutan pendahulu di file (n8n: urutan
+  koneksi — beda disengaja, deterministik). combineByPosition default
+  `addSuffix`; lainnya `preferLast`. `combineBySql` ditolak eksplisit.
+- **dateTime**: zona kerja UTC; `options.timezone` IANA untuk current
+  (mis. Asia/Jakarta). Parse tanpa fuzzy ("tomorrow" ditolak); diff
+  menolak month/year; pecahan unit kalender dipotong ke integer.
+- **wait**: subset — tidur sinkron lalu teruskan. Resume pasif/webhook
+  n8n tidak dimodelkan (butuh scheduler).
 
 ## Conditions If/Filter
 
@@ -207,9 +227,10 @@ Bentuk `rule` mengikuti n8n: `{"interval": [{"field": "days"}]}`
 
 ## UI web
 
-Editor visual di `GET /`: tambah 12 tipe node (template parameter bentuk
+Editor visual di `GET /`: tambah 18 tipe node (template parameter bentuk
 n8n), drag-node, drag-dari-port untuk edge (If: pertama = true, kedua =
-false), klik edge untuk hapus, edit parameters JSON, Export JSON,
+false; Switch: cabang kosong pertama), klik edge untuk hapus, edit
+parameters JSON, Export JSON,
 Validate/Explain/Run, badge urutan + durasi. Detail: [web/README.md](web/README.md).
 
 ## Struktur crate
@@ -217,19 +238,19 @@ Validate/Explain/Run, badge urutan + durasi. Detail: [web/README.md](web/README.
 ```text
 crates/
   n8n-core/    model Workflow + parser + expr ($node alias, $now/$today) (2 + 11 test)
-  n8n-engine/  planner topo + executor + linter (6 test)
-  n8n-nodes/   12 node + filter.rs conditions (28 + 8 test)
+  n8n-engine/  planner topo + executor + linter + multi-input (7 test)
+  n8n-nodes/   18 node: lib (38) + filter (8) + merge (8) + datetime (7) test
   n8n-cli/     validate/explain/run --save/nodes
-  n8n-server/  axum: UI + REST + hooks (multi-method, responseMode) + ring runs
+  n8n-server/  axum: UI + REST + hooks (multi-method, responseMode/responseNode) + ring runs
 fixtures/manual-to-set.json   workflow contoh (dipakai 1 test e2e)
 web/README.md                 dokumentasi UI
 ```
 
-Total: **55 test** (`cargo test --workspace`).
+Total: **81 test** (`cargo test --workspace`).
 
-Referensi perilaku n8n asli (dibaca saat v0.5.0, implementasi tetap
-orisinal): `packages/workflow/src/node-parameters/filter-parameter.ts`,
-`nodes/{Set/v2,If/V2,Filter/V2,Code,Webhook,Schedule,Transform/{Limit,Sort},HttpRequest/V3}`.
+Referensi perilaku n8n asli (dibaca saat v0.5.0–v0.6.0, implementasi
+tetap orisinal): `packages/workflow/src/node-parameters/filter-parameter.ts`,
+`nodes/{Set/v2,If/V2,Filter/V2,Code,Webhook,Schedule,Transform/{Limit,Sort},HttpRequest/V3,Switch/V3,Merge/v3,DateTime/V2,RespondToWebhook,StopAndError,Wait}`.
 
 ## Beda disengaja vs n8n
 
@@ -242,12 +263,16 @@ Perbedaan perilaku yang dipilih sadar (bukan bug):
 - Angka vs null → false (n8n: koersi JS).
 - Sort type `code` ditolak (butuh JS); regex tanpa pelindung timeout.
 - Timezone schedule selalu UTC (n8n: timezone workflow).
+- Merge: urutan input = urutan pendahulu di file (n8n: urutan koneksi).
+- DateTime: output RFC3339 ms; placeholder `fromFormat` default n8n diabaikan.
+- Wait: tidur sinkron (n8n: resume terjadwal); amount ≤ 0 dilewati.
 
 ## Batasan yang disengaja
 
 - State server in-memory (hooks + riwayat hilang saat restart).
 - Eksekusi sinkron sekuensial (satu workflow satu thread blocking).
 - Hook path satu segmen.
+- Merge `combineBySql`, respond `stream`, diff month/year: ditolak eksplisit.
 - Subset ekspresi kecil (tanpa ternary, tanpa `$items()`, tanpa JMESPath).
 - rhai tanpa sandbox — script tepercaya saja.
 - DB, auth multi-user, antrean, dan telemetry: TIDAK ADA — dan tidak

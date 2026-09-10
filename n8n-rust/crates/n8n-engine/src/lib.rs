@@ -1,7 +1,8 @@
 //! n8n-engine: executor workflow sinkron (tanpa runtime async — ringan).
 //!
-//! v0.4.0: `run_with` membawa payload webhook opsional ke `ExecContext`
-//! (node webhook membacanya); `run` = `run_with(None)`. Sisanya sama.
+//! v0.6.0: trait `Node::execute_multi` (default: gabung input lalu
+//! `execute`) — node Merge melihat tiap input terpisah; `run_with`
+//! membawa payload webhook; `run` = `run_with(None)`.
 
 use n8n_core::{Workflow, WorkflowNode};
 use serde::{Deserialize, Serialize};
@@ -49,6 +50,16 @@ impl ExecContext<'_> {
     }
 }
 
+/// Satu edge masuk: dari node + cabang mana items ini datang.
+/// Urutan = urutan node pendahulu di file (deterministik) — Merge
+/// memakai ini sebagai input1, input2, ...
+#[derive(Debug, Clone)]
+pub struct MultiInput {
+    pub from: String,
+    pub branch: usize,
+    pub items: Vec<Value>,
+}
+
 /// Kontrak satu tipe node. `Send + Sync` supaya kelak bisa paralel.
 pub trait Node: Send + Sync {
     /// Nama tipe persis n8n, mis. `"n8n-nodes-base.set"`.
@@ -60,6 +71,17 @@ pub trait Node: Send + Sync {
         items: Vec<Value>,
         ctx: &ExecContext,
     ) -> EngineResult<BranchOutputs>;
+    /// Varian multi-input (dipakai engine). Default: gabungkan semua
+    /// input lalu panggil `execute` — node biasa tak perlu override.
+    fn execute_multi(
+        &self,
+        node: &WorkflowNode,
+        inputs: Vec<MultiInput>,
+        ctx: &ExecContext,
+    ) -> EngineResult<BranchOutputs> {
+        let items = inputs.into_iter().flat_map(|i| i.items).collect();
+        self.execute(node, items, ctx)
+    }
 }
 
 #[derive(Default)]
@@ -197,12 +219,19 @@ impl Engine {
             let node = by_name.get(name.as_str()).copied().ok_or_else(|| {
                 EngineError::new(format!("plan menyebut node hilang '{name}'"))
             })?;
-            let mut items = Vec::new();
+            let mut inputs = Vec::new();
             if let Some(ps) = p.incoming.get(name) {
                 for (pr, bi) in ps {
-                    if let Some(out) = done.get(pr).and_then(|b| b.get(*bi)) {
-                        items.extend(out.clone());
-                    }
+                    let branch_items = done
+                        .get(pr)
+                        .and_then(|b| b.get(*bi))
+                        .cloned()
+                        .unwrap_or_default();
+                    inputs.push(MultiInput {
+                        from: pr.clone(),
+                        branch: *bi,
+                        items: branch_items,
+                    });
                 }
             }
             let node_impl = registry.get(&node.node_type).ok_or_else(|| {
@@ -216,9 +245,9 @@ impl Engine {
                 webhook: webhook.as_ref(),
             };
             let t0 = std::time::Instant::now();
-            let out = node_impl.execute(node, items, &ctx).map_err(|e| {
-                EngineError::new(format!("node '{name}' failed: {e}"))
-            })?;
+            let out = node_impl
+                .execute_multi(node, inputs, &ctx)
+                .map_err(|e| EngineError::new(format!("node '{name}' failed: {e}")))?;
             durations_ms.insert(name.clone(), t0.elapsed().as_millis());
             done.insert(name.clone(), out);
         }
@@ -465,6 +494,65 @@ mod tests {
                 .iter()
                 .any(|d| d.level == Level::Error && d.message.contains("gantung")),
             "{diags:?}"
+        );
+    }
+
+    #[test]
+    fn execute_multi_sees_separate_inputs() {
+        struct Probe;
+        impl Node for Probe {
+            fn node_type(&self) -> &'static str {
+                "test.probe"
+            }
+            fn execute(
+                &self,
+                _node: &WorkflowNode,
+                _items: Vec<Value>,
+                _ctx: &ExecContext,
+            ) -> EngineResult<BranchOutputs> {
+                unreachable!("probe hanya via execute_multi")
+            }
+            fn execute_multi(
+                &self,
+                _node: &WorkflowNode,
+                inputs: Vec<MultiInput>,
+                _ctx: &ExecContext,
+            ) -> EngineResult<BranchOutputs> {
+                let summary: Vec<Value> = inputs
+                    .iter()
+                    .map(|i| {
+                        serde_json::json!({"from": i.from, "branch": i.branch, "n": i.items.len()})
+                    })
+                    .collect();
+                Ok(vec![vec![Value::Array(summary)]])
+            }
+        }
+        let mut reg = registry();
+        reg.register(Arc::new(Probe));
+        let wf = workflow(
+            vec![
+                node("A", "test.emit"),
+                node("B", "test.emit"),
+                node("P", "test.probe"),
+            ],
+            HashMap::from([
+                (
+                    "A".to_string(),
+                    serde_json::json!({ "main": [[{ "node": "P" }]] }),
+                ),
+                (
+                    "B".to_string(),
+                    serde_json::json!({ "main": [[{ "node": "P" }]] }),
+                ),
+            ]),
+        );
+        let report = Engine::run(&wf, &reg).expect("run");
+        assert_eq!(
+            report.outputs["P"][0],
+            vec![serde_json::json!([
+                {"from": "A", "branch": 0, "n": 1},
+                {"from": "B", "branch": 0, "n": 1}
+            ])]
         );
     }
 

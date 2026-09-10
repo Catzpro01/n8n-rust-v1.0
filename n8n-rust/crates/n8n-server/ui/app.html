@@ -88,7 +88,13 @@ const COLORS = {
   "n8n-nodes-base.function": "#a855f7",
   "n8n-nodes-base.scheduleTrigger": "#ca8a04",
   "n8n-nodes-base.webhook": "#ec4899",
-  "n8n-nodes-base.noOp": "#9aa0ae"
+  "n8n-nodes-base.noOp": "#9aa0ae",
+  "n8n-nodes-base.switch": "#b45309",
+  "n8n-nodes-base.merge": "#0e7490",
+  "n8n-nodes-base.dateTime": "#4d7c0f",
+  "n8n-nodes-base.respondToWebhook": "#be185d",
+  "n8n-nodes-base.wait": "#6d28d9",
+  "n8n-nodes-base.stopAndError": "#b91c1c"
 };
 const DISPLAY = {
   "n8n-nodes-base.manualTrigger": "Manual Trigger",
@@ -102,7 +108,13 @@ const DISPLAY = {
   "n8n-nodes-base.function": "Function (rhai)",
   "n8n-nodes-base.scheduleTrigger": "Schedule Trigger",
   "n8n-nodes-base.webhook": "Webhook",
-  "n8n-nodes-base.noOp": "NoOp"
+  "n8n-nodes-base.noOp": "NoOp",
+  "n8n-nodes-base.switch": "Switch",
+  "n8n-nodes-base.merge": "Merge",
+  "n8n-nodes-base.dateTime": "DateTime",
+  "n8n-nodes-base.respondToWebhook": "Respond to Webhook",
+  "n8n-nodes-base.wait": "Wait",
+  "n8n-nodes-base.stopAndError": "Stop And Error"
 };
 const DEFAULTS = {
   "n8n-nodes-base.set": {"mode": "manual", "include": "all", "assignments": {"assignments": []}},
@@ -114,7 +126,13 @@ const DEFAULTS = {
   "n8n-nodes-base.code": {"mode": "runOnceForAllItems", "code": "// `items` = array item masuk; tulis kembali `items` sebagai output.\nitems = items;"},
   "n8n-nodes-base.function": {"mode": "runOnceForAllItems", "code": "// alias `code`: `items` masuk, tulis kembali `items`.\nitems = items;"},
   "n8n-nodes-base.scheduleTrigger": {"rule": {"interval": [{"field": "days"}]}},
-  "n8n-nodes-base.webhook": {"path": "demo", "httpMethod": "GET", "responseMode": "onReceived"}
+  "n8n-nodes-base.webhook": {"path": "demo", "httpMethod": "GET", "responseMode": "onReceived"},
+  "n8n-nodes-base.switch": {"dataType": "string", "rules": {"values": []}, "fallbackOutput": "extra"},
+  "n8n-nodes-base.merge": {"mode": "append"},
+  "n8n-nodes-base.dateTime": {"operation": "getCurrentDate", "includeTime": true},
+  "n8n-nodes-base.respondToWebhook": {"respondWith": "json", "responseBody": "={{ $json }}", "responseCode": 200},
+  "n8n-nodes-base.wait": {"amount": 5, "unit": "seconds"},
+  "n8n-nodes-base.stopAndError": {"errorType": "errorMessage", "message": "Stopped"}
 };
 
 const state = { wf: structuredClone(EXAMPLE), selected: null, report: null, diags: null, plan: null };
@@ -279,8 +297,10 @@ function addEdge(from, to) {
   if (!Array.isArray(c.main)) c.main = [];
   const src = nodeByName(from);
   const isIf = src && src.type === "n8n-nodes-base.if";
+  const isSwitch = src && src.type === "n8n-nodes-base.switch";
   let bi = 0;
   if (isIf && c.main[0] && c.main[0].length && !(c.main[1] && c.main[1].length)) bi = 1;
+  else if (isSwitch) { while (c.main[bi] && c.main[bi].length) bi++; }
   while (c.main.length <= bi) c.main.push([]);
   if (c.main[bi].some(l => l && l.node === to)) {
     setStatus("edge " + from + " → " + to + " sudah ada.");
@@ -288,7 +308,7 @@ function addEdge(from, to) {
   }
   c.main[bi].push({node: to, type: "main", index: 0});
   clearRun();
-  setStatus("edge: " + from + " → " + to + " (output[" + bi + "])" + (isIf ? (bi === 0 ? " = true" : " = false") : ""));
+  setStatus("edge: " + from + " → " + to + " (output[" + bi + "])" + (isIf ? (bi === 0 ? " = true" : " = false") : isSwitch ? " = rule " + (bi + 1) : ""));
 }
 function deleteEdge(from, bi, to) {
   const c = (state.wf.connections || {})[from];
@@ -340,7 +360,7 @@ function renderPanel() {
     panel.appendChild(row);
     if (state.report && state.report.outputs && state.report.outputs[sel.name] !== undefined) {
       panel.appendChild(h2("Output"));
-      renderOutput(state.report.outputs[sel.name]);
+      renderOutput(state.report.outputs[sel.name], sel.type);
     }
   } else {
     panel.appendChild(h2("Workflow"));
@@ -385,15 +405,16 @@ function renderPanel() {
   }
 }
 
-function renderOutput(out) {
+function renderOutput(out, type) {
   if (!Array.isArray(out) || out.length <= 1) {
     panel.appendChild(pre(Array.isArray(out) ? (out[0] || []) : out));
     return;
   }
+  const isIf = type === "n8n-nodes-base.if";
   out.forEach((br, i) => {
     const lab = document.createElement("div");
     lab.style.cssText = "font-size:12px;color:#6b6b80;margin-top:4px;";
-    lab.textContent = "output[" + i + "]" + (i === 0 ? " (true)" : i === 1 ? " (false)" : "");
+    lab.textContent = "output[" + i + "]" + (isIf ? (i === 0 ? " (true)" : i === 1 ? " (false)" : "") : "");
     panel.appendChild(lab);
     panel.appendChild(pre(br));
   });

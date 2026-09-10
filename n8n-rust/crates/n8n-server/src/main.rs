@@ -8,18 +8,22 @@
 //! Beda disengaja: onReceived mengembalikan RunReport (n8n: ack
 //! "Workflow was started") — run lokal sinkron, laporan lebih berguna.
 //! State in-memory: restart = hooks + riwayat hilang (terdokumentasi).
+//!
+//! v0.6.0: `responseMode: "responseNode"` — webhook node menunjuk node
+//! respondToWebhook (`respondWith` json/text/redirect; stream ditolak).
+//! Template `={{ }}` di responseBody dirender via n8n-core expr.
 
 use axum::{
     body::Bytes,
     extract::{Path, Query, State},
-    http::{HeaderMap, Method, StatusCode},
+    http::{header, HeaderMap, HeaderName, HeaderValue, Method, StatusCode},
     response::{Html, IntoResponse, Response},
     routing::{delete, get, patch, post, put},
     Json, Router,
 };
 use n8n_core::Workflow;
-use n8n_engine::{Diagnostic, Engine, Registry, RunReport};
-use n8n_nodes::find_webhook;
+use n8n_engine::{BranchOutputs, Diagnostic, Engine, Registry, RunReport};
+use n8n_nodes::{find_respond, find_webhook};
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, VecDeque};
 use std::sync::{
@@ -201,6 +205,50 @@ fn hook_param<'a>(
     find_webhook(wf).and_then(|n| n.parameters.get(key))
 }
 
+/// Render `responseBody` node respond: string `={{ }}` dirender dengan
+/// konteks item pertama output node itu; non-string dipakai apa adanya.
+/// Absen → semua items sebagai array.
+fn respond_json(
+    body: Option<&serde_json::Value>,
+    items: &[serde_json::Value],
+    outputs: &std::collections::HashMap<String, BranchOutputs>,
+) -> serde_json::Value {
+    match body {
+        None => serde_json::Value::Array(items.to_vec()),
+        Some(b) => {
+            if let Some(t) = b.as_str().filter(|s| s.starts_with('=')) {
+                let null = serde_json::Value::Null;
+                let item = items.first().unwrap_or(&null);
+                let ectx = n8n_core::expr::ExprContext { item, outputs };
+                n8n_core::expr::render(t, &ectx)
+            } else {
+                b.clone()
+            }
+        }
+    }
+}
+
+fn respond_text(
+    body: Option<&serde_json::Value>,
+    items: &[serde_json::Value],
+    outputs: &std::collections::HashMap<String, BranchOutputs>,
+) -> String {
+    let v = match body.and_then(serde_json::Value::as_str) {
+        Some(t) if t.starts_with('=') => {
+            let null = serde_json::Value::Null;
+            let item = items.first().unwrap_or(&null);
+            let ectx = n8n_core::expr::ExprContext { item, outputs };
+            n8n_core::expr::render(t, &ectx)
+        }
+        Some(t) => serde_json::Value::String(t.to_string()),
+        None => serde_json::Value::Array(items.to_vec()),
+    };
+    match v {
+        serde_json::Value::String(s) => s,
+        other => serde_json::to_string(&other).unwrap_or_default(),
+    }
+}
+
 async fn api_hook_fire(
     State(s): State<AppState>,
     Path(path): Path<String>,
@@ -305,6 +353,104 @@ async fn api_hook_fire(
                 other => Err((
                     StatusCode::BAD_REQUEST,
                     format!("responseData tak dikenal '{other}'"),
+                )),
+            }
+        }
+        "responseNode" => {
+            let rnode = match find_respond(&wf) {
+                Some(n) => n,
+                None => {
+                    return Err((
+                        StatusCode::BAD_REQUEST,
+                        "responseMode 'responseNode' tapi workflow tanpa node respondToWebhook"
+                            .to_string(),
+                    ))
+                }
+            };
+            let p = &rnode.parameters;
+            let items: Vec<serde_json::Value> = rep
+                .outputs
+                .get(&rnode.name)
+                .map(|branches| branches.iter().flatten().cloned().collect())
+                .unwrap_or_default();
+            let code = p
+                .get("responseCode")
+                .and_then(serde_json::Value::as_u64)
+                .unwrap_or(200);
+            let status = StatusCode::from_u16(code as u16).unwrap_or(StatusCode::OK);
+            let mut headers = HeaderMap::new();
+            if let Some(vals) = p
+                .get("responseHeaders")
+                .and_then(|h| h.get("values"))
+                .and_then(serde_json::Value::as_array)
+            {
+                for hv in vals {
+                    let name = hv.get("name").and_then(|v| v.as_str()).unwrap_or("");
+                    let value = hv.get("value").and_then(|v| v.as_str()).unwrap_or("");
+                    if name.is_empty() {
+                        continue;
+                    }
+                    let n: HeaderName = name.parse().map_err(|_| {
+                        (
+                            StatusCode::BAD_REQUEST,
+                            format!("response header tak valid: '{name}'"),
+                        )
+                    })?;
+                    let v: HeaderValue = value.parse().map_err(|_| {
+                        (
+                            StatusCode::BAD_REQUEST,
+                            format!("response header tak valid: '{name}'"),
+                        )
+                    })?;
+                    headers.insert(n, v);
+                }
+            }
+            let respond_with = p
+                .get("respondWith")
+                .and_then(serde_json::Value::as_str)
+                .unwrap_or("json");
+            match respond_with {
+                "json" => {
+                    let v = respond_json(p.get("responseBody"), &items, &rep.outputs);
+                    let mut resp = (status, Json(v)).into_response();
+                    resp.headers_mut().extend(headers);
+                    Ok(resp)
+                }
+                "text" => {
+                    let t = respond_text(p.get("responseBody"), &items, &rep.outputs);
+                    let mut resp = (status, t).into_response();
+                    resp.headers_mut().extend(headers);
+                    Ok(resp)
+                }
+                "redirect" => {
+                    let url = p
+                        .get("redirectUrl")
+                        .and_then(serde_json::Value::as_str)
+                        .unwrap_or("");
+                    if url.is_empty() {
+                        return Err((
+                            StatusCode::BAD_REQUEST,
+                            "respondWith 'redirect' tapi redirectUrl kosong".to_string(),
+                        ));
+                    }
+                    let loc: HeaderValue = url.parse().map_err(|_| {
+                        (
+                            StatusCode::BAD_REQUEST,
+                            format!("redirectUrl tak valid: '{url}'"),
+                        )
+                    })?;
+                    headers.insert(header::LOCATION, loc);
+                    let mut resp = (status, "").into_response();
+                    resp.headers_mut().extend(headers);
+                    Ok(resp)
+                }
+                "stream" => Err((
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "respondWith 'stream' belum didukung (tanpa binary)".to_string(),
+                )),
+                other => Err((
+                    StatusCode::BAD_REQUEST,
+                    format!("respondWith tak dikenal '{other}'"),
                 )),
             }
         }

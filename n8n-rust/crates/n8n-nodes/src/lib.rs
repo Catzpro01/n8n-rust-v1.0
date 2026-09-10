@@ -14,13 +14,20 @@
 //! - webhook: emit payload server; `httpMethod`/`responseMode`/`responseData`/
 //!   `responseCode` dibaca server (lihat n8n-server)
 //! Nilai string di parameter dirender sebagai template `={{ }}`.
+//!
+//! v0.6.0: switch (N cabang + else), merge (multi-input; lihat
+//! `merge.rs`), dateTime (lihat `datetime.rs`), respondToWebhook
+//! (passthrough; server membaca paramsnya), wait (subset tidur),
+//! stopAndError (selalu gagal).
 
+mod datetime;
 mod filter;
+mod merge;
 
 use filter::{evaluate as eval_conditions, resolve_opts};
 use n8n_core::expr::{render, render_value, ExprContext};
 use n8n_core::WorkflowNode;
-use n8n_engine::{BranchOutputs, EngineError, EngineResult, ExecContext, Node, Registry};
+use n8n_engine::{BranchOutputs, EngineError, EngineResult, ExecContext, MultiInput, Node, Registry};
 use serde_json::{json, Map, Value};
 use std::sync::Arc;
 
@@ -36,12 +43,18 @@ pub struct CodeNode;
 pub struct FunctionNode;
 pub struct ScheduleNode;
 pub struct WebhookNode;
+pub struct SwitchNode;
+pub struct MergeNode;
+pub struct DateTimeNode;
+pub struct RespondNode;
+pub struct WaitNode;
+pub struct StopNode;
 
 // ---------------------------------------------------------------------------
 // Path helper ala lodash get/set/unset (subset: segmen object + indeks array)
 // ---------------------------------------------------------------------------
 
-fn get_path<'a>(v: &'a Value, dotted: &str) -> Option<&'a Value> {
+pub(crate) fn get_path<'a>(v: &'a Value, dotted: &str) -> Option<&'a Value> {
     let mut cur = v;
     for seg in dotted.split('.') {
         if seg.is_empty() {
@@ -1059,6 +1072,297 @@ impl Node for WebhookNode {
     }
 }
 
+// ---------------------------------------------------------------------------
+// Switch — N cabang rules + else (n8n Switch V3)
+// ---------------------------------------------------------------------------
+
+impl Node for SwitchNode {
+    fn node_type(&self) -> &'static str {
+        "n8n-nodes-base.switch"
+    }
+
+    /// Tiap item masuk ke SEMUA cabang yang cocok; yang tak cocok ke
+    /// cabang `extra` (else) kecuali `fallbackOutput: "none"`.
+    /// `renameOutput`/`numberOutputs` diabaikan (display-only di n8n).
+    fn execute(
+        &self,
+        node: &WorkflowNode,
+        items: Vec<Value>,
+        ctx: &ExecContext,
+    ) -> EngineResult<BranchOutputs> {
+        let extra = node
+            .parameters
+            .get("fallbackOutput")
+            .and_then(Value::as_str)
+            .unwrap_or("extra");
+        if extra != "extra" && extra != "none" {
+            return Err(EngineError::new(format!(
+                "switch: fallbackOutput tak dikenal '{extra}'"
+            )));
+        }
+        let mut rules: Vec<Value> = Vec::new();
+        if let Some(rs) = node
+            .parameters
+            .get("rules")
+            .and_then(|r| r.get("values"))
+            .and_then(Value::as_array)
+        {
+            for (i, r) in rs.iter().enumerate() {
+                let conds = r
+                    .get("conditions")
+                    .filter(|c| c.is_object())
+                    .cloned()
+                    .ok_or_else(|| {
+                        EngineError::new(format!(
+                            "switch: rule {} tanpa conditions object",
+                            i + 1
+                        ))
+                    })?;
+                rules.push(conds);
+            }
+        }
+        let n_out = if extra == "none" {
+            rules.len().max(1)
+        } else {
+            rules.len() + 1
+        };
+        let mut outs: BranchOutputs = vec![Vec::new(); n_out];
+        let global_opts = node.parameters.get("options");
+        for (i, it) in items.into_iter().enumerate() {
+            let ectx = ExprContext {
+                item: &it,
+                outputs: ctx.outputs,
+            };
+            let render = |v: &Value| render_value(v, &ectx);
+            let mut matched = false;
+            for (ri, rule) in rules.iter().enumerate() {
+                let opts = resolve_opts(rule, global_opts);
+                if eval_conditions(rule, i, &render, &opts)? {
+                    outs[ri].push(it.clone());
+                    matched = true;
+                }
+            }
+            if !matched && extra == "extra" {
+                outs[rules.len()].push(it);
+            }
+        }
+        Ok(outs)
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Merge — multi-input (n8n Merge v3); logika di `merge.rs`
+// ---------------------------------------------------------------------------
+
+impl Node for MergeNode {
+    fn node_type(&self) -> &'static str {
+        "n8n-nodes-base.merge"
+    }
+
+    fn execute(
+        &self,
+        node: &WorkflowNode,
+        items: Vec<Value>,
+        _ctx: &ExecContext,
+    ) -> EngineResult<BranchOutputs> {
+        merge::run(std::slice::from_ref(&items), &node.parameters)
+    }
+
+    fn execute_multi(
+        &self,
+        node: &WorkflowNode,
+        inputs: Vec<MultiInput>,
+        _ctx: &ExecContext,
+    ) -> EngineResult<BranchOutputs> {
+        let views: Vec<Vec<Value>> = inputs.into_iter().map(|i| i.items).collect();
+        merge::run(&views, &node.parameters)
+    }
+}
+
+// ---------------------------------------------------------------------------
+// DateTime — 7 operasi (n8n DateTime V2); logika di `datetime.rs`
+// ---------------------------------------------------------------------------
+
+impl Node for DateTimeNode {
+    fn node_type(&self) -> &'static str {
+        "n8n-nodes-base.dateTime"
+    }
+
+    /// Tiap item mendapat field output; item non-object dibungkus
+    /// (`{"value": ...}`); 0 item → 1 item (manual-trigger n8n).
+    fn execute(
+        &self,
+        node: &WorkflowNode,
+        items: Vec<Value>,
+        ctx: &ExecContext,
+    ) -> EngineResult<BranchOutputs> {
+        if items.is_empty() {
+            let null = Value::Null;
+            let ectx = ExprContext {
+                item: &null,
+                outputs: ctx.outputs,
+            };
+            let render = |v: &Value| render_value(v, &ectx);
+            let (name, value) = datetime::compute(&node.parameters, &render)?;
+            let mut o = Map::new();
+            o.insert(name, value);
+            return Ok(vec![vec![Value::Object(o)]]);
+        }
+        let mut out = Vec::with_capacity(items.len());
+        for it in &items {
+            let ectx = ExprContext {
+                item: it,
+                outputs: ctx.outputs,
+            };
+            let render = |v: &Value| render_value(v, &ectx);
+            let (name, value) = datetime::compute(&node.parameters, &render)?;
+            match it {
+                Value::Object(o) => {
+                    let mut m = o.clone();
+                    m.insert(name, value);
+                    out.push(Value::Object(m));
+                }
+                other => {
+                    let mut m = Map::new();
+                    m.insert("value".to_string(), other.clone());
+                    m.insert(name, value);
+                    out.push(Value::Object(m));
+                }
+            }
+        }
+        Ok(vec![out])
+    }
+}
+
+// ---------------------------------------------------------------------------
+// RespondToWebhook — passthrough; server `/hook` membaca paramsnya
+// ---------------------------------------------------------------------------
+
+impl Node for RespondNode {
+    fn node_type(&self) -> &'static str {
+        "n8n-nodes-base.respondToWebhook"
+    }
+
+    /// Run biasa: teruskan item apa adanya. Bila workflow webhook
+    /// memakai `responseMode: "responseNode"`, server memakai
+    /// `respondWith`/`responseBody`/`responseCode`/headers node ini.
+    fn execute(
+        &self,
+        _node: &WorkflowNode,
+        items: Vec<Value>,
+        _ctx: &ExecContext,
+    ) -> EngineResult<BranchOutputs> {
+        Ok(vec![items])
+    }
+}
+
+/// Cari node respond pertama (dipakai server untuk mode responseNode).
+pub fn find_respond(workflow: &n8n_core::Workflow) -> Option<&WorkflowNode> {
+    workflow
+        .nodes
+        .iter()
+        .find(|n| n.node_type == "n8n-nodes-base.respondToWebhook")
+}
+
+// ---------------------------------------------------------------------------
+// Wait — subset: tidur `amount`×`unit` lalu teruskan
+// ---------------------------------------------------------------------------
+
+impl Node for WaitNode {
+    fn node_type(&self) -> &'static str {
+        "n8n-nodes-base.wait"
+    }
+
+    /// Subset n8n Wait: tidur sinkron lalu teruskan item. `amount` ≤ 0
+    /// dilewati (n8n: resumeAt ≤ now → lanjut). Resume pasif &
+    /// webhook (`$execution.resumeUrl`) tak dimodelkan.
+    fn execute(
+        &self,
+        node: &WorkflowNode,
+        items: Vec<Value>,
+        _ctx: &ExecContext,
+    ) -> EngineResult<BranchOutputs> {
+        let amount = match node.parameters.get("amount") {
+            None => 1.0,
+            Some(Value::Number(n)) => n.as_f64().unwrap_or(1.0),
+            Some(Value::String(s)) => s.trim().parse::<f64>().map_err(|_| {
+                EngineError::new(format!("wait: amount bukan angka ('{s}')"))
+            })?,
+            Some(other) => {
+                return Err(EngineError::new(format!(
+                    "wait: amount bukan angka ({other})"
+                )))
+            }
+        };
+        let unit = node
+            .parameters
+            .get("unit")
+            .and_then(Value::as_str)
+            .unwrap_or("hours");
+        let ms = match unit {
+            "milliseconds" => amount,
+            "seconds" => amount * 1000.0,
+            "minutes" => amount * 60_000.0,
+            "hours" => amount * 3600_000.0,
+            "days" => amount * 86400_000.0,
+            other => {
+                return Err(EngineError::new(format!(
+                    "wait: unit tak dikenal '{other}'"
+                )))
+            }
+        };
+        if !ms.is_finite() {
+            return Err(EngineError::new("wait: amount tak hingga"));
+        }
+        if ms > 0.0 {
+            std::thread::sleep(std::time::Duration::from_secs_f64(ms / 1000.0));
+        }
+        Ok(vec![items])
+    }
+}
+
+// ---------------------------------------------------------------------------
+// StopAndError — selalu gagal dengan pesan berlapis
+// ---------------------------------------------------------------------------
+
+impl Node for StopNode {
+    fn node_type(&self) -> &'static str {
+        "n8n-nodes-base.stopAndError"
+    }
+
+    /// Selalu gagal: `message` ‖ `description` ‖ `error` ‖ `Error: {...}`.
+    fn execute(
+        &self,
+        node: &WorkflowNode,
+        _items: Vec<Value>,
+        _ctx: &ExecContext,
+    ) -> EngineResult<BranchOutputs> {
+        let p = &node.parameters;
+        let msg = p
+            .get("message")
+            .and_then(Value::as_str)
+            .filter(|s| !s.is_empty())
+            .map(str::to_string)
+            .or_else(|| {
+                p.get("description")
+                    .and_then(Value::as_str)
+                    .filter(|s| !s.is_empty())
+                    .map(str::to_string)
+            })
+            .or_else(|| {
+                p.get("error")
+                    .and_then(Value::as_str)
+                    .map(str::to_string)
+            })
+            .unwrap_or_else(|| {
+                let dump: Map<String, Value> =
+                    p.iter().map(|(k, v)| (k.clone(), v.clone())).collect();
+                format!("Error: {}", Value::Object(dump))
+            });
+        Err(EngineError::new(format!("stopAndError: {msg}")))
+    }
+}
+
 /// Cari node webhook pertama (dipakai server untuk responseMode dkk).
 pub fn find_webhook(workflow: &n8n_core::Workflow) -> Option<&WorkflowNode> {
     workflow
@@ -1098,6 +1402,12 @@ pub fn register_all(registry: &mut Registry) {
     registry.register(Arc::new(FunctionNode));
     registry.register(Arc::new(ScheduleNode));
     registry.register(Arc::new(WebhookNode));
+    registry.register(Arc::new(SwitchNode));
+    registry.register(Arc::new(MergeNode));
+    registry.register(Arc::new(DateTimeNode));
+    registry.register(Arc::new(RespondNode));
+    registry.register(Arc::new(WaitNode));
+    registry.register(Arc::new(StopNode));
 }
 
 #[cfg(test)]
@@ -1853,5 +2163,251 @@ mod tests {
             .execute(&node, vec![], &empty_ctx(&outputs))
             .expect("exec");
         assert_eq!(out, vec![vec![json!({"mode": "manual"})]]);
+    }
+
+    #[test]
+    fn switch_routes_to_matching_branches_and_else() {
+        let rule = |kind: &str| {
+            json!({
+                "conditions": {
+                    "combinator": "and",
+                    "conditions": [{
+                        "leftValue": "={{ $json.kind }}",
+                        "rightValue": kind,
+                        "operator": {"type": "string", "operation": "equals"}
+                    }],
+                    "options": {}
+                }
+            })
+        };
+        let node = mk(
+            "s",
+            "Switch",
+            "n8n-nodes-base.switch",
+            HashMap::from([(
+                "rules".to_string(),
+                json!({"values": [rule("a"), rule("b")]}),
+            )]),
+        );
+        let outputs = HashMap::new();
+        let out = SwitchNode
+            .execute(
+                &node,
+                vec![
+                    json!({"kind": "a"}),
+                    json!({"kind": "b"}),
+                    json!({"kind": "z"}),
+                ],
+                &empty_ctx(&outputs),
+            )
+            .expect("exec");
+        assert_eq!(out.len(), 3);
+        assert_eq!(out[0], vec![json!({"kind": "a"})]);
+        assert_eq!(out[1], vec![json!({"kind": "b"})]);
+        assert_eq!(out[2], vec![json!({"kind": "z"})]);
+    }
+
+    #[test]
+    fn switch_fallback_none_drops_unmatched() {
+        let node = mk(
+            "s",
+            "Switch",
+            "n8n-nodes-base.switch",
+            HashMap::from([
+                (
+                    "rules".to_string(),
+                    json!({"values": [{
+                        "conditions": {
+                            "combinator": "and",
+                            "conditions": [{
+                                "leftValue": "={{ $json.kind }}",
+                                "rightValue": "a",
+                                "operator": {"type": "string", "operation": "equals"}
+                            }],
+                            "options": {}
+                        }
+                    }]}),
+                ),
+                ("fallbackOutput".to_string(), json!("none")),
+            ]),
+        );
+        let outputs = HashMap::new();
+        let out = SwitchNode
+            .execute(
+                &node,
+                vec![json!({"kind": "a"}), json!({"kind": "z"})],
+                &empty_ctx(&outputs),
+            )
+            .expect("exec");
+        assert_eq!(out, vec![vec![json!({"kind": "a"})]]);
+    }
+
+    #[test]
+    fn switch_rule_without_conditions_is_error() {
+        let node = mk(
+            "s",
+            "Switch",
+            "n8n-nodes-base.switch",
+            HashMap::from([(
+                "rules".to_string(),
+                json!({"values": [{"renameOutput": "x"}]}),
+            )]),
+        );
+        let outputs = HashMap::new();
+        let err = SwitchNode
+            .execute(&node, vec![json!({})], &empty_ctx(&outputs))
+            .expect_err("must fail");
+        assert!(err.to_string().contains("tanpa conditions"), "{err}");
+    }
+
+    #[test]
+    fn merge_dispatch_sees_two_inputs() {
+        let node = mk(
+            "m",
+            "Merge",
+            "n8n-nodes-base.merge",
+            HashMap::from([("mode".to_string(), json!("append"))]),
+        );
+        let outputs = HashMap::new();
+        let out = MergeNode
+            .execute_multi(
+                &node,
+                vec![
+                    MultiInput {
+                        from: "A".to_string(),
+                        branch: 0,
+                        items: vec![json!({"a": 1})],
+                    },
+                    MultiInput {
+                        from: "B".to_string(),
+                        branch: 0,
+                        items: vec![json!({"b": 2})],
+                    },
+                ],
+                &empty_ctx(&outputs),
+            )
+            .expect("exec");
+        assert_eq!(out, vec![vec![json!({"a": 1}), json!({"b": 2})]]);
+    }
+
+    #[test]
+    fn datetime_adds_field_per_item() {
+        let node = mk(
+            "d",
+            "DateTime",
+            "n8n-nodes-base.dateTime",
+            HashMap::from([
+                ("operation".to_string(), json!("addToDate")),
+                (
+                    "magnitude".to_string(),
+                    json!("2026-01-01T00:00:00+00:00"),
+                ),
+                ("timeUnit".to_string(), json!("days")),
+                ("duration".to_string(), json!(1)),
+            ]),
+        );
+        let outputs = HashMap::new();
+        let out = DateTimeNode
+            .execute(
+                &node,
+                vec![json!({}), json!({"k": 1})],
+                &empty_ctx(&outputs),
+            )
+            .expect("exec");
+        assert_eq!(
+            out,
+            vec![vec![
+                json!({"newDate": "2026-01-02T00:00:00.000+00:00"}),
+                json!({"k": 1, "newDate": "2026-01-02T00:00:00.000+00:00"}),
+            ]]
+        );
+    }
+
+    #[test]
+    fn datetime_empty_input_yields_one_item() {
+        let node = mk(
+            "d",
+            "DateTime",
+            "n8n-nodes-base.dateTime",
+            HashMap::from([("operation".to_string(), json!("getCurrentDate"))]),
+        );
+        let outputs = HashMap::new();
+        let out = DateTimeNode
+            .execute(&node, vec![], &empty_ctx(&outputs))
+            .expect("exec");
+        assert_eq!(out.len(), 1);
+        assert_eq!(out[0].len(), 1);
+        let s = out[0][0]
+            .get("currentDate")
+            .and_then(Value::as_str)
+            .expect("currentDate string");
+        assert!(s.contains('T'), "{s}");
+    }
+
+    #[test]
+    fn respond_passes_items_through() {
+        let node = mk(
+            "r",
+            "Respond",
+            "n8n-nodes-base.respondToWebhook",
+            HashMap::new(),
+        );
+        let outputs = HashMap::new();
+        let items = vec![json!({"a": 1}), json!({"b": 2})];
+        let out = RespondNode
+            .execute(&node, items.clone(), &empty_ctx(&outputs))
+            .expect("exec");
+        assert_eq!(out, vec![items]);
+    }
+
+    #[test]
+    fn wait_zero_amount_skips_sleep() {
+        let node = mk(
+            "w",
+            "Wait",
+            "n8n-nodes-base.wait",
+            HashMap::from([
+                ("amount".to_string(), json!(0)),
+                ("unit".to_string(), json!("seconds")),
+            ]),
+        );
+        let outputs = HashMap::new();
+        let out = WaitNode
+            .execute(&node, vec![json!({"a": 1})], &empty_ctx(&outputs))
+            .expect("exec");
+        assert_eq!(out, vec![vec![json!({"a": 1})]]);
+    }
+
+    #[test]
+    fn stop_uses_message_first() {
+        let node = mk(
+            "s",
+            "Stop",
+            "n8n-nodes-base.stopAndError",
+            HashMap::from([
+                ("message".to_string(), json!("boom")),
+                ("error".to_string(), json!("x")),
+            ]),
+        );
+        let outputs = HashMap::new();
+        let err = StopNode
+            .execute(&node, vec![json!({})], &empty_ctx(&outputs))
+            .expect_err("must fail");
+        assert_eq!(err.to_string(), "stopAndError: boom");
+    }
+
+    #[test]
+    fn stop_default_error_shape() {
+        let node = mk(
+            "s",
+            "Stop",
+            "n8n-nodes-base.stopAndError",
+            HashMap::new(),
+        );
+        let outputs = HashMap::new();
+        let err = StopNode
+            .execute(&node, vec![], &empty_ctx(&outputs))
+            .expect_err("must fail");
+        assert!(err.to_string().contains("Error:"), "{err}");
     }
 }

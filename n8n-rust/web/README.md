@@ -1,17 +1,19 @@
-# UI web n8n-rust v0.5.0
+# UI web n8n-rust v0.6.0
 
-Editor workflow single-file (`crates/n8n-server/ui/app.html`, ±24 KB),
+Editor workflow single-file (`crates/n8n-server/ui/app.html`),
 disajikan embedded oleh binary server di `GET /`. Tanpa toolchain JS,
 tanpa bundler, tanpa dependensi CDN — buka browser, langsung pakai.
 
 ## Fitur
 
-- Canvas SVG: 12 tipe node, drag untuk pindah, badge warna per tipe.
+- Canvas SVG: 18 tipe node, drag untuk pindah, badge warna per tipe.
 - Edge: drag dari lingkaran kanan node sumber ke node target; klik edge
   untuk menghapus. Aturan If: edge pertama = cabang true (abu-abu),
-  edge kedua = false (kuning).
+  edge kedua = false (kuning). Switch: edge baru mengisi cabang kosong
+  pertama (= rule N).
 - Template parameter bentuk n8n asli saat tambah node (conditions,
-  sortFieldsUi, maxItems, runOnceForAllItems, rule interval, httpMethod…).
+  sortFieldsUi, maxItems, runOnceForAllItems, rule interval, httpMethod,
+  rules+fallbackOutput switch, mode merge, operation dateTime…).
 - Panel node: metadata + editor parameters JSON (disimpan per tombol,
   divalidasi sebagai object) + output run terakhir per cabang.
 - Toolbar: Contoh (fixture), Buka JSON (impor file), Export JSON
