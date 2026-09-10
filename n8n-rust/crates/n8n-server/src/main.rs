@@ -297,8 +297,12 @@ async fn api_hook_fire(
     });
     let reg = s.registry.clone();
     let name = wf.name.clone();
-    let res =
-        tokio::task::spawn_blocking(move || Engine::run_with(&wf, &reg, Some(payload))).await;
+    // `wf` dipakai lagi setelah run (responseMode) → clone untuk thread.
+    let wf_run = wf.clone();
+    let res = tokio::task::spawn_blocking(move || {
+        Engine::run_with(&wf_run, &reg, Some(payload))
+    })
+    .await;
     let rep = match res {
         Ok(Ok(rep)) => rep,
         Ok(Err(e)) => {

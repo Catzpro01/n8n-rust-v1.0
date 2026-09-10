@@ -666,7 +666,7 @@ mod tests {
     use super::*;
     use serde_json::json;
 
-    fn p(pairs: Vec<(&str, Value)>) -> Map<String, Value> {
+    fn p(pairs: Vec<(&str, Value)>) -> HashMap<String, Value> {
         pairs
             .into_iter()
             .map(|(k, v)| (k.to_string(), v))
