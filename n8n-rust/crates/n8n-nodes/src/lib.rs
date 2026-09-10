@@ -930,7 +930,8 @@ fn run_code(node: &WorkflowNode, items: Vec<Value>) -> EngineResult<Vec<Value>> 
         rhai::serde::to_dynamic(&items).map_err(|e| EngineError::new(format!("code: {e}")))?;
     let mut scope = rhai::Scope::new();
     scope.push("items", dyn_items);
-    let _ = eng.eval_with_scope::<rhai::Dynamic>(&mut scope, code)
+    let _ = eng
+        .eval_with_scope::<rhai::Dynamic>(&mut scope, code)
         .map_err(|e| EngineError::new(format!("code: {e}")))?;
     let back: rhai::Dynamic = scope
         .get_value("items")
@@ -956,7 +957,8 @@ fn run_code_each(node: &WorkflowNode, items: Vec<Value>) -> EngineResult<Vec<Val
         let mut scope = rhai::Scope::new();
         scope.push("item", dyn_item);
         scope.push("index", i as i64);
-        let _ = eng.eval_with_scope::<rhai::Dynamic>(&mut scope, code)
+        let _ = eng
+            .eval_with_scope::<rhai::Dynamic>(&mut scope, code)
             .map_err(|e| EngineError::new(format!("code: {e}")))?;
         let back: rhai::Dynamic = scope
             .get_value("item")
