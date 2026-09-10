@@ -108,7 +108,7 @@ jobs:
         with:
           components: rustfmt
       - name: cargo fmt
-        run: set -o pipefail; cargo fmt -- --check crates/n8n-core/src/lib.rs crates/n8n-core/src/expr.rs crates/n8n-engine/src/lib.rs crates/n8n-cli/src/main.rs 2>&1 | tee /tmp/out.log
+        run: set -o pipefail; (rustc --version; rustfmt --version; rustfmt --edition 2021 --check crates/n8n-core/src/lib.rs crates/n8n-core/src/expr.rs crates/n8n-engine/src/lib.rs crates/n8n-cli/src/main.rs) 2>&1 | tee /tmp/out.log
       - name: Ekspor error sebagai anotasi
         if: failure()
         run: |
@@ -149,7 +149,7 @@ jobs:
         with:
           components: rustfmt
       - name: cargo fmt
-        run: set -o pipefail; cargo fmt -- --check crates/n8n-nodes/src/lib.rs crates/n8n-nodes/src/filter.rs crates/n8n-nodes/src/merge.rs crates/n8n-nodes/src/datetime.rs crates/n8n-server/src/main.rs 2>&1 | tee /tmp/out.log
+        run: set -o pipefail; (rustc --version; rustfmt --version; rustfmt --edition 2021 --check crates/n8n-nodes/src/lib.rs crates/n8n-nodes/src/filter.rs crates/n8n-nodes/src/merge.rs crates/n8n-nodes/src/datetime.rs crates/n8n-server/src/main.rs) 2>&1 | tee /tmp/out.log
       - name: Ekspor error sebagai anotasi
         if: failure()
         run: |
