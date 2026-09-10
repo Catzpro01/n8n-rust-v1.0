@@ -143,6 +143,7 @@
 | Rilis | `release-readiness` → (`strix` bila permukaan berubah) → `strix-verify` bila ada artefak |
 | Keamanan rutin | `strix` (scan) → hasil ke `triage` → remedia |
 | Butuh context codebase | `mem-search` (riwayat) → `graphify query` → `understand-chat`/`understand-explain` (dalam) |
+| Butuh paralel nyata (2+ tugas independen) | `dispatching-parallel-agents` → harness repo: `scripts/parallel-fanout.sh` (read-only) atau `scripts/fanout/worktree-fanout.sh` (worker menulis file, worktree+branch sendiri) — lihat `docs/runtime/MULTITASKING.md` |
 | Docs/library eksternal | `context7-cli` (verifikasi) — JANGAN andalkan training data |
 | Sesinya panjang / ganti sesi | `handoff` atau `claude-handoff` → `retro` di akhir |
 | Prompt untuk tool AI lain | `prompt-master` |

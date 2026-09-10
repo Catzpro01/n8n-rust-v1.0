@@ -1,0 +1,11 @@
+# manifest.example — contoh nyata untuk repo ini (semua task read-only & independen)
+#
+# Jalankan:  scripts/parallel-fanout.sh scripts/fanout/manifest.example --jobs 4 --timeout 300
+#
+# Aturan: satu task = satu perintah mandiri, tidak menulis file yang sama dengan task lain.
+
+census-arsip   | echo "total file (tanpa .git): $(find . -path ./.git -prune -o -type f -print | wc -l)"; echo "--- 8 direktori terbesar:"; du -sh ./* 2>/dev/null | sort -h | tail -8
+kualitas-todo  | n=$(grep -rIn --exclude-dir=.git -I -E '(TODO|FIXME|XXX|HACK)[: ]' . | wc -l); echo "penanda TODO/FIXME/XXX/HACK: $n"; grep -rIn --exclude-dir=.git -I -E '(TODO|FIXME)[: ]' . | awk -F: '{print $1}' | sort | uniq -c | sort -rn | head -10
+drift-skill    | echo "jumlah .claude/skills: $(ls .claude/skills | wc -l) · .agents/skills: $(ls .agents/skills | wc -l)"; echo "--- hanya ada di .claude:"; comm -23 <(ls .claude/skills | sort) <(ls .agents/skills | sort); echo "--- hanya ada di .agents:"; comm -13 <(ls .claude/skills | sort) <(ls .agents/skills | sort)
+inventaris-rust| echo "Cargo.toml: $(find agent-workspace -name Cargo.toml -not -path '*/target/*' | wc -l)"; echo "baris .rs : $(find agent-workspace -name '*.rs' -not -path '*/target/*' -print0 | xargs -0 cat 2>/dev/null | wc -l)"; find agent-workspace -name Cargo.toml -not -path '*/target/*' | head -20
+higiene-rahasia| c=$(grep -rIn --exclude-dir=.git -I -E '(sk-[A-Za-z0-9]{20,}|ghp_[A-Za-z0-9]{30,}|AKIA[0-9A-Z]{16}|BEGIN [A-Z ]*PRIVATE KEY)' . | wc -l); echo "kandidat kredensial terdeteksi (isi di-redaksi): $c"; echo "--- .gitignore saat ini:"; cat .gitignore

@@ -8,6 +8,10 @@ id_*
 .env*
 !.env.example
 
+# Fan-out output (regenerable — lihat docs/runtime/MULTITASKING.md)
+.fanout*/
+.fanout-worktrees/
+
 # Build artifacts & caches
 target/
 Cargo.lock.bak

@@ -1,0 +1,6 @@
+task	status	exit	durasi_detik	log
+census-arsip	OK	0	0.20	census-arsip.log
+kualitas-todo	OK	0	0.64	kualitas-todo.log
+drift-skill	OK	0	0.10	drift-skill.log
+inventaris-rust	OK	0	0.17	inventaris-rust.log
+higiene-rahasia	OK	0	0.42	higiene-rahasia.log
