@@ -131,7 +131,11 @@ fn read_clash(params: &HashMap<String, Value>, allow_prefer_n: bool) -> EngineRe
 }
 
 fn is_empty_scalar(v: &Value) -> bool {
-    matches!(v, Value::Null | Value::String(s) if s.is_empty())
+    match v {
+        Value::Null => true,
+        Value::String(s) => s.is_empty(),
+        _ => false,
+    }
 }
 
 /// Gabung `src` ke `target` (rekursif bila deep; array digabung per

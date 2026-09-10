@@ -724,7 +724,7 @@ impl Node for LimitNode {
         let out = if keep == "firstItems" {
             items.into_iter().take(n).collect()
         } else {
-            items.into_iter().skip(items.len() - n).collect()
+            items.into_iter().skip(len as usize - n).collect()
         };
         Ok(vec![out])
     }
