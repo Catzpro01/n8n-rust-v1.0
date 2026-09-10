@@ -25,8 +25,10 @@ jobs:
       - name: Ekspor error sebagai anotasi
         if: failure()
         run: |
-          grep -E "^(error|failures:)" /tmp/out.log | head -30 | sed 's/^/::error::/' || true
-          tail -20 /tmp/out.log | sed 's/^/::error::tail: /'
+          sed 's/\x1b\[[0-9;]*m//g' /tmp/out.log > /tmp/clean.log
+          grep -E "^error" /tmp/clean.log | head -30 | sed 's/^/::error::/' || true
+          grep -E "^(failures:|test .* FAILED)" /tmp/clean.log | head -10 | sed 's/^/::error::/' || true
+          tail -15 /tmp/clean.log | sed 's/^/::error::tail: /'
 
   clippy:
     name: cargo clippy
@@ -47,8 +49,9 @@ jobs:
       - name: Ekspor error sebagai anotasi
         if: failure()
         run: |
-          grep -E "^(error|warning)" /tmp/out.log | head -30 | sed 's/^/::error::/' || true
-          tail -20 /tmp/out.log | sed 's/^/::error::tail: /'
+          sed 's/\x1b\[[0-9;]*m//g' /tmp/out.log > /tmp/clean.log
+          grep -E "^(error|warning)" /tmp/clean.log | head -30 | sed 's/^/::error::/' || true
+          tail -15 /tmp/clean.log | sed 's/^/::error::tail: /'
 
   fmt:
     name: cargo fmt
@@ -65,4 +68,4 @@ jobs:
         run: set -o pipefail; cargo fmt --all --check 2>&1 | tee /tmp/out.log
       - name: Ekspor error sebagai anotasi
         if: failure()
-        run: head -40 /tmp/out.log | sed 's/^/::error::/'
+        run: head -150 /tmp/out.log | sed 's/^/::error::fmt: /'
