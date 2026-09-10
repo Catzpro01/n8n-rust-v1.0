@@ -1,26 +1,20 @@
 # Matt Pocock Skills — Sync Manifest
 
-Catatan sinkronisasi skill `mattpocock/skills` (upstream) ke repo ini.
-Diperbarui setiap kali ada download/sync ulang dari GitHub.
-
 ## Status terakhir
 
 - **Upstream:** https://github.com/mattpocock/skills
 - **Release terakhir:** v1.2.3 (2026-08-06)
 - **Main HEAD saat sync:** `3cca18b368ae95cdbdebbff572ccafa662551015`
-  ("Merge pull request #1025 — link-skills: stop linking misc/")
 - **Tanggal sync:** 2026-09-10
-- **Jumlah skill upstream:** 37 (engineering 18, in-progress 8, misc 4, productivity 7)
-- **Skill custom repo ini:** 36 (tidak ikut sync, tidak pernah dioverwrite)
+- **Jumlah skill upstream:** 37 · **Skill custom repo:** 36
 
-## Lokasi di repo ini
+## Lokasi di repo ini (pasca wipe v1, 2026-09-10)
 
-| Lokasi | Isi |
+| Lokasi | Status |
 |---|---|
-| `agent-workspace/skills-mattpocock/` | Salinan penuh repo upstream (163 file, byte-identical dengan main HEAD di atas) |
-| `.claude/skills/<nama>/` | 37 skill Matt Pocock (flattened) + 36 skill custom = 73 total |
-| `.agents/skills/<nama>/` | Mirror dari `.claude/skills` (73 total, identik) |
-| `workspace matt/skills-mattpocock` | Gitlink → commit upstream `3cca18b` (direktori kerja kosong, referensi saja) |
+| `.claude/skills/<nama>/` | 37 upstream + 36 custom = 73, byte-identical upstream |
+| `.agents/skills/<nama>/` | Mirror identik (73) |
+| `agent-workspace/skills-mattpocock/` | DIHAPUS saat wipe v1 — salinan penuh terakhir ada di tag `pre-v1-wipe` |
 
 ## Daftar 37 skill upstream (disync)
 
@@ -51,8 +45,7 @@ writing-plans, writing-skills
 ```bash
 rm -rf /tmp/mattpocock-latest
 git clone --depth 50 https://github.com/mattpocock/skills /tmp/mattpocock-latest
-# Lalu salin tiap skill upstream ke .claude/skills/<nama>/ dan .agents/skills/<nama>/
+# Salin tiap skill upstream ke .claude/skills/<nama>/ dan .agents/skills/<nama>/
 # (hanya 37 nama di daftar atas — skill custom jangan disentuh),
-# refresh agent-workspace/skills-mattpocock/, verifikasi dengan diff -rq,
-# update manifest ini + gitlink bila HEAD berubah.
+# verifikasi dengan diff -rq, update manifest ini.
 ```

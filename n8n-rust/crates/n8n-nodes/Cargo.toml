@@ -1,0 +1,9 @@
+[package]
+name = "n8n-nodes"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+n8n-core = { path = "../n8n-core" }
+n8n-engine = { path = "../n8n-engine" }
+serde_json = "1"

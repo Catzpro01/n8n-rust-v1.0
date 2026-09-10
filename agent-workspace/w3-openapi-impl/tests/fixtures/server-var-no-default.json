@@ -1,3 +1,0 @@
-{"openapi": "3.0.0", "info": {"title": "x", "version": "1"},
- "servers": [{"url": "https://{region}.example.com"}],
- "paths": {"/a": {"get": {"operationId": "listA"}}}}
