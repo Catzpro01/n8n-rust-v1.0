@@ -563,7 +563,7 @@ mod tests {
             ],
             "options": {}
         });
-        assert_eq!(run(&conds, None).expect("eval"), true);
+        assert!(run(&conds, None).expect("eval"));
     }
 
     #[test]
@@ -578,7 +578,7 @@ mod tests {
             ],
             "options": {"caseSensitive": true}
         });
-        assert_eq!(run(&conds, None).expect("eval"), true);
+        assert!(run(&conds, None).expect("eval"));
     }
 
     #[test]
@@ -591,7 +591,7 @@ mod tests {
             ],
             "options": {}
         });
-        assert_eq!(run(&conds, None).expect("eval"), true);
+        assert!(run(&conds, None).expect("eval"));
         let bad = json!({
             "combinator": "and",
             "conditions": [
@@ -616,7 +616,7 @@ mod tests {
             ],
             "options": {"typeValidation": "loose"}
         });
-        assert_eq!(run(&conds, None).expect("eval"), true);
+        assert!(run(&conds, None).expect("eval"));
     }
 
     #[test]
@@ -629,7 +629,7 @@ mod tests {
             ],
             "options": {}
         });
-        assert_eq!(run(&conds, None).expect("eval"), true);
+        assert!(run(&conds, None).expect("eval"));
     }
 
     #[test]
@@ -644,7 +644,7 @@ mod tests {
             ],
             "options": {}
         });
-        assert_eq!(run(&conds, None).expect("eval"), true);
+        assert!(run(&conds, None).expect("eval"));
     }
 
     #[test]
@@ -657,7 +657,7 @@ mod tests {
             ],
             "options": {"caseSensitive": true}
         });
-        assert_eq!(run(&conds, None).expect("eval"), true);
+        assert!(run(&conds, None).expect("eval"));
     }
 
     #[test]

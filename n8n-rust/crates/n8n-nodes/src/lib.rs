@@ -13,6 +13,7 @@
 //! - scheduleTrigger: field output persis n8n (UTC) + echo `rule`
 //! - webhook: emit payload server; `httpMethod`/`responseMode`/`responseData`/
 //!   `responseCode` dibaca server (lihat n8n-server)
+//!
 //! Nilai string di parameter dirender sebagai template `={{ }}`.
 //!
 //! v0.6.0: switch (N cabang + else), merge (multi-input; lihat
@@ -929,7 +930,7 @@ fn run_code(node: &WorkflowNode, items: Vec<Value>) -> EngineResult<Vec<Value>> 
         rhai::serde::to_dynamic(&items).map_err(|e| EngineError::new(format!("code: {e}")))?;
     let mut scope = rhai::Scope::new();
     scope.push("items", dyn_items);
-    eng.eval_with_scope::<rhai::Dynamic>(&mut scope, code)
+    let _ = eng.eval_with_scope::<rhai::Dynamic>(&mut scope, code)
         .map_err(|e| EngineError::new(format!("code: {e}")))?;
     let back: rhai::Dynamic = scope
         .get_value("items")
@@ -955,7 +956,7 @@ fn run_code_each(node: &WorkflowNode, items: Vec<Value>) -> EngineResult<Vec<Val
         let mut scope = rhai::Scope::new();
         scope.push("item", dyn_item);
         scope.push("index", i as i64);
-        eng.eval_with_scope::<rhai::Dynamic>(&mut scope, code)
+        let _ = eng.eval_with_scope::<rhai::Dynamic>(&mut scope, code)
             .map_err(|e| EngineError::new(format!("code: {e}")))?;
         let back: rhai::Dynamic = scope
             .get_value("item")
@@ -1288,8 +1289,8 @@ impl Node for WaitNode {
             "milliseconds" => amount,
             "seconds" => amount * 1000.0,
             "minutes" => amount * 60_000.0,
-            "hours" => amount * 3600_000.0,
-            "days" => amount * 86400_000.0,
+            "hours" => amount * 3_600_000.0,
+            "days" => amount * 86_400_000.0,
             other => {
                 return Err(EngineError::new(format!(
                     "wait: unit tak dikenal '{other}'"
