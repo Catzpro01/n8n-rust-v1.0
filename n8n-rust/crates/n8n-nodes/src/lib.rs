@@ -1374,8 +1374,10 @@ impl Node for ExecNode {
             item: items.first().unwrap_or(&null),
             outputs: ctx.outputs,
         };
-        let cmd_v =
-            render_value(node.parameters.get("command").unwrap_or(&Value::Null), &ectx);
+        let cmd_v = render_value(
+            node.parameters.get("command").unwrap_or(&Value::Null),
+            &ectx,
+        );
         let cmd = cmd_v
             .as_str()
             .ok_or_else(|| EngineError::new("executeCommand: 'command' wajib string"))?;
@@ -1406,7 +1408,9 @@ impl Node for ExecNode {
                     Some(c) => c.to_string(),
                     None => "signal".to_string(),
                 };
-                return Err(EngineError::new(format!("executeCommand: exit tidak-nol ({c})")));
+                return Err(EngineError::new(format!(
+                    "executeCommand: exit tidak-nol ({c})"
+                )));
             }
         }
         Ok(vec![vec![item]])
