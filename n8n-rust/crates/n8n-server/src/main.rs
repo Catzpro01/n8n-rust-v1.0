@@ -130,9 +130,7 @@ async fn api_validate(
     Json(Engine::lint(&wf, &s.registry))
 }
 
-async fn api_explain(
-    Json(wf): Json<Workflow>,
-) -> Result<Json<Vec<String>>, (StatusCode, String)> {
+async fn api_explain(Json(wf): Json<Workflow>) -> Result<Json<Vec<String>>, (StatusCode, String)> {
     Engine::explain(&wf)
         .map(Json)
         .map_err(|e| (StatusCode::BAD_REQUEST, e.to_string()))
@@ -157,10 +155,7 @@ async fn api_run(
             record(&s, &name, false, Vec::new(), 0);
             Err((StatusCode::BAD_REQUEST, e.to_string()))
         }
-        Err(e) => Err((
-            StatusCode::INTERNAL_SERVER_ERROR,
-            format!("join: {e}"),
-        )),
+        Err(e) => Err((StatusCode::INTERNAL_SERVER_ERROR, format!("join: {e}"))),
     }
 }
 
@@ -191,17 +186,11 @@ async fn api_hook_list(State(s): State<AppState>) -> Json<Vec<String>> {
     Json(v)
 }
 
-async fn api_hook_delete(
-    State(s): State<AppState>,
-    Path(path): Path<String>,
-) -> Json<bool> {
+async fn api_hook_delete(State(s): State<AppState>, Path(path): Path<String>) -> Json<bool> {
     Json(s.hooks.write().await.remove(&path).is_some())
 }
 
-fn hook_param<'a>(
-    wf: &'a Workflow,
-    key: &str,
-) -> Option<&'a serde_json::Value> {
+fn hook_param<'a>(wf: &'a Workflow, key: &str) -> Option<&'a serde_json::Value> {
     find_webhook(wf).and_then(|n| n.parameters.get(key))
 }
 
@@ -258,8 +247,7 @@ async fn api_hook_fire(
     body: Bytes,
 ) -> Result<Response, (StatusCode, String)> {
     let wf = s.hooks.read().await.get(&path).cloned();
-    let wf =
-        wf.ok_or_else(|| (StatusCode::NOT_FOUND, format!("hook tak dikenal: {path}")))?;
+    let wf = wf.ok_or_else(|| (StatusCode::NOT_FOUND, format!("hook tak dikenal: {path}")))?;
     // n8n mendaftarkan webhook per (method, path): method salah → 404.
     // Tanpa node webhook di workflow → semua method diterima (warisan 0.4).
     if find_webhook(&wf).is_some() {
@@ -278,8 +266,7 @@ async fn api_hook_fire(
         serde_json::Value::Null
     } else {
         let text = String::from_utf8_lossy(&body);
-        serde_json::from_str(&text)
-            .unwrap_or(serde_json::Value::String(text.to_string()))
+        serde_json::from_str(&text).unwrap_or(serde_json::Value::String(text.to_string()))
     };
     let mut hm = serde_json::Map::new();
     for (k, v) in headers.iter() {
@@ -299,22 +286,15 @@ async fn api_hook_fire(
     let name = wf.name.clone();
     // `wf` dipakai lagi setelah run (responseMode) → clone untuk thread.
     let wf_run = wf.clone();
-    let res = tokio::task::spawn_blocking(move || {
-        Engine::run_with(&wf_run, &reg, Some(payload))
-    })
-    .await;
+    let res =
+        tokio::task::spawn_blocking(move || Engine::run_with(&wf_run, &reg, Some(payload))).await;
     let rep = match res {
         Ok(Ok(rep)) => rep,
         Ok(Err(e)) => {
             record(&s, &name, false, Vec::new(), 0);
             return Err((StatusCode::BAD_REQUEST, e.to_string()));
         }
-        Err(e) => {
-            return Err((
-                StatusCode::INTERNAL_SERVER_ERROR,
-                format!("join: {e}"),
-            ))
-        }
+        Err(e) => return Err((StatusCode::INTERNAL_SERVER_ERROR, format!("join: {e}"))),
     };
     let total = rep.durations_ms.values().sum();
     record(&s, &name, true, rep.order.clone(), total);
@@ -332,8 +312,7 @@ async fn api_hook_fire(
             let code = hook_param(&wf, "responseCode")
                 .and_then(serde_json::Value::as_u64)
                 .unwrap_or(200);
-            let status =
-                StatusCode::from_u16(code as u16).unwrap_or(StatusCode::OK);
+            let status = StatusCode::from_u16(code as u16).unwrap_or(StatusCode::OK);
             let items: Vec<serde_json::Value> = rep
                 .order
                 .last()
