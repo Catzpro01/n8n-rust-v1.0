@@ -25,7 +25,17 @@ jobs:
       - name: Ekspor error sebagai anotasi
         if: failure()
         run: |
-          python3 -c "import sys;d=open('/tmp/out.log','rb').read().decode('utf-8','replace');d=d.replace('%','%25').replace(chr(13),'%0D').replace(chr(10),'%0A');print('::error::FULL-LOG:'+d[:60000])"
+          python3 - <<'EOF'
+          import re
+          raw = open('/tmp/out.log', 'rb').read().decode('utf-8', 'replace')
+          CH = 3500
+          parts = [raw[i:i+CH] for i in range(0, len(raw), CH)] or ['']
+          rx = re.compile(r'error|warning|Diff in|failures:|panicked|test result|FAILED', re.I)
+          keep = [(i, p) for i, p in enumerate(parts) if rx.search(p) or i == len(parts)-1][:8]
+          for i, p in keep:
+              m = p.replace('%', '%25').replace(chr(13), '%0D').replace(chr(10), '%0A')
+              print(f"::error::LOG[{i+1}/{len(parts)}]:{m}")
+          EOF
 
   clippy:
     name: cargo clippy
@@ -46,7 +56,17 @@ jobs:
       - name: Ekspor error sebagai anotasi
         if: failure()
         run: |
-          python3 -c "import sys;d=open('/tmp/out.log','rb').read().decode('utf-8','replace');d=d.replace('%','%25').replace(chr(13),'%0D').replace(chr(10),'%0A');print('::error::FULL-LOG:'+d[:60000])"
+          python3 - <<'EOF'
+          import re
+          raw = open('/tmp/out.log', 'rb').read().decode('utf-8', 'replace')
+          CH = 3500
+          parts = [raw[i:i+CH] for i in range(0, len(raw), CH)] or ['']
+          rx = re.compile(r'error|warning|Diff in|failures:|panicked|test result|FAILED', re.I)
+          keep = [(i, p) for i, p in enumerate(parts) if rx.search(p) or i == len(parts)-1][:8]
+          for i, p in keep:
+              m = p.replace('%', '%25').replace(chr(13), '%0D').replace(chr(10), '%0A')
+              print(f"::error::LOG[{i+1}/{len(parts)}]:{m}")
+          EOF
 
   fmt:
     name: cargo fmt
@@ -64,4 +84,14 @@ jobs:
       - name: Ekspor error sebagai anotasi
         if: failure()
         run: |
-          python3 -c "import sys;d=open('/tmp/out.log','rb').read().decode('utf-8','replace');d=d.replace('%','%25').replace(chr(13),'%0D').replace(chr(10),'%0A');print('::error::FULL-LOG:'+d[:60000])"
+          python3 - <<'EOF'
+          import re
+          raw = open('/tmp/out.log', 'rb').read().decode('utf-8', 'replace')
+          CH = 3500
+          parts = [raw[i:i+CH] for i in range(0, len(raw), CH)] or ['']
+          rx = re.compile(r'error|warning|Diff in|failures:|panicked|test result|FAILED', re.I)
+          keep = [(i, p) for i, p in enumerate(parts) if rx.search(p) or i == len(parts)-1][:8]
+          for i, p in keep:
+              m = p.replace('%', '%25').replace(chr(13), '%0D').replace(chr(10), '%0A')
+              print(f"::error::LOG[{i+1}/{len(parts)}]:{m}")
+          EOF
