@@ -28,12 +28,17 @@ pub fn render(template: &str, ctx: &ExprContext) -> Value {
     if let Some(inner) = single_placeholder(t) {
         return eval(inner, ctx);
     }
+    // String diawali `=` = mode ekspresi: semua `=` sebelum `{{`
+    // adalah penanda (dibuang). Tanpa itu, `=` tengah adalah literal.
+    let expr_mode = t.starts_with('=');
     let mut out = String::new();
     let mut rest = template;
     while let Some(start) = rest.find("={{") {
-        // `=` hanya penanda ekspresi di awal string; di tengah
-        // string ia teks literal yang harus dipertahankan.
-        let keep = if start > 0 { start + 1 } else { start };
+        let keep = if start > 0 && !expr_mode {
+            start + 1
+        } else {
+            start
+        };
         out.push_str(&rest[..keep]);
         let after = &rest[start + 3..];
         match after.find("}}") {
