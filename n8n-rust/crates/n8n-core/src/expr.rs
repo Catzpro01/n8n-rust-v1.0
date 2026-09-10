@@ -31,7 +31,10 @@ pub fn render(template: &str, ctx: &ExprContext) -> Value {
     let mut out = String::new();
     let mut rest = template;
     while let Some(start) = rest.find("={{") {
-        out.push_str(&rest[..start]);
+        // `=` hanya penanda ekspresi di awal string; di tengah
+        // string ia teks literal yang harus dipertahankan.
+        let keep = if start > 0 { start + 1 } else { start };
+        out.push_str(&rest[..keep]);
         let after = &rest[start + 3..];
         match after.find("}}") {
             Some(end) => {

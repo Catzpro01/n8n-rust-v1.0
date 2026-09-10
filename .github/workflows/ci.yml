@@ -28,15 +28,21 @@ jobs:
           python3 - <<'EOF'
           import re
           raw = ''
-          for _f in ['/tmp/out.log', '/tmp/fmtfix.log']:
-              try:
-                  raw += open(_f, 'rb').read().decode('utf-8', 'replace') + '\n'
-              except OSError:
-                  pass
+          try:
+              raw = open('/tmp/out.log', 'rb').read().decode('utf-8', 'replace')
+          except OSError:
+              pass
+          try:
+              _fix = open('/tmp/fmtfix.log', 'rb').read().decode('utf-8', 'replace')
+              if _fix.strip():
+                  _m = _fix[:3400].replace('%', '%25').replace(chr(13), '%0D').replace(chr(10), '%0A')
+                  print('::error::FMTFIX:' + _m)
+          except OSError:
+              pass
           CH = 3500
           parts = [raw[i:i+CH] for i in range(0, len(raw), CH)] or ['']
           rx = re.compile(r'error|warning|Diff in|failures:|panicked|test result|FAILED', re.I)
-          keep = [(i, p) for i, p in enumerate(parts) if rx.search(p) or i == len(parts)-1][:8]
+          keep = [(i, p) for i, p in enumerate(parts) if rx.search(p) or i == len(parts)-1][:7]
           for i, p in keep:
               m = p.replace('%', '%25').replace(chr(13), '%0D').replace(chr(10), '%0A')
               print(f"::error::LOG[{i+1}/{len(parts)}]:{m}")
@@ -64,15 +70,21 @@ jobs:
           python3 - <<'EOF'
           import re
           raw = ''
-          for _f in ['/tmp/out.log', '/tmp/fmtfix.log']:
-              try:
-                  raw += open(_f, 'rb').read().decode('utf-8', 'replace') + '\n'
-              except OSError:
-                  pass
+          try:
+              raw = open('/tmp/out.log', 'rb').read().decode('utf-8', 'replace')
+          except OSError:
+              pass
+          try:
+              _fix = open('/tmp/fmtfix.log', 'rb').read().decode('utf-8', 'replace')
+              if _fix.strip():
+                  _m = _fix[:3400].replace('%', '%25').replace(chr(13), '%0D').replace(chr(10), '%0A')
+                  print('::error::FMTFIX:' + _m)
+          except OSError:
+              pass
           CH = 3500
           parts = [raw[i:i+CH] for i in range(0, len(raw), CH)] or ['']
           rx = re.compile(r'error|warning|Diff in|failures:|panicked|test result|FAILED', re.I)
-          keep = [(i, p) for i, p in enumerate(parts) if rx.search(p) or i == len(parts)-1][:8]
+          keep = [(i, p) for i, p in enumerate(parts) if rx.search(p) or i == len(parts)-1][:7]
           for i, p in keep:
               m = p.replace('%', '%25').replace(chr(13), '%0D').replace(chr(10), '%0A')
               print(f"::error::LOG[{i+1}/{len(parts)}]:{m}")
@@ -108,15 +120,21 @@ jobs:
           python3 - <<'EOF'
           import re
           raw = ''
-          for _f in ['/tmp/out.log', '/tmp/fmtfix.log']:
-              try:
-                  raw += open(_f, 'rb').read().decode('utf-8', 'replace') + '\n'
-              except OSError:
-                  pass
+          try:
+              raw = open('/tmp/out.log', 'rb').read().decode('utf-8', 'replace')
+          except OSError:
+              pass
+          try:
+              _fix = open('/tmp/fmtfix.log', 'rb').read().decode('utf-8', 'replace')
+              if _fix.strip():
+                  _m = _fix[:3400].replace('%', '%25').replace(chr(13), '%0D').replace(chr(10), '%0A')
+                  print('::error::FMTFIX:' + _m)
+          except OSError:
+              pass
           CH = 3500
           parts = [raw[i:i+CH] for i in range(0, len(raw), CH)] or ['']
           rx = re.compile(r'error|warning|Diff in|failures:|panicked|test result|FAILED', re.I)
-          keep = [(i, p) for i, p in enumerate(parts) if rx.search(p) or i == len(parts)-1][:8]
+          keep = [(i, p) for i, p in enumerate(parts) if rx.search(p) or i == len(parts)-1][:7]
           for i, p in keep:
               m = p.replace('%', '%25').replace(chr(13), '%0D').replace(chr(10), '%0A')
               print(f"::error::LOG[{i+1}/{len(parts)}]:{m}")
