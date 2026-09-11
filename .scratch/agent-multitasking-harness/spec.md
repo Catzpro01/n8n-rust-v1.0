@@ -1,6 +1,6 @@
-﻿# Spec: Agent Multitasking & Remote HTTP Harness (V1.0)
+# Spec: Agent Multitasking & Remote HTTP Harness (V1.0)
 
-Status: ready-for-agent
+Status: implemented
 
 ## Problem Statement
 
