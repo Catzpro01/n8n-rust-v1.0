@@ -1,8 +1,13 @@
 //! Credentials — 95% n8n asli: encrypted store, types, CRUD
-//! v0.8.0: AES-like simple obfuscation via base64 + key (real n8n uses AES).
-//! For personal use, base64 + env key is enough, but structure matches n8n.
+//! v0.8.0: AES-GCM 256 real encryption — key from env N8N_ENCRYPTION_KEY or default.
+//! Matches n8n asli encryption at rest.
 
+use aes_gcm::{
+    aead::{Aead, KeyInit},
+    Aes256Gcm, Nonce,
+};
 use base64::{engine::general_purpose::STANDARD as BASE64, Engine as _};
+use rand::RngCore;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::HashMap;
@@ -63,20 +68,65 @@ impl Credential {
         }
     }
 
+    fn key_bytes(key: &str) -> [u8; 32] {
+        let mut kb = [0u8; 32];
+        let b = key.as_bytes();
+        if b.len() >= 32 {
+            kb.copy_from_slice(&b[..32]);
+        } else if !b.is_empty() {
+            kb[..b.len()].copy_from_slice(b);
+            for i in b.len()..32 {
+                kb[i] = b[i % b.len()] ^ (i as u8);
+            }
+        }
+        kb
+    }
+
     pub fn encrypt_data(&self, key: &str) -> String {
         let json = serde_json::to_string(&self.data).unwrap_or_default();
-        let combined = format!("{}:{}", key, json);
-        BASE64.encode(combined.as_bytes())
+        let kb = Self::key_bytes(key);
+        // try AES-GCM
+        if let Ok(cipher) = Aes256Gcm::new_from_slice(&kb) {
+            let mut nonce_bytes = [0u8; 12];
+            rand::thread_rng().fill_bytes(&mut nonce_bytes);
+            let nonce = Nonce::from_slice(&nonce_bytes);
+            if let Ok(ct) = cipher.encrypt(nonce, json.as_bytes()) {
+                let mut combined = Vec::with_capacity(12 + ct.len());
+                combined.extend_from_slice(&nonce_bytes);
+                combined.extend_from_slice(&ct);
+                return BASE64.encode(combined);
+            }
+        }
+        // fallback legacy
+        BASE64.encode(format!("{}:{}", key, json).as_bytes())
     }
 
     pub fn decrypt_data(encrypted: &str, key: &str) -> Result<HashMap<String, Value>, String> {
         let decoded = BASE64
             .decode(encrypted)
             .map_err(|e| format!("base64 decode failed: {e}"))?;
-        let s = String::from_utf8(decoded).map_err(|e| format!("utf8 failed: {e}"))?;
-        let prefix = format!("{}:", key);
-        let json_str = s.strip_prefix(&prefix).ok_or("invalid key")?;
-        serde_json::from_str(json_str).map_err(|e| format!("json parse failed: {e}"))
+        if decoded.len() >= 12 {
+            let (nonce_bytes, ct) = decoded.split_at(12);
+            let kb = Self::key_bytes(key);
+            if let Ok(cipher) = Aes256Gcm::new_from_slice(&kb) {
+                let nonce = Nonce::from_slice(nonce_bytes);
+                if let Ok(pt) = cipher.decrypt(nonce, ct) {
+                    if let Ok(json_str) = String::from_utf8(pt) {
+                        if let Ok(map) = serde_json::from_str(&json_str) {
+                            return Ok(map);
+                        }
+                    }
+                }
+            }
+        }
+        // try legacy
+        if let Ok(s) = String::from_utf8(decoded.clone()) {
+            let prefix = format!("{}:", key);
+            if let Some(json_str) = s.strip_prefix(&prefix) {
+                return serde_json::from_str(json_str).map_err(|e| format!("json parse failed: {e}"));
+            }
+        }
+        Err("decrypt failed: invalid key or format".to_string())
     }
 
     pub fn masked(&self) -> Self {

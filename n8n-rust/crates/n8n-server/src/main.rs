@@ -667,10 +667,16 @@ async fn api_executions_delete(
 async fn api_wait_resume(
     State(s): State<AppState>,
     Path(execution_id): Path<String>,
-    Json(payload): Json<serde_json::Value>,
+    body: Bytes,
 ) -> Result<Json<serde_json::Value>, (StatusCode, String)> {
     // In n8n asli, wait resume webhook continues paused execution.
     // Here we simulate: check if execution exists, then broadcast resume event.
+    let payload: serde_json::Value = if body.is_empty() {
+        serde_json::Value::Null
+    } else {
+        let text = String::from_utf8_lossy(&body);
+        serde_json::from_str(&text).unwrap_or(serde_json::Value::String(text.to_string()))
+    };
     let exists = s.executions.read().await.contains_key(&execution_id);
     if !exists {
         // still allow resume for mock executions (wait marker)
