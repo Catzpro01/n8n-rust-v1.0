@@ -133,8 +133,8 @@ impl Credential {
         let mut masked = self.clone();
         masked.data = masked
             .data
-            .into_iter()
-            .map(|(k, _)| (k, Value::String("***".to_string())))
+            .into_keys()
+            .map(|k| (k, Value::String("***".to_string())))
             .collect();
         masked
     }

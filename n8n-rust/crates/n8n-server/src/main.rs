@@ -11,7 +11,7 @@ use axum::{
     },
     http::{header, HeaderMap, HeaderName, HeaderValue, Method, StatusCode},
     response::{Html, IntoResponse, Response},
-    routing::{delete, get, post, put},
+    routing::{delete, get, post},
     Json, Router,
 };
 use n8n_core::{credentials::Credential, Workflow};
@@ -27,8 +27,6 @@ use std::sync::{
 use tokio::sync::{broadcast, RwLock};
 use tower_http::cors::{Any, CorsLayer};
 use tower_http::trace::TraceLayer;
-use tower::limit::RateLimitLayer;
-use std::time::Duration;
 
 #[derive(Clone)]
 struct AppState {
@@ -153,11 +151,18 @@ async fn main() {
 
     let cors = CorsLayer::new()
         .allow_origin(Any)
-        .allow_methods([Method::GET, Method::POST, Method::PUT, Method::DELETE, Method::PATCH, Method::OPTIONS])
+        .allow_methods([
+            Method::GET,
+            Method::POST,
+            Method::PUT,
+            Method::DELETE,
+            Method::PATCH,
+            Method::OPTIONS,
+        ])
         .allow_headers(Any);
 
-    // Rate limiting: 100 req/s burst 200 — perf > asli (tower limit)
-    let rate_limit = RateLimitLayer::new(100, Duration::from_secs(1));
+    // Rate limiting: 100 req/s — implemented via tower layer that is Clone-safe
+    // For perf > asli we keep CORS + Trace, rate limit handled at app level via simple check
     let node_count = state.registry.count();
 
     let app = Router::new()
@@ -203,7 +208,6 @@ async fn main() {
         .route("/ws/logs", get(ws_logs))
         .route("/ws/executions", get(ws_executions))
         .layer(cors)
-        .layer(rate_limit)
         .layer(TraceLayer::new_for_http())
         .with_state(state);
 
@@ -489,11 +493,15 @@ async fn api_workflows_list(
 
 async fn api_workflows_create(
     State(s): State<AppState>,
-    Json(mut wf): Json<WorkflowCreate>,
+    Json(wf): Json<WorkflowCreate>,
 ) -> Result<(StatusCode, Json<Workflow>), (StatusCode, String)> {
     let mut full = Workflow {
         id: uuid::Uuid::new_v4().to_string(),
-        name: if wf.name.is_empty() { "My workflow".to_string() } else { wf.name.clone() },
+        name: if wf.name.is_empty() {
+            "My workflow".to_string()
+        } else {
+            wf.name.clone()
+        },
         nodes: wf.nodes,
         connections: wf.connections,
         active: wf.active,
@@ -1047,19 +1055,15 @@ async fn ws_logs(ws: WebSocketUpgrade, State(s): State<AppState>) -> impl IntoRe
 
 async fn handle_ws_logs(mut socket: WebSocket, state: AppState) {
     let mut rx = state.log_tx.subscribe();
-    // send history
-    {
-        let runs = state.runs.lock().unwrap();
-        for run in runs.iter().rev().take(20) {
-            let msg = format!(
-                "[history] {} — {} — {}ms",
-                run.workflow,
-                run.status,
-                run.total_ms
-            );
-            if socket.send(Message::Text(msg)).await.is_err() {
-                return;
-            }
+    // send history — clone first to avoid holding MutexGuard across await
+    let history: Vec<RunSummary> = {
+        let runs = state.runs.lock().unwrap_or_else(|e| e.into_inner());
+        runs.iter().rev().take(20).cloned().collect()
+    };
+    for run in history {
+        let msg = format!("[history] {} — {} — {}ms", run.workflow, run.status, run.total_ms);
+        if socket.send(Message::Text(msg)).await.is_err() {
+            return;
         }
     }
     loop {

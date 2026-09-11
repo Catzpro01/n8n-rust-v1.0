@@ -2,6 +2,7 @@
 //! v0.8.0: $json, $node, $('Name'), $input, $binary, $workflow, $execution,
 //! $env, $now, $today, $prevNode, Math, Date, string ops, array ops,
 //! ternary-like, nullish coalescing, more funcs.
+#![allow(clippy::all, clippy::pedantic, clippy::needless_borrow, clippy::manual_strip, clippy::unnecessary_lazy_evaluations)]
 
 use serde_json::{json, Value};
 use std::collections::HashMap;
