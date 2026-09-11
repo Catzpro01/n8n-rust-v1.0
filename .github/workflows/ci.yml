@@ -307,7 +307,9 @@ jobs:
           B=http://127.0.0.1:3000
           FX=fixtures/manual-to-set.json
           echo "== 2 GET / =="
-          curl -sf $B/ | grep -q "<title>n8n-rust</title>" || { echo "SMOKE: GET / tanpa marker"; exit 1; }
+          curl -sf $B/ > /tmp/index.html || { echo "SMOKE: GET / curl fail"; cat /tmp/index.html; tail -20 /tmp/server.log; exit 1; }
+          head -c 500 /tmp/index.html; echo ""
+          grep -q "<title>n8n-rust</title>" /tmp/index.html || { echo "SMOKE: GET / tanpa marker — first 500:"; head -c 500 /tmp/index.html; echo ""; tail -30 /tmp/server.log; exit 1; }
           echo "== 3 api/nodes =="
           N=$(curl -sf $B/api/nodes | python3 -c "import json,sys; print(len(json.load(sys.stdin)))") || { echo "SMOKE: /api/nodes gagal"; exit 1; }
           [ "$N" -ge 19 ] || { echo "SMOKE: nodes=$N mau >=19"; exit 1; }
