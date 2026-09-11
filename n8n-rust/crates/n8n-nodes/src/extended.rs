@@ -4,7 +4,7 @@
 
 use n8n_core::expr::{render_value, ExprContext};
 use n8n_core::WorkflowNode;
-use n8n_engine::{BranchOutputs, EngineError, EngineResult, ExecContext, Node};
+use n8n_engine::{BranchOutputs, EngineResult, ExecContext, Node};
 use serde_json::{json, Value};
 use std::collections::HashMap;
 
@@ -16,9 +16,11 @@ fn get_str_param(node: &WorkflowNode, key: &str, ctx: &ExprContext, default: &st
         .unwrap_or_else(|| default.to_string())
 }
 
+static NULL_VAL: Value = Value::Null;
+
 fn render_ctx<'a>(items: &'a [Value], outputs: &'a HashMap<String, Vec<Vec<Value>>>) -> ExprContext<'a> {
-    let null = Value::Null;
-    ExprContext::simple(items.first().unwrap_or(&null), outputs)
+    let item = items.first().unwrap_or(&NULL_VAL);
+    ExprContext::simple(item, outputs)
 }
 
 macro_rules! simple_node {
@@ -28,6 +30,7 @@ macro_rules! simple_node {
             fn node_type(&self) -> &'static str {
                 $type_str
             }
+            #[allow(unused_variables)]
             fn execute(
                 &self,
                 node: &WorkflowNode,
@@ -52,6 +55,7 @@ macro_rules! simple_node {
             fn node_type(&self) -> &'static str {
                 $type_str
             }
+            #[allow(unused_variables)]
             fn execute(
                 &self,
                 $n: &WorkflowNode,
@@ -446,7 +450,7 @@ simple_node!(HtmlNode, "n8n-nodes-base.html", |node, items, ctx| {
     }).collect();
     Ok(vec![out])
 });
-simple_node!(FunctionItemNode, "n8n-nodes-base.functionItem", |node, items, _ctx| {
+simple_node!(FunctionItemNode, "n8n-nodes-base.functionItem", |_node, items, _ctx| {
     let out: Vec<Value> = items.into_iter().map(|it| {
         let mut o = it.as_object().cloned().unwrap_or_default();
         o.insert("functionItem".to_string(), json!({"executed": true}));
