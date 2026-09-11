@@ -112,17 +112,23 @@ fn encryption_key() -> String {
 
 async fn rate_limit_middleware(
     State(state): State<AppState>,
-    ConnectInfo(addr): ConnectInfo<SocketAddr>,
     request: Request<axum::body::Body>,
     next: Next,
 ) -> Result<Response, (StatusCode, String)> {
+    // Try to get IP from ConnectInfo extension or X-Forwarded-For
     let ip = request
         .headers()
         .get("x-forwarded-for")
         .and_then(|v| v.to_str().ok())
         .and_then(|s| s.split(',').next())
         .map(|s| s.trim().to_string())
-        .unwrap_or_else(|| addr.ip().to_string());
+        .or_else(|| {
+            request
+                .extensions()
+                .get::<ConnectInfo<SocketAddr>>()
+                .map(|ci| ci.0.ip().to_string())
+        })
+        .unwrap_or_else(|| "127.0.0.1".to_string());
     if !state.rate_limiter.check(&ip) {
         return Err((
             StatusCode::TOO_MANY_REQUESTS,
