@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>n8n-rust — Workflow Automation</title>
+<title>n8n-rust</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 /* 95% n8n asli + performa di atas asli — TOKENS: shadcn + penpot + taste + ui-ux-pro-max */
@@ -441,7 +441,7 @@ function redo(){if(state.histIdx<state.history.length-1){state.histIdx++;state.w
 function nodeByName(n){return state.wf.nodes.find(x=>x.name===n)}
 function branches(name){const e=(state.wf.connections||{})[name];const m=e&&e.main;if(!Array.isArray(m)) return [];return m.map(br=>Array.isArray(br)?br.filter(l=>l&&typeof l.node==="string").map(l=>l.node):[])}
 function allEdges(){const out=[];for(const n of state.wf.nodes){branches(n.name).forEach((br,bi)=>{for(const to of br){out.push({from:n.name,to,bi})}})}return out}
-function esc(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]))}
+function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 
 // COLLAPSIBLE — full canvas perf
 function setLeftCollapsed(v){
@@ -933,7 +933,7 @@ async function saveWorkflowToServer(){
 }
 async function fetchExecutions(){
   const data=await apiGet("/api/executions?limit=50");
-  if(Array.isArray(data)){serverExecutions=data; $(\"#execCount\").textContent=data.length; renderExecutionsList(); return data}
+  if(Array.isArray(data)){serverExecutions=data; $("#execCount").textContent=data.length; renderExecutionsList(); return data}
   return []
 }
 async function fetchCredentials(){
@@ -942,46 +942,46 @@ async function fetchCredentials(){
   return []
 }
 function renderWorkflowsList(){
-  const q=($(\"#nodeSearch\").value||\"\").toLowerCase();
-  nodeList.innerHTML=\"\";
+  const q=($("#nodeSearch").value||"").toLowerCase();
+  nodeList.innerHTML="";
   const frag=document.createDocumentFragment();
-  const h=document.createElement(\"div\"); h.className=\"cat\"; h.innerHTML=`<div class=\"left\"><span>📂 Workflows</span><span class=\"count\">${serverWorkflows.length}</span></div><button class=\"btn sm\" id=\"bNewWf\">+ New</button>`; frag.appendChild(h);
+  const h=document.createElement("div"); h.className="cat"; h.innerHTML=`<div class="left"><span>📂 Workflows</span><span class="count">${serverWorkflows.length}</span></div><button class="btn sm" id="bNewWf">+ New</button>`; frag.appendChild(h);
   for(const wf of serverWorkflows){
     if(q&&!wf.name.toLowerCase().includes(q)) continue;
-    const el=document.createElement(\"div\"); el.className=\"node-item\"; el.style.setProperty(\"--node-color\",\"#ff6d5a\");
-    const active=wf.active?\"<span style='background:var(--success-light);color:var(--success);padding:1px 6px;border-radius:10px;font:600 9px var(--font)'>ACTIVE</span>\":\"<span style='background:var(--bg-subtle);color:var(--text-lighter);padding:1px 6px;border-radius:10px;font:600 9px var(--font)'>DRAFT</span>\";
-    el.innerHTML=`<div class=\"node-icon\" style=\"background:#ff6d5a\">📄</div><div class=\"node-info\"><b>${esc(wf.name)} ${active}</b><span>${wf.nodes?.length||0} nodes • ${wf.updated_at?new Date(wf.updated_at).toLocaleString():\"\"}</span></div><div class=\"add\">↗</div>`;
+    const el=document.createElement("div"); el.className="node-item"; el.style.setProperty("--node-color","#ff6d5a");
+    const active=wf.active?"<span style='background:var(--success-light);color:var(--success);padding:1px 6px;border-radius:10px;font:600 9px var(--font)'>ACTIVE</span>":"<span style='background:var(--bg-subtle);color:var(--text-lighter);padding:1px 6px;border-radius:10px;font:600 9px var(--font)'>DRAFT</span>";
+    el.innerHTML=`<div class="node-icon" style="background:#ff6d5a">📄</div><div class="node-info"><b>${esc(wf.name)} ${active}</b><span>${wf.nodes?.length||0} nodes • ${wf.updated_at?new Date(wf.updated_at).toLocaleString():""}</span></div><div class="add">↗</div>`;
     el.onclick=async()=>{
       state.wf=structuredClone(wf); state.selected=null; saveHistory(); renderAll(); fitView(); toast(`Loaded ${wf.name}`,"ok"); log(`Loaded workflow ${wf.name}`,"success");
     };
     frag.appendChild(el);
   }
   if(!serverWorkflows.length){
-    const empty=document.createElement(\"div\"); empty.className=\"empty\"; empty.innerHTML=`<b>No workflows on server</b>Click + New to create`; frag.appendChild(empty);
+    const empty=document.createElement("div"); empty.className="empty"; empty.innerHTML=`<b>No workflows on server</b>Click + New to create`; frag.appendChild(empty);
   }
-  nodeList.innerHTML=\"\"; nodeList.appendChild(frag);
-  const nb=frag.querySelector(\"#bNewWf\"); if(nb) nb.onclick=async()=>{state.wf=structuredClone(EXAMPLE); state.wf.name=\"My workflow \"+(serverWorkflows.length+1); state.wf.id=\"\"; saveHistory(); renderAll(); const res=await saveWorkflowToServer(); if(res) await fetchWorkflows(); renderWorkflowsList(); toast(\"New workflow\",\"ok")};
+  nodeList.innerHTML=""; nodeList.appendChild(frag);
+  const nb=frag.querySelector("#bNewWf"); if(nb) nb.onclick=async()=>{state.wf=structuredClone(EXAMPLE); state.wf.name="My workflow "+(serverWorkflows.length+1); state.wf.id=""; saveHistory(); renderAll(); const res=await saveWorkflowToServer(); if(res) await fetchWorkflows(); renderWorkflowsList(); toast("New workflow","ok")};
 }
 function renderCredentialsList(){
-  nodeList.innerHTML=\"\"; const frag=document.createDocumentFragment();
-  const h=document.createElement(\"div\"); h.className=\"cat\"; h.innerHTML=`<div class=\"left\"><span>🔑 Credentials</span><span class=\"count\">${serverCredentials.length}</span></div>`; frag.appendChild(h);
+  nodeList.innerHTML=""; const frag=document.createDocumentFragment();
+  const h=document.createElement("div"); h.className="cat"; h.innerHTML=`<div class="left"><span>🔑 Credentials</span><span class="count">${serverCredentials.length}</span></div>`; frag.appendChild(h);
   for(const cred of serverCredentials){
-    const el=document.createElement(\"div\"); el.className=\"node-item\"; el.style.setProperty(\"--node-color\",\"#8b5cf6\");
-    el.innerHTML=`<div class=\"node-icon\" style=\"background:#8b5cf6\">🔑</div><div class=\"node-info\"><b>${esc(cred.name)}</b><span>${esc(cred.type)} • *** masked</span></div>`;
+    const el=document.createElement("div"); el.className="node-item"; el.style.setProperty("--node-color","#8b5cf6");
+    el.innerHTML=`<div class="node-icon" style="background:#8b5cf6">🔑</div><div class="node-info"><b>${esc(cred.name)}</b><span>${esc(cred.type)} • *** masked</span></div>`;
     frag.appendChild(el);
   }
-  if(!serverCredentials.length){const empty=document.createElement(\"div\"); empty.className=\"empty\"; empty.innerHTML=`<b>No credentials</b>Use API /api/credentials to create`; frag.appendChild(empty);}
+  if(!serverCredentials.length){const empty=document.createElement("div"); empty.className="empty"; empty.innerHTML=`<b>No credentials</b>Use API /api/credentials to create`; frag.appendChild(empty);}
   nodeList.appendChild(frag);
 }
 function renderExecutionsList(){
   // render in bottom logs if executions tab active
-  if(state.bottomTab!==\"executions\") return;
-  if(!serverExecutions.length){bottomLogs.innerHTML=`<div class=\"empty\"><b>No executions yet</b>Execute workflow to see history</div>`; return}
+  if(state.bottomTab!=="executions") return;
+  if(!serverExecutions.length){bottomLogs.innerHTML=`<div class="empty"><b>No executions yet</b>Execute workflow to see history</div>`; return}
   bottomLogs.innerHTML=serverExecutions.map(ex=>{
     const time=new Date(ex.started_at).toLocaleTimeString();
-    const ok=ex.status===\"success\";
-    return `<div class=\"log-line\"><span class=\"time\">${time}</span><span class=\"msg\"><b style=\"color:${ok?\"var(--success)\":\"var(--error)\"}\">${ok?\"✓\":\"✕\"} ${esc(ex.workflow_name||ex.workflow_id)}</b> — ${esc(ex.status)} — ${ex.data?.order?.join(\" → \")||\"\"} <span style=\"font:600 10px var(--mono);background:var(--bg-subtle);padding:1px 6px;border-radius:10px\">${ex.id.slice(0,8)}</span></span></div>`
-  }).join(\"\");
+    const ok=ex.status==="success";
+    return `<div class="log-line"><span class="time">${time}</span><span class="msg"><b style="color:${ok?"var(--success)":"var(--error)"}">${ok?"✓":"✕"} ${esc(ex.workflow_name||ex.workflow_id)}</b> — ${esc(ex.status)} — ${ex.data?.order?.join(" → ")||""} <span style="font:600 10px var(--mono);background:var(--bg-subtle);padding:1px 6px;border-radius:10px">${ex.id.slice(0,8)}</span></span></div>`
+  }).join("");
 }
 function mockTopo(wf){
   const enabled=(wf.nodes||[]).filter(n=>!n.disabled); const incoming=new Map(enabled.map(n=>[n.name,[]]));
@@ -1047,13 +1047,13 @@ async function doRun(){
     state.report=await api("/api/run",state.wf);
     renderAll();
     const total=Object.values(state.report.durations_ms||{}).reduce((a,b)=>a+b,0);
-    const execId=state.report.execution_id||\"-\"; 
+    const execId=state.report.execution_id||"-"; 
     setStatus(`✓ Executed: ${state.report.order.join(" → ")} (${total}ms) id=${execId.slice(0,8)}`);
     toast(`✓ Executed in ${total}ms — ${state.report.order.length} nodes`,"ok");
     $("#execCount").textContent=state.report.order.length;
     $("#execBar").style.display="none";
     log(`✓ Executed in ${total}ms — ${state.report.order.join(" → ")} — id=${execId}`,"success");
-    if(state.report.order.some(n=>n.toLowerCase().includes(\"wait\"))){
+    if(state.report.order.some(n=>n.toLowerCase().includes("wait"))){
       log(`Wait resume: POST /api/wait/resume/${execId} to continue`,"info");
     }
     setBottomHidden(false); setBottomCollapsed(false);
@@ -1085,9 +1085,9 @@ $("#bClearLogs").onclick=()=>{state.logs=[]; renderLogs(); $("#logCount").textCo
 $("#nodeSearch").addEventListener("input",e=>{
   clearTimeout(searchTimer);
   searchTimer=setTimeout(()=>{
-    if(leftMode===\"nodes\") renderNodeList(e.target.value);
-    else if(leftMode===\"workflows\") renderWorkflowsList();
-    else if(leftMode===\"credentials\") renderCredentialsList();
+    if(leftMode==="nodes") renderNodeList(e.target.value);
+    else if(leftMode==="workflows") renderWorkflowsList();
+    else if(leftMode==="credentials") renderCredentialsList();
     else setLeftMode(leftMode);
   },150)
 });
@@ -1107,12 +1107,12 @@ document.querySelectorAll(".bottom-tab").forEach(t=>t.addEventListener("click",a
 let leftMode="nodes"; // nodes | workflows | credentials | executions
 async function setLeftMode(mode){
   leftMode=mode;
-  $(\"#leftTitle\").textContent=mode===\"nodes\"?\"What triggers this workflow?\":mode===\"workflows\"?\"Workflows\":mode===\"credentials\"?\"Credentials\":mode===\"executions\"?\"Executions\":\"Nodes\";
-  $(\"#nodeSearch\").placeholder=mode===\"nodes\"?\"Search nodes... (e.g. HTTP, Slack, Set)\":`Search ${mode}...`;
-  if(mode===\"nodes\"){renderNodeList($(\"#nodeSearch\").value||\"\")}
-  else if(mode===\"workflows\"){await fetchWorkflows(); renderWorkflowsList()}
-  else if(mode===\"credentials\"){await fetchCredentials(); renderCredentialsList()}
-  else if(mode===\"executions\"){await fetchExecutions(); nodeList.innerHTML=\"\"; const frag=document.createDocumentFragment(); const h=document.createElement(\"div\"); h.className=\"cat\"; h.innerHTML=`<div class=\"left\"><span>📊 Executions</span><span class=\"count\">${serverExecutions.length}</span></div>`; frag.appendChild(h); for(const ex of serverExecutions){const el=document.createElement(\"div\"); el.className=\"node-item\"; el.style.setProperty(\"--node-color\",ex.status===\"success\"?\"#10b981\":\"#ef4444\"); el.innerHTML=`<div class=\"node-icon\" style=\"background:${ex.status===\"success\"?\"#10b981\":\"#ef4444\"}\">${ex.status===\"success\"?\"✓\":\"✕\"}</div><div class=\"node-info\"><b>${esc(ex.workflow_name)}</b><span>${esc(ex.status)} • ${new Date(ex.started_at).toLocaleString()}</span></div>`; frag.appendChild(el)} nodeList.innerHTML=\"\"; nodeList.appendChild(frag)}
+  $("#leftTitle").textContent=mode==="nodes"?"What triggers this workflow?":mode==="workflows"?"Workflows":mode==="credentials"?"Credentials":mode==="executions"?"Executions":"Nodes";
+  $("#nodeSearch").placeholder=mode==="nodes"?"Search nodes... (e.g. HTTP, Slack, Set)":`Search ${mode}...`;
+  if(mode==="nodes"){renderNodeList($("#nodeSearch").value||"")}
+  else if(mode==="workflows"){await fetchWorkflows(); renderWorkflowsList()}
+  else if(mode==="credentials"){await fetchCredentials(); renderCredentialsList()}
+  else if(mode==="executions"){await fetchExecutions(); nodeList.innerHTML=""; const frag=document.createDocumentFragment(); const h=document.createElement("div"); h.className="cat"; h.innerHTML=`<div class="left"><span>📊 Executions</span><span class="count">${serverExecutions.length}</span></div>`; frag.appendChild(h); for(const ex of serverExecutions){const el=document.createElement("div"); el.className="node-item"; el.style.setProperty("--node-color",ex.status==="success"?"#10b981":"#ef4444"); el.innerHTML=`<div class="node-icon" style="background:${ex.status==="success"?"#10b981":"#ef4444"}">${ex.status==="success"?"✓":"✕"}</div><div class="node-info"><b>${esc(ex.workflow_name)}</b><span>${esc(ex.status)} • ${new Date(ex.started_at).toLocaleString()}</span></div>`; frag.appendChild(el)} nodeList.innerHTML=""; nodeList.appendChild(frag)}
   setLeftCollapsed(false);
 }
 document.querySelectorAll(".main-sidebar .nav-item").forEach(btn=>{
@@ -1121,11 +1121,11 @@ document.querySelectorAll(".main-sidebar .nav-item").forEach(btn=>{
       document.querySelectorAll(".main-sidebar .nav-item").forEach(b=>b.classList.remove("active"));
       btn.classList.add("active");
       const nav=btn.dataset.nav;
-      if(nav===\"workflows\"){await setLeftMode(\"workflows\"); log(\"Workflows — server persistence\",\"info\")}
-      else if(nav===\"credentials\"){await setLeftMode(\"credentials\"); log(\"Credentials — 12 types encrypted\",\"info\")}
-      else if(nav===\"executions\"){await setLeftMode(\"executions\"); log(\"Executions — persistence file\",\"info\"); await fetchExecutions(); setBottomHidden(false); state.bottomTab=\"executions\"; document.querySelectorAll(\".bottom-tab\").forEach(x=>x.classList.toggle(\"active\",x.dataset.btab===\"executions\")); renderExecutionsList()}
-      else if(nav===\"variables\"){toast(\"Variables — 95% n8n asli\",\"info\"); log(\"Variables — coming soon\",\"info\")}
-      else{await setLeftMode(\"nodes\"); toast(`${nav} — 95% n8n asli sidebar`,"info"); log(`Navigate ${nav}`,"info")}
+      if(nav==="workflows"){await setLeftMode("workflows"); log("Workflows — server persistence","info")}
+      else if(nav==="credentials"){await setLeftMode("credentials"); log("Credentials — 12 types encrypted","info")}
+      else if(nav==="executions"){await setLeftMode("executions"); log("Executions — persistence file","info"); await fetchExecutions(); setBottomHidden(false); state.bottomTab="executions"; document.querySelectorAll(".bottom-tab").forEach(x=>x.classList.toggle("active",x.dataset.btab==="executions")); renderExecutionsList()}
+      else if(nav==="variables"){toast("Variables — 95% n8n asli","info"); log("Variables — coming soon","info")}
+      else{await setLeftMode("nodes"); toast(`${nav} — 95% n8n asli sidebar`,"info"); log(`Navigate ${nav}`,"info")}
     }
   });
 });
