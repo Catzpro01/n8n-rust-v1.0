@@ -1,4 +1,4 @@
-﻿# Agent Workspace & Multitasking System
+# Agent Workspace & Multitasking System
 
 Glossary of canonical domain concepts for the remote VPS connector, dual-layer tab multiplexer, and autonomous agent execution environment.
 
@@ -46,6 +46,17 @@ _Avoid_: SSH tunnel, gateway proxy, direct socket
 A developer-only SSH terminal connection (`fern@master`) used solely for manual verification, sanity checks, and baseline comparison against agent results.
 _Avoid_: Agent SSH, runtime remote shell
 
-**ShellLevelFreedom**:
-Unrestricted execution capability granting the agent the power to run arbitrary Linux bash commands, scripts, compilers, and tools on the VPS through the HTTP connector.
-_Avoid_: Sandboxed sandbox, restricted command whitelist
+### Security & Isolation
+
+**ContainerRootIsolation**:
+The execution boundary granting the agent full `root` privileges inside the project directory (`/work`), strictly enclosed within an unprivileged Podman container sandbox, preventing privilege escalation to the host VPS operating system.
+_Avoid_: Host root access, unrestricted VM sudo, host break-out
+
+**TabLifecycleRule**:
+The mandatory resource hygiene policy requiring agents to immediately terminate and prune ephemeral task tabs (package installations, builds, compiler passes) once their output and exit status are confirmed, while preserving standing service daemons.
+_Avoid_: Tab hoarding, abandoned background processes, zombie task accumulation
+
+**TabSwitchingAndRecall**:
+The interactive multitasking navigation capability allowing developers and agents to toggle between concurrent tabs (`switch <name|id>`), stream live stdout/stderr, and immediately resume previous working contexts (`prev`).
+_Avoid_: Blind backgrounding, unmonitored subshell
+
