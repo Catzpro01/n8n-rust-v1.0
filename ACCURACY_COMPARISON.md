@@ -1,5 +1,10 @@
 # Accuracy Comparison — n8n Asli vs n8n-rust v0.9.0
 
+> ⚠️ **CATATAN (audit 2026-09-11):** skor "95–99%" di dokumen ini adalah **target/klaim lama, bukan hasil pengukuran**, dan target pembandingnya n8n 1.x.
+> Pengukuran ulang terhadap n8n **2.38.6** ada di **[`docs/parity/GAP-ANALYSIS.md`](docs/parity/GAP-ANALYSIS.md)**:
+> halaman ~2% (1 route vs ~60), node ~6% (46 terdaftar vs 701 implementasi), API ~10% (25 route vs 90 path), tanpa auth & tanpa DB.
+> Verifikasi ulang: `bash docs/parity/verify-parity.sh --n8n`.
+
 ## Metodologi
 - Bandingkan UI, API, Engine, Expression, Nodes, Security, Perf
 - Skor: 0-100% kesamaan fungsional

@@ -7,6 +7,10 @@
 [![License](https://img.shields.io/badge/license-MIT-green?style=flat-square)](LICENSE)
 [![Nodes](https://img.shields.io/badge/nodes-19%20types-purple?style=flat-square)](#node-yang-didukung)
 
+> ⚠️ **Status paritas (audit 2026-09-11):** angka "95–99% n8n asli" di `ACCURACY_COMPARISON.md` **belum terverifikasi**.
+> Hasil pengukuran ulang terhadap n8n **2.38.6**: halaman UI **1 route vs ~60**, node **46 terdaftar (19 core + 27 mock) vs 701**, API **25 route vs 90**, tanpa auth/DB.
+> Lihat **[`docs/parity/GAP-ANALYSIS.md`](docs/parity/GAP-ANALYSIS.md)** (audit + peta jalan) · matriks: [`docs/parity/PARITY-MATRIX.json`](docs/parity/PARITY-MATRIX.json) · verifikasi ulang: `bash docs/parity/verify-parity.sh`.
+
 - **Kode v1.1**: [`n8n-rust/`](n8n-rust/) (workspace Cargo: core/engine/nodes/cli/server + UI premium di `crates/n8n-server/ui/`)
 - **UI Premium**: Single-file modern (Geist font, dark/light, canvas infinite, minimap, command palette ⌘K)
 - **Preview**: `node preview-server.js` → http://localhost:3000

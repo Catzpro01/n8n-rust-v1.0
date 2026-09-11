@@ -1,0 +1,1330 @@
+{
+ "generated_at": "2026-09-11",
+ "target": {
+  "n8n_version": "2.38.6",
+  "n8n_master_commit_date": "2026-09-11",
+  "source": "gh api repos/n8n-io/n8n + docs.n8n.io/llms.txt"
+ },
+ "repo_under_audit": {
+  "version_runtime": "0.9.0",
+  "version_readme": "v1.1.0",
+  "nodes_registered": 46,
+  "nodes_preview": 19,
+  "credentials": 13,
+  "http_routes": 25,
+  "unit_tests": 95
+ },
+ "legend": {
+  "ada": "setara",
+  "sebagian": "ada versi terbatas",
+  "mock": "stub/mock",
+  "hilang": "belum ada",
+  "-": "tidak perlu diubah"
+ },
+ "summary": {
+  "halaman": {
+   "sebagian": 5,
+   "ada": 1,
+   "hilang": 30
+  },
+  "platform": {
+   "hilang": 25,
+   "sebagian": 4,
+   "mock": 1
+  },
+  "engine": {
+   "hilang": 3,
+   "sebagian": 4,
+   "mock": 1
+  },
+  "node-core": {
+   "ada": 18,
+   "mock": 6,
+   "hilang": 43
+  },
+  "api": {
+   "hilang": 10,
+   "sebagian": 1,
+   "mock": 1
+  },
+  "kualitas": {
+   "hilang": 4,
+   "sebagian": 1,
+   "mock": 1
+  }
+ },
+ "items": [
+  {
+   "area": "halaman",
+   "item": "Daftar workflow (grid/list, filter, sort, arsip)",
+   "n8n": "/ (WorkflowsView)",
+   "rust": "sebagian",
+   "priority": "P0",
+   "evidence": "sidebar kiri saja"
+  },
+  {
+   "area": "halaman",
+   "item": "Editor canvas workflow",
+   "n8n": "/workflow/new, /workflow/:id/:nodeId?",
+   "rust": "ada",
+   "priority": "-",
+   "evidence": "kekuatan repo"
+  },
+  {
+   "area": "halaman",
+   "item": "Node Details View (NDV) modal",
+   "n8n": "panel /workflow/:id/:nodeId",
+   "rust": "sebagian",
+   "priority": "P1",
+   "evidence": "inspector inline 420px"
+  },
+  {
+   "area": "halaman",
+   "item": "Debug eksekusi per node",
+   "n8n": "/workflow/:id/debug/:executionId",
+   "rust": "hilang",
+   "priority": "P1",
+   "evidence": ""
+  },
+  {
+   "area": "halaman",
+   "item": "Riwayat versi workflow + diff",
+   "n8n": "/workflow/:id/history/:versionId?",
+   "rust": "hilang",
+   "priority": "P1",
+   "evidence": ""
+  },
+  {
+   "area": "halaman",
+   "item": "Template: search/koleksi/detail/setup",
+   "n8n": "/templates, /collections/:id, /templates/:id, /templates/:id/setup",
+   "rust": "hilang",
+   "priority": "P2",
+   "evidence": "toast saja"
+  },
+  {
+   "area": "halaman",
+   "item": "Resource center",
+   "n8n": "/resource-center",
+   "rust": "hilang",
+   "priority": "P3",
+   "evidence": ""
+  },
+  {
+   "area": "halaman",
+   "item": "Demo & demo diff",
+   "n8n": "/workflows/demo, /workflows/demo/diff",
+   "rust": "hilang",
+   "priority": "P3",
+   "evidence": ""
+  },
+  {
+   "area": "halaman",
+   "item": "Onboarding workflow",
+   "n8n": "/workflows/onboarding/:id",
+   "rust": "hilang",
+   "priority": "P3",
+   "evidence": ""
+  },
+  {
+   "area": "halaman",
+   "item": "Workflow reviews",
+   "n8n": "features/workflow-reviews/views/*",
+   "rust": "hilang",
+   "priority": "P3",
+   "evidence": "fitur 2.x"
+  },
+  {
+   "area": "halaman",
+   "item": "Daftar eksekusi global",
+   "n8n": "/executions",
+   "rust": "sebagian",
+   "priority": "P1",
+   "evidence": "list sidebar, tanpa tabel/filter"
+  },
+  {
+   "area": "halaman",
+   "item": "Eksekusi per workflow",
+   "n8n": "/workflow/:id/executions",
+   "rust": "sebagian",
+   "priority": "P1",
+   "evidence": "tab ada, list sederhana"
+  },
+  {
+   "area": "halaman",
+   "item": "Detail eksekusi + output per node",
+   "n8n": "/workflow/:id/executions/:executionId/:nodeId?",
+   "rust": "hilang",
+   "priority": "P1",
+   "evidence": ""
+  },
+  {
+   "area": "halaman",
+   "item": "Evaluations (test run, compare)",
+   "n8n": "/workflow/:id/evaluation",
+   "rust": "hilang",
+   "priority": "P2",
+   "evidence": "tab kosong"
+  },
+  {
+   "area": "halaman",
+   "item": "Insights (dashboard)",
+   "n8n": "/settings/usage + Insights",
+   "rust": "hilang",
+   "priority": "P2",
+   "evidence": ""
+  },
+  {
+   "area": "halaman",
+   "item": "Credentials (list + modal + test + sharing)",
+   "n8n": "/settings/... credentials",
+   "rust": "sebagian",
+   "priority": "P1",
+   "evidence": "tanpa test/sharing/transfer"
+  },
+  {
+   "area": "halaman",
+   "item": "Variables",
+   "n8n": "sidebar Variables",
+   "rust": "hilang",
+   "priority": "P1",
+   "evidence": "toast"
+  },
+  {
+   "area": "halaman",
+   "item": "Projects (list, settings, members, roles)",
+   "n8n": "/projects/*, settings project-roles",
+   "rust": "hilang",
+   "priority": "P1",
+   "evidence": "toast"
+  },
+  {
+   "area": "halaman",
+   "item": "Folders (nested per project)",
+   "n8n": "folders.handler.ts + UI",
+   "rust": "hilang",
+   "priority": "P2",
+   "evidence": ""
+  },
+  {
+   "area": "halaman",
+   "item": "Tags (filter & bulk)",
+   "n8n": "tags.controller.ts",
+   "rust": "hilang",
+   "priority": "P1",
+   "evidence": ""
+  },
+  {
+   "area": "halaman",
+   "item": "Data Tables (grid + CRUD)",
+   "n8n": "features/core/dataTable",
+   "rust": "hilang",
+   "priority": "P2",
+   "evidence": ""
+  },
+  {
+   "area": "halaman",
+   "item": "Chat Hub",
+   "n8n": "features/ai/chatHub",
+   "rust": "hilang",
+   "priority": "P2",
+   "evidence": ""
+  },
+  {
+   "area": "halaman",
+   "item": "Agents (list, builder, session, timeline)",
+   "n8n": "features/agents/views/*",
+   "rust": "hilang",
+   "priority": "P2",
+   "evidence": ""
+  },
+  {
+   "area": "halaman",
+   "item": "AI Assistant / Instance AI",
+   "n8n": "features/ai/assistant, instanceAi",
+   "rust": "hilang",
+   "priority": "P3",
+   "evidence": ""
+  },
+  {
+   "area": "halaman",
+   "item": "MCP Access (server + klien + registry)",
+   "n8n": "features/ai/mcpAccess",
+   "rust": "hilang",
+   "priority": "P2",
+   "evidence": ""
+  },
+  {
+   "area": "halaman",
+   "item": "Settings personal & security & MFA",
+   "n8n": "/settings/personal, /security, MFA",
+   "rust": "hilang",
+   "priority": "P1",
+   "evidence": ""
+  },
+  {
+   "area": "halaman",
+   "item": "Settings instance: users, API keys, roles",
+   "n8n": "settings/users, apiKeys, roles",
+   "rust": "hilang",
+   "priority": "P0",
+   "evidence": ""
+  },
+  {
+   "area": "halaman",
+   "item": "SSO SAML/OIDC, LDAP",
+   "n8n": "settings/sso, settings/ldap",
+   "rust": "hilang",
+   "priority": "P3",
+   "evidence": "EE"
+  },
+  {
+   "area": "halaman",
+   "item": "Environments / source control (git)",
+   "n8n": "integrations/sourceControl.ee",
+   "rust": "hilang",
+   "priority": "P3",
+   "evidence": "EE"
+  },
+  {
+   "area": "halaman",
+   "item": "External secrets & secrets providers",
+   "n8n": "integrations/externalSecrets.ee, secretsProviders.ee",
+   "rust": "hilang",
+   "priority": "P3",
+   "evidence": "EE"
+  },
+  {
+   "area": "halaman",
+   "item": "Log streaming",
+   "n8n": "integrations/logStreaming.ee",
+   "rust": "hilang",
+   "priority": "P3",
+   "evidence": "EE"
+  },
+  {
+   "area": "halaman",
+   "item": "Encryption keys (rotasi)",
+   "n8n": "settings/encryption-keys",
+   "rust": "hilang",
+   "priority": "P2",
+   "evidence": ""
+  },
+  {
+   "area": "halaman",
+   "item": "Community nodes",
+   "n8n": "settings/communityNodes",
+   "rust": "hilang",
+   "priority": "P2",
+   "evidence": ""
+  },
+  {
+   "area": "halaman",
+   "item": "Usage & plan, migration report",
+   "n8n": "settings/usage, migrationReport",
+   "rust": "hilang",
+   "priority": "P3",
+   "evidence": ""
+  },
+  {
+   "area": "halaman",
+   "item": "Auth pages: signin/signup/setup/forgot/change/oauth-consent/signout",
+   "n8n": "core/auth/views/*",
+   "rust": "hilang",
+   "priority": "P0",
+   "evidence": ""
+  },
+  {
+   "area": "halaman",
+   "item": "Error/utility views (404, unauthorized, error, loading)",
+   "n8n": "app/views/*",
+   "rust": "hilang",
+   "priority": "P1",
+   "evidence": ""
+  },
+  {
+   "area": "platform",
+   "item": "Database relasional + migrasi",
+   "n8n": "141 tabel SQLite",
+   "rust": "hilang",
+   "priority": "P0",
+   "evidence": "file JSON"
+  },
+  {
+   "area": "platform",
+   "item": "Auth user (sesi, argon2, invite)",
+   "n8n": "packages/cli/src/auth",
+   "rust": "hilang",
+   "priority": "P0",
+   "evidence": "0 referensi auth"
+  },
+  {
+   "area": "platform",
+   "item": "API key X-N8N-API-KEY + scope",
+   "n8n": "api-keys.controller.ts",
+   "rust": "hilang",
+   "priority": "P0",
+   "evidence": ""
+  },
+  {
+   "area": "platform",
+   "item": "RBAC role global + project + scope",
+   "n8n": "permissions.ee, protect-endpoints",
+   "rust": "hilang",
+   "priority": "P1",
+   "evidence": ""
+  },
+  {
+   "area": "platform",
+   "item": "Multi-user / project ownership",
+   "n8n": "project.controller.ts",
+   "rust": "hilang",
+   "priority": "P1",
+   "evidence": ""
+  },
+  {
+   "area": "platform",
+   "item": "Webhook produksi vs test + auto registrasi",
+   "n8n": "webhooks/",
+   "rust": "sebagian",
+   "priority": "P1",
+   "evidence": "/hook/:path manual"
+  },
+  {
+   "area": "platform",
+   "item": "Scheduler & polling trigger nyata",
+   "n8n": "scheduling/, active-workflow-manager",
+   "rust": "mock",
+   "priority": "P1",
+   "evidence": "cron/schedule mock"
+  },
+  {
+   "area": "platform",
+   "item": "Queue mode + worker",
+   "n8n": "scaling/, concurrency/",
+   "rust": "hilang",
+   "priority": "P3",
+   "evidence": ""
+  },
+  {
+   "area": "platform",
+   "item": "Task runner (sandbox JS/Python)",
+   "n8n": "task-runners/",
+   "rust": "hilang",
+   "priority": "P2",
+   "evidence": "Code = Rhai in-process"
+  },
+  {
+   "area": "platform",
+   "item": "Binary data (memory/fs/S3)",
+   "n8n": "binary-data.ts",
+   "rust": "hilang",
+   "priority": "P1",
+   "evidence": "0 match BinaryData"
+  },
+  {
+   "area": "platform",
+   "item": "Error workflow + Error Trigger",
+   "n8n": "error workflow engine",
+   "rust": "hilang",
+   "priority": "P1",
+   "evidence": ""
+  },
+  {
+   "area": "platform",
+   "item": "Retry on fail (maxTries, backoff)",
+   "n8n": "execution-lifecycle",
+   "rust": "hilang",
+   "priority": "P1",
+   "evidence": "0 match retries"
+  },
+  {
+   "area": "platform",
+   "item": "Execute Sub-workflow",
+   "n8n": "ExecuteWorkflow node",
+   "rust": "hilang",
+   "priority": "P1",
+   "evidence": ""
+  },
+  {
+   "area": "platform",
+   "item": "Pin data",
+   "n8n": "pinData",
+   "rust": "hilang",
+   "priority": "P1",
+   "evidence": ""
+  },
+  {
+   "area": "platform",
+   "item": "Partial/per-node execution",
+   "n8n": "manual-execution.service",
+   "rust": "sebagian",
+   "priority": "P1",
+   "evidence": "run penuh saja"
+  },
+  {
+   "area": "platform",
+   "item": "Execution order v1 + warisan v0",
+   "n8n": "workflow-execute",
+   "rust": "sebagian",
+   "priority": "P1",
+   "evidence": "topological+rayon"
+  },
+  {
+   "area": "platform",
+   "item": "Form + Form Trigger (hosted form)",
+   "n8n": "Form/FormTrigger node",
+   "rust": "hilang",
+   "priority": "P2",
+   "evidence": ""
+  },
+  {
+   "area": "platform",
+   "item": "Chat Trigger (hosted chat)",
+   "n8n": "ChatTrigger node",
+   "rust": "hilang",
+   "priority": "P2",
+   "evidence": ""
+  },
+  {
+   "area": "platform",
+   "item": "MCP server trigger / client",
+   "n8n": "mcpAccess, mcp nodes",
+   "rust": "hilang",
+   "priority": "P2",
+   "evidence": ""
+  },
+  {
+   "area": "platform",
+   "item": "Community & custom nodes loader",
+   "n8n": "load-nodes-and-credentials.ts",
+   "rust": "hilang",
+   "priority": "P2",
+   "evidence": ""
+  },
+  {
+   "area": "platform",
+   "item": "Source control git (environments)",
+   "n8n": "source-control.ee",
+   "rust": "hilang",
+   "priority": "P3",
+   "evidence": "EE"
+  },
+  {
+   "area": "platform",
+   "item": "External secrets (Vault/AWS/Infisical/1P)",
+   "n8n": "external-secrets",
+   "rust": "hilang",
+   "priority": "P3",
+   "evidence": "EE"
+  },
+  {
+   "area": "platform",
+   "item": "Log streaming destinations",
+   "n8n": "log-streaming",
+   "rust": "hilang",
+   "priority": "P3",
+   "evidence": "EE"
+  },
+  {
+   "area": "platform",
+   "item": "Audit log",
+   "n8n": "/audit + controller",
+   "rust": "hilang",
+   "priority": "P2",
+   "evidence": ""
+  },
+  {
+   "area": "platform",
+   "item": "Insights (agregasi waktu tersimpan)",
+   "n8n": "insights.handler.ts",
+   "rust": "hilang",
+   "priority": "P2",
+   "evidence": ""
+  },
+  {
+   "area": "platform",
+   "item": "Observability: Prometheus + OTel",
+   "n8n": "metrics/, otel.handler.ts",
+   "rust": "sebagian",
+   "priority": "P2",
+   "evidence": "/api/metrics JSON"
+  },
+  {
+   "area": "platform",
+   "item": "i18n (18+ bahasa)",
+   "n8n": "@n8n/i18n",
+   "rust": "hilang",
+   "priority": "P3",
+   "evidence": "hardcode EN"
+  },
+  {
+   "area": "platform",
+   "item": "Telemetry/PostHog (opsional)",
+   "n8n": "telemetry.controller.ts",
+   "rust": "hilang",
+   "priority": "P3",
+   "evidence": "n8n-rust tanpa telemetri = nilai plus"
+  },
+  {
+   "area": "platform",
+   "item": "License/plan gating (EE)",
+   "n8n": "license.ts",
+   "rust": "hilang",
+   "priority": "P3",
+   "evidence": ""
+  },
+  {
+   "area": "platform",
+   "item": "Evaluations engine (dataset, metrics)",
+   "n8n": "evaluation.ee",
+   "rust": "hilang",
+   "priority": "P2",
+   "evidence": ""
+  },
+  {
+   "area": "engine",
+   "item": "Paired item / item linking ($input.item)",
+   "n8n": "pairedItem",
+   "rust": "hilang",
+   "priority": "P1",
+   "evidence": ""
+  },
+  {
+   "area": "engine",
+   "item": "Expression $items(), $runIndex, $fromAI()",
+   "n8n": "expression engine",
+   "rust": "sebagian",
+   "priority": "P1",
+   "evidence": "expr.rs subset"
+  },
+  {
+   "area": "engine",
+   "item": "onError 3 mode + continueOnFail",
+   "n8n": "error handling",
+   "rust": "sebagian",
+   "priority": "P1",
+   "evidence": "2 mode"
+  },
+  {
+   "area": "engine",
+   "item": "Wait benar-benar menahan + resume",
+   "n8n": "wait-tracker.ts",
+   "rust": "mock",
+   "priority": "P1",
+   "evidence": "marker __waitResume"
+  },
+  {
+   "area": "engine",
+   "item": "Streaming progress per node ke UI",
+   "n8n": "push/Socket.IO",
+   "rust": "sebagian",
+   "priority": "P1",
+   "evidence": "WS log global"
+  },
+  {
+   "area": "engine",
+   "item": "Concurrency limit",
+   "n8n": "concurrency/",
+   "rust": "hilang",
+   "priority": "P2",
+   "evidence": ""
+  },
+  {
+   "area": "engine",
+   "item": "Execution data pruning/redaction",
+   "n8n": "execution-data",
+   "rust": "hilang",
+   "priority": "P2",
+   "evidence": ""
+  },
+  {
+   "area": "engine",
+   "item": "Modes: manual/trigger/webhook/retry/evaluation",
+   "n8n": "execution.mode",
+   "rust": "sebagian",
+   "priority": "P2",
+   "evidence": ""
+  },
+  {
+   "area": "node-core",
+   "item": "Code",
+   "n8n": "core node resmi",
+   "rust": "ada",
+   "priority": "-",
+   "evidence": ""
+  },
+  {
+   "area": "node-core",
+   "item": "Date & Time",
+   "n8n": "core node resmi",
+   "rust": "ada",
+   "priority": "-",
+   "evidence": ""
+  },
+  {
+   "area": "node-core",
+   "item": "Edit Fields (Set)",
+   "n8n": "core node resmi",
+   "rust": "ada",
+   "priority": "-",
+   "evidence": ""
+  },
+  {
+   "area": "node-core",
+   "item": "Execute Command",
+   "n8n": "core node resmi",
+   "rust": "ada",
+   "priority": "-",
+   "evidence": ""
+  },
+  {
+   "area": "node-core",
+   "item": "Filter",
+   "n8n": "core node resmi",
+   "rust": "ada",
+   "priority": "-",
+   "evidence": ""
+  },
+  {
+   "area": "node-core",
+   "item": "HTTP Request",
+   "n8n": "core node resmi",
+   "rust": "ada",
+   "priority": "-",
+   "evidence": ""
+  },
+  {
+   "area": "node-core",
+   "item": "If",
+   "n8n": "core node resmi",
+   "rust": "ada",
+   "priority": "-",
+   "evidence": ""
+  },
+  {
+   "area": "node-core",
+   "item": "Limit",
+   "n8n": "core node resmi",
+   "rust": "ada",
+   "priority": "-",
+   "evidence": ""
+  },
+  {
+   "area": "node-core",
+   "item": "Manual Trigger",
+   "n8n": "core node resmi",
+   "rust": "ada",
+   "priority": "-",
+   "evidence": ""
+  },
+  {
+   "area": "node-core",
+   "item": "Merge",
+   "n8n": "core node resmi",
+   "rust": "ada",
+   "priority": "-",
+   "evidence": ""
+  },
+  {
+   "area": "node-core",
+   "item": "No Operation",
+   "n8n": "core node resmi",
+   "rust": "ada",
+   "priority": "-",
+   "evidence": ""
+  },
+  {
+   "area": "node-core",
+   "item": "Respond to Webhook",
+   "n8n": "core node resmi",
+   "rust": "ada",
+   "priority": "-",
+   "evidence": ""
+  },
+  {
+   "area": "node-core",
+   "item": "Schedule Trigger",
+   "n8n": "core node resmi",
+   "rust": "ada",
+   "priority": "-",
+   "evidence": ""
+  },
+  {
+   "area": "node-core",
+   "item": "Sort",
+   "n8n": "core node resmi",
+   "rust": "ada",
+   "priority": "-",
+   "evidence": ""
+  },
+  {
+   "area": "node-core",
+   "item": "Stop And Error",
+   "n8n": "core node resmi",
+   "rust": "ada",
+   "priority": "-",
+   "evidence": ""
+  },
+  {
+   "area": "node-core",
+   "item": "Switch",
+   "n8n": "core node resmi",
+   "rust": "ada",
+   "priority": "-",
+   "evidence": ""
+  },
+  {
+   "area": "node-core",
+   "item": "Wait",
+   "n8n": "core node resmi",
+   "rust": "ada",
+   "priority": "-",
+   "evidence": ""
+  },
+  {
+   "area": "node-core",
+   "item": "Webhook",
+   "n8n": "core node resmi",
+   "rust": "ada",
+   "priority": "-",
+   "evidence": ""
+  },
+  {
+   "area": "node-core",
+   "item": "Crypto",
+   "n8n": "core node resmi",
+   "rust": "mock",
+   "priority": "P1",
+   "evidence": "extended.rs: HTTP + mock fallback"
+  },
+  {
+   "area": "node-core",
+   "item": "HTML",
+   "n8n": "core node resmi",
+   "rust": "mock",
+   "priority": "P1",
+   "evidence": "extended.rs: HTTP + mock fallback"
+  },
+  {
+   "area": "node-core",
+   "item": "XML",
+   "n8n": "core node resmi",
+   "rust": "mock",
+   "priority": "P1",
+   "evidence": "extended.rs: HTTP + mock fallback"
+  },
+  {
+   "area": "node-core",
+   "item": "RSS Read",
+   "n8n": "core node resmi",
+   "rust": "mock",
+   "priority": "P1",
+   "evidence": "extended.rs: HTTP + mock fallback"
+  },
+  {
+   "area": "node-core",
+   "item": "Split in Batches (Loop Over Items)",
+   "n8n": "core node resmi",
+   "rust": "mock",
+   "priority": "P1",
+   "evidence": "extended.rs: HTTP + mock fallback"
+  },
+  {
+   "area": "node-core",
+   "item": "Send Email",
+   "n8n": "core node resmi",
+   "rust": "mock",
+   "priority": "P1",
+   "evidence": "extended.rs: HTTP + mock fallback"
+  },
+  {
+   "area": "node-core",
+   "item": "Activation Trigger",
+   "n8n": "core node resmi",
+   "rust": "hilang",
+   "priority": "P2",
+   "evidence": ""
+  },
+  {
+   "area": "node-core",
+   "item": "Aggregate",
+   "n8n": "core node resmi",
+   "rust": "hilang",
+   "priority": "P1",
+   "evidence": ""
+  },
+  {
+   "area": "node-core",
+   "item": "AI Transform",
+   "n8n": "core node resmi",
+   "rust": "hilang",
+   "priority": "P2",
+   "evidence": ""
+  },
+  {
+   "area": "node-core",
+   "item": "Compare Datasets",
+   "n8n": "core node resmi",
+   "rust": "hilang",
+   "priority": "P1",
+   "evidence": ""
+  },
+  {
+   "area": "node-core",
+   "item": "Compression",
+   "n8n": "core node resmi",
+   "rust": "hilang",
+   "priority": "P1",
+   "evidence": ""
+  },
+  {
+   "area": "node-core",
+   "item": "Convert to File",
+   "n8n": "core node resmi",
+   "rust": "hilang",
+   "priority": "P1",
+   "evidence": ""
+  },
+  {
+   "area": "node-core",
+   "item": "Data Table",
+   "n8n": "core node resmi",
+   "rust": "hilang",
+   "priority": "P1",
+   "evidence": ""
+  },
+  {
+   "area": "node-core",
+   "item": "Debug Helper",
+   "n8n": "core node resmi",
+   "rust": "hilang",
+   "priority": "P2",
+   "evidence": ""
+  },
+  {
+   "area": "node-core",
+   "item": "Edit Image",
+   "n8n": "core node resmi",
+   "rust": "hilang",
+   "priority": "P1",
+   "evidence": ""
+  },
+  {
+   "area": "node-core",
+   "item": "Email Trigger (IMAP)",
+   "n8n": "core node resmi",
+   "rust": "hilang",
+   "priority": "P2",
+   "evidence": ""
+  },
+  {
+   "area": "node-core",
+   "item": "Error Trigger",
+   "n8n": "core node resmi",
+   "rust": "hilang",
+   "priority": "P1",
+   "evidence": ""
+  },
+  {
+   "area": "node-core",
+   "item": "Evaluation",
+   "n8n": "core node resmi",
+   "rust": "hilang",
+   "priority": "P2",
+   "evidence": ""
+  },
+  {
+   "area": "node-core",
+   "item": "Evaluation Trigger",
+   "n8n": "core node resmi",
+   "rust": "hilang",
+   "priority": "P2",
+   "evidence": ""
+  },
+  {
+   "area": "node-core",
+   "item": "Execute Sub-workflow",
+   "n8n": "core node resmi",
+   "rust": "hilang",
+   "priority": "P1",
+   "evidence": ""
+  },
+  {
+   "area": "node-core",
+   "item": "Execute Sub-workflow Trigger",
+   "n8n": "core node resmi",
+   "rust": "hilang",
+   "priority": "P2",
+   "evidence": ""
+  },
+  {
+   "area": "node-core",
+   "item": "Execution Data",
+   "n8n": "core node resmi",
+   "rust": "hilang",
+   "priority": "P2",
+   "evidence": ""
+  },
+  {
+   "area": "node-core",
+   "item": "Extract From File",
+   "n8n": "core node resmi",
+   "rust": "hilang",
+   "priority": "P2",
+   "evidence": ""
+  },
+  {
+   "area": "node-core",
+   "item": "FTP",
+   "n8n": "core node resmi",
+   "rust": "hilang",
+   "priority": "P2",
+   "evidence": ""
+  },
+  {
+   "area": "node-core",
+   "item": "Git",
+   "n8n": "core node resmi",
+   "rust": "hilang",
+   "priority": "P2",
+   "evidence": ""
+  },
+  {
+   "area": "node-core",
+   "item": "GraphQL",
+   "n8n": "core node resmi",
+   "rust": "hilang",
+   "priority": "P2",
+   "evidence": ""
+  },
+  {
+   "area": "node-core",
+   "item": "JWT",
+   "n8n": "core node resmi",
+   "rust": "hilang",
+   "priority": "P2",
+   "evidence": ""
+  },
+  {
+   "area": "node-core",
+   "item": "LDAP",
+   "n8n": "core node resmi",
+   "rust": "hilang",
+   "priority": "P2",
+   "evidence": ""
+  },
+  {
+   "area": "node-core",
+   "item": "Local File Trigger",
+   "n8n": "core node resmi",
+   "rust": "hilang",
+   "priority": "P2",
+   "evidence": ""
+  },
+  {
+   "area": "node-core",
+   "item": "Markdown",
+   "n8n": "core node resmi",
+   "rust": "hilang",
+   "priority": "P1",
+   "evidence": ""
+  },
+  {
+   "area": "node-core",
+   "item": "n8n",
+   "n8n": "core node resmi",
+   "rust": "hilang",
+   "priority": "P2",
+   "evidence": ""
+  },
+  {
+   "area": "node-core",
+   "item": "n8n Form",
+   "n8n": "core node resmi",
+   "rust": "hilang",
+   "priority": "P2",
+   "evidence": ""
+  },
+  {
+   "area": "node-core",
+   "item": "n8n Form Trigger",
+   "n8n": "core node resmi",
+   "rust": "hilang",
+   "priority": "P2",
+   "evidence": ""
+  },
+  {
+   "area": "node-core",
+   "item": "n8n Trigger",
+   "n8n": "core node resmi",
+   "rust": "hilang",
+   "priority": "P2",
+   "evidence": ""
+  },
+  {
+   "area": "node-core",
+   "item": "Read/Write Files from Disk",
+   "n8n": "core node resmi",
+   "rust": "hilang",
+   "priority": "P2",
+   "evidence": ""
+  },
+  {
+   "area": "node-core",
+   "item": "Remove Duplicates",
+   "n8n": "core node resmi",
+   "rust": "hilang",
+   "priority": "P1",
+   "evidence": ""
+  },
+  {
+   "area": "node-core",
+   "item": "Rename Keys",
+   "n8n": "core node resmi",
+   "rust": "hilang",
+   "priority": "P1",
+   "evidence": ""
+  },
+  {
+   "area": "node-core",
+   "item": "RSS Feed Trigger",
+   "n8n": "core node resmi",
+   "rust": "hilang",
+   "priority": "P2",
+   "evidence": ""
+  },
+  {
+   "area": "node-core",
+   "item": "Split Out",
+   "n8n": "core node resmi",
+   "rust": "hilang",
+   "priority": "P1",
+   "evidence": ""
+  },
+  {
+   "area": "node-core",
+   "item": "SSE Trigger",
+   "n8n": "core node resmi",
+   "rust": "hilang",
+   "priority": "P2",
+   "evidence": ""
+  },
+  {
+   "area": "node-core",
+   "item": "SSH",
+   "n8n": "core node resmi",
+   "rust": "hilang",
+   "priority": "P2",
+   "evidence": ""
+  },
+  {
+   "area": "node-core",
+   "item": "Summarize",
+   "n8n": "core node resmi",
+   "rust": "hilang",
+   "priority": "P1",
+   "evidence": ""
+  },
+  {
+   "area": "node-core",
+   "item": "TOTP",
+   "n8n": "core node resmi",
+   "rust": "hilang",
+   "priority": "P2",
+   "evidence": ""
+  },
+  {
+   "area": "node-core",
+   "item": "Workflow Trigger",
+   "n8n": "core node resmi",
+   "rust": "hilang",
+   "priority": "P2",
+   "evidence": ""
+  },
+  {
+   "area": "node-core",
+   "item": "Chat",
+   "n8n": "core node resmi",
+   "rust": "hilang",
+   "priority": "P2",
+   "evidence": ""
+  },
+  {
+   "area": "node-core",
+   "item": "Chat Trigger",
+   "n8n": "core node resmi",
+   "rust": "hilang",
+   "priority": "P2",
+   "evidence": ""
+  },
+  {
+   "area": "node-core",
+   "item": "MCP Client",
+   "n8n": "core node resmi",
+   "rust": "hilang",
+   "priority": "P2",
+   "evidence": ""
+  },
+  {
+   "area": "node-core",
+   "item": "MCP Server Trigger",
+   "n8n": "core node resmi",
+   "rust": "hilang",
+   "priority": "P2",
+   "evidence": ""
+  },
+  {
+   "area": "node-core",
+   "item": "Guardrails",
+   "n8n": "core node resmi",
+   "rust": "hilang",
+   "priority": "P2",
+   "evidence": ""
+  },
+  {
+   "area": "api",
+   "item": "Auth: X-N8N-API-KEY di semua endpoint",
+   "n8n": "ya",
+   "rust": "hilang",
+   "priority": "P0",
+   "evidence": "server tanpa auth"
+  },
+  {
+   "area": "api",
+   "item": "Bentuk respons {data, nextCursor} + filter/pagination",
+   "n8n": "ya",
+   "rust": "hilang",
+   "priority": "P0",
+   "evidence": "array telanjang"
+  },
+  {
+   "area": "api",
+   "item": "/workflows: archive/unarchive/publish/transfer/history/versions/tags",
+   "n8n": "ya",
+   "rust": "hilang",
+   "priority": "P1",
+   "evidence": ""
+  },
+  {
+   "area": "api",
+   "item": "/executions: retry/stop/tags",
+   "n8n": "ya",
+   "rust": "hilang",
+   "priority": "P1",
+   "evidence": ""
+  },
+  {
+   "area": "api",
+   "item": "/credentials: schema/test/transfer",
+   "n8n": "ya",
+   "rust": "sebagian",
+   "priority": "P1",
+   "evidence": "tanpa test/transfer/schema"
+  },
+  {
+   "area": "api",
+   "item": "/variables, /tags, /projects, /users(+role), /roles",
+   "n8n": "ya",
+   "rust": "hilang",
+   "priority": "P1",
+   "evidence": ""
+  },
+  {
+   "area": "api",
+   "item": "/data-tables(+columns/rows)",
+   "n8n": "ya",
+   "rust": "hilang",
+   "priority": "P2",
+   "evidence": ""
+  },
+  {
+   "area": "api",
+   "item": "/insights/summary, /audit",
+   "n8n": "ya",
+   "rust": "hilang",
+   "priority": "P2",
+   "evidence": ""
+  },
+  {
+   "area": "api",
+   "item": "/settings/{ldap,sso,otel,security-policy,log-streaming}",
+   "n8n": "ya",
+   "rust": "hilang",
+   "priority": "P3",
+   "evidence": ""
+  },
+  {
+   "area": "api",
+   "item": "/source-control/{status,push,pull}",
+   "n8n": "ya",
+   "rust": "hilang",
+   "priority": "P3",
+   "evidence": ""
+  },
+  {
+   "area": "api",
+   "item": "/community-packages, /discover, /n8n-packages",
+   "n8n": "ya",
+   "rust": "hilang",
+   "priority": "P3",
+   "evidence": ""
+  },
+  {
+   "area": "api",
+   "item": "OpenAPI 3 valid (components/parameters/responses)",
+   "n8n": "openapi.yml + decorator routes (90 path)",
+   "rust": "mock",
+   "priority": "P2",
+   "evidence": "hanya ringkasan {path:{get:{summary}}}"
+  },
+  {
+   "area": "kualitas",
+   "item": "Test otomatis",
+   "n8n": "6.911 file test",
+   "rust": "hilang",
+   "priority": "P1",
+   "evidence": "95 unit test, 0 e2e"
+  },
+  {
+   "area": "kualitas",
+   "item": "E2E UI (Playwright)",
+   "n8n": "ya",
+   "rust": "hilang",
+   "priority": "P2",
+   "evidence": ""
+  },
+  {
+   "area": "kualitas",
+   "item": "Benchmark terpublikasi",
+   "n8n": "ya",
+   "rust": "sebagian",
+   "priority": "P3",
+   "evidence": "ada job bench CI"
+  },
+  {
+   "area": "kualitas",
+   "item": "Aksesibilitas (axe/ARIA)",
+   "n8n": "ya",
+   "rust": "hilang",
+   "priority": "P2",
+   "evidence": ""
+  },
+  {
+   "area": "kualitas",
+   "item": "Dokumentasi fitur per halaman",
+   "n8n": "docs.n8n.io",
+   "rust": "hilang",
+   "priority": "P2",
+   "evidence": "README + 3 laporan"
+  },
+  {
+   "area": "kualitas",
+   "item": "Klaim paritas terdokumentasi & terverifikasi",
+   "n8n": "-",
+   "rust": "mock",
+   "priority": "P0",
+   "evidence": "README/ACCURACY_COMPARISON klaim 95-99% tanpa bukti"
+  }
+ ]
+}
