@@ -22,7 +22,7 @@ fn render_ctx<'a>(items: &'a [Value], outputs: &'a HashMap<String, Vec<Vec<Value
 }
 
 macro_rules! simple_node {
-    ($name:ident, $type_str:expr, $exec_fn:expr) => {
+    ($name:ident, $type_str:expr, $body:block) => {
         pub struct $name;
         impl Node for $name {
             fn node_type(&self) -> &'static str {
@@ -34,7 +34,31 @@ macro_rules! simple_node {
                 items: Vec<Value>,
                 ctx: &ExecContext,
             ) -> EngineResult<BranchOutputs> {
-                $exec_fn(node, items, ctx)
+                // to allow using node, items, ctx inside block
+                let __node = node;
+                let __items = items;
+                let __ctx = ctx;
+                // shadow with expected names
+                let node = __node;
+                let items = __items;
+                let ctx = __ctx;
+                $body
+            }
+        }
+    };
+    ($name:ident, $type_str:expr, |$n:ident, $i:ident, $c:ident| $body:block) => {
+        pub struct $name;
+        impl Node for $name {
+            fn node_type(&self) -> &'static str {
+                $type_str
+            }
+            fn execute(
+                &self,
+                $n: &WorkflowNode,
+                $i: Vec<Value>,
+                $c: &ExecContext,
+            ) -> EngineResult<BranchOutputs> {
+                $body
             }
         }
     };
