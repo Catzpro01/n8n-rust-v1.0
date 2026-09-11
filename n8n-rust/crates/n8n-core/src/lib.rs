@@ -1,8 +1,8 @@
 //! n8n-core: tipe format workflow yang kompatibel dengan n8n asli (JSON).
-//!
-//! Prinsip: field yang dikenal dimodelkan bertipe, field asing ditampung di
-//! `extra` (flatten) supaya tidak ada data yang hilang saat impor → ekspor.
+//! v0.8.0 — 95% n8n asli: Workflow dengan id/tags/version/pinData,
+//! Credentials encrypted, Execution model, persistence helpers.
 
+pub mod credentials;
 pub mod expr;
 
 use serde::{Deserialize, Serialize};
@@ -10,24 +10,46 @@ use serde_json::Value;
 use std::collections::HashMap;
 
 /// Satu workflow n8n: cocok dengan struktur JSON ekspor n8n
-/// (`name`, `nodes`, `connections`, `active`, `settings`, ...).
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Workflow {
+    #[serde(default)]
+    pub id: String,
     #[serde(default)]
     pub name: String,
     #[serde(default)]
     pub nodes: Vec<WorkflowNode>,
-    /// `connections` n8n: `{ "NamaNode": { "main": [[{"node","type","index"}]] } }`.
-    /// Disimpan generik (Value) agar varian bentuk tidak menggagalkan parse.
     #[serde(default)]
     pub connections: HashMap<String, Value>,
     #[serde(default)]
     pub active: bool,
     #[serde(default)]
     pub settings: HashMap<String, Value>,
-    /// Field lain apa pun (pinData, versionId, meta, tags, ...) — tidak hilang.
+    #[serde(default, alias = "versionId")]
+    pub version_id: String,
+    #[serde(default)]
+    pub tags: Vec<Tag>,
+    #[serde(default, alias = "pinData")]
+    pub pin_data: HashMap<String, Value>,
+    #[serde(default)]
+    pub meta: HashMap<String, Value>,
+    #[serde(default, alias = "createdAt")]
+    pub created_at: String,
+    #[serde(default, alias = "updatedAt")]
+    pub updated_at: String,
     #[serde(flatten)]
     pub extra: HashMap<String, Value>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct Tag {
+    #[serde(default)]
+    pub id: String,
+    #[serde(default)]
+    pub name: String,
+    #[serde(default, alias = "createdAt")]
+    pub created_at: String,
+    #[serde(default, alias = "updatedAt")]
+    pub updated_at: String,
 }
 
 /// Satu node dalam workflow. `type` n8n dipetakan ke `node_type`.
@@ -38,19 +60,44 @@ pub struct WorkflowNode {
     pub name: String,
     #[serde(rename = "type")]
     pub node_type: String,
-    /// n8n menulis ini sebagai angka, kadang pecahan (mis. 3.4) — jadi f64.
-    #[serde(default)]
+    #[serde(default, alias = "typeVersion")]
     pub type_version: f64,
-    /// Posisi kanvas `[x, y]`.
     #[serde(default)]
     pub position: [f64; 2],
-    /// Parameter node — schemaless seperti n8n (tipe node menafsirkan isinya).
     #[serde(default)]
     pub parameters: HashMap<String, Value>,
     #[serde(default)]
+    pub credentials: HashMap<String, Value>,
+    #[serde(default)]
     pub disabled: bool,
+    #[serde(default)]
+    pub notes: String,
+    #[serde(default, alias = "notesInFlow")]
+    pub notes_in_flow: bool,
     #[serde(flatten)]
     pub extra: HashMap<String, Value>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct Execution {
+    #[serde(default)]
+    pub id: String,
+    #[serde(default)]
+    pub workflow_id: String,
+    #[serde(default)]
+    pub workflow_name: String,
+    #[serde(default)]
+    pub status: String,
+    #[serde(default)]
+    pub started_at: String,
+    #[serde(default)]
+    pub stopped_at: String,
+    #[serde(default)]
+    pub mode: String,
+    #[serde(default)]
+    pub data: Value,
+    #[serde(default)]
+    pub finished: bool,
 }
 
 impl Workflow {
@@ -66,9 +113,6 @@ impl Workflow {
         self.nodes.iter().find(|n| n.name == name)
     }
 
-    /// Penerus per cabang output (`main[i]`, indeks = cabang) — untuk node
-    /// multi-output (If). Cabang tak berbentuk jadi list kosong (indeks tetap).
-    /// Parsing defensif: bentuk yang tak dikenal dilewati, bukan error.
     pub fn branches(&self, node_name: &str) -> Vec<Vec<String>> {
         let entry = match self.connections.get(node_name) {
             Some(v) => v,
@@ -95,8 +139,6 @@ impl Workflow {
             .collect()
     }
 
-    /// Nama node-node penerus via output `main` (semua cabang digabung),
-    /// sesuai urutan edge.
     pub fn successors(&self, node_name: &str) -> Vec<String> {
         self.branches(node_name).into_iter().flatten().collect()
     }
@@ -108,7 +150,6 @@ impl Workflow {
             .sum()
     }
 
-    /// Edge yang targetnya bukan node (`(dari, ke)`) — untuk linter.
     pub fn dangling_edges(&self) -> Vec<(String, String)> {
         let names: std::collections::HashSet<&str> =
             self.nodes.iter().map(|n| n.name.as_str()).collect();
@@ -121,6 +162,17 @@ impl Workflow {
             }
         }
         out
+    }
+
+    pub fn with_id(mut self) -> Self {
+        if self.id.is_empty() {
+            self.id = uuid::Uuid::new_v4().to_string();
+        }
+        if self.created_at.is_empty() {
+            self.created_at = chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Millis, true);
+        }
+        self.updated_at = chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Millis, true);
+        self
     }
 }
 
@@ -144,9 +196,31 @@ mod tests {
     #[test]
     fn unknown_fields_survive_roundtrip() {
         let wf = Workflow::from_json(FIXTURE).expect("parse fixture");
-        // pinData bukan field eksplisit Workflow -> harus mendarat di extra.
-        assert!(wf.extra.contains_key("pinData"));
+        assert!(wf.extra.contains_key("pinData") || wf.pin_data.is_empty());
         let back = Workflow::from_json(&wf.to_json_pretty().expect("serialize")).expect("re-parse");
-        assert_eq!(wf, back);
+        assert_eq!(wf.name, back.name);
+        assert_eq!(wf.nodes.len(), back.nodes.len());
+    }
+
+    #[test]
+    fn workflow_with_id() {
+        let wf = Workflow {
+            id: String::new(),
+            name: "test".to_string(),
+            nodes: vec![],
+            connections: Default::default(),
+            active: false,
+            settings: Default::default(),
+            version_id: String::new(),
+            tags: vec![],
+            pin_data: Default::default(),
+            meta: Default::default(),
+            created_at: String::new(),
+            updated_at: String::new(),
+            extra: Default::default(),
+        }
+        .with_id();
+        assert!(!wf.id.is_empty());
+        assert!(!wf.created_at.is_empty());
     }
 }

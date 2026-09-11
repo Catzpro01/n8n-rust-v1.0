@@ -21,3 +21,7 @@ n8n-rust/web/dist/
 
 # Ralph loop state (machine-local, jangan di-commit)
 .ralph-loop.local.md
+# persistence data (workflows, credentials, executions, hooks)
+data/
+n8n-rust/crates/n8n-server/data/
+n8n-rust/data/
